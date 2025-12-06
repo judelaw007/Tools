@@ -11,8 +11,7 @@ import {
   TrendingUp,
   Plus,
   ArrowRight,
-  Activity,
-  Clock,
+  Sparkles,
 } from 'lucide-react';
 
 export default async function AdminDashboardPage() {
@@ -20,6 +19,9 @@ export default async function AdminDashboardPage() {
   const stats = await getPlatformStats();
   const recentTools = await getRecentTools(5);
   const courses = await getAllCourses();
+
+  const hasTools = stats.totalTools > 0;
+  const hasCourses = courses.length > 0;
 
   return (
     <DashboardLayout variant="admin">
@@ -54,10 +56,12 @@ export default async function AdminDashboardPage() {
                 <Wrench className="w-6 h-6 text-blue-600" />
               </div>
             </div>
-            <div className="mt-3 flex items-center gap-2 text-xs">
-              <Badge variant="active" size="sm">{stats.activeTools} Live</Badge>
-              <Badge variant="draft" size="sm">{stats.draftTools} Draft</Badge>
-            </div>
+            {hasTools && (
+              <div className="mt-3 flex items-center gap-2 text-xs">
+                <Badge variant="active" size="sm">{stats.activeTools} Live</Badge>
+                <Badge variant="draft" size="sm">{stats.draftTools} Draft</Badge>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -125,32 +129,52 @@ export default async function AdminDashboardPage() {
         </Card>
       </div>
 
-      {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Recent Tools */}
-        <Card className="lg:col-span-2">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Recent Tools</CardTitle>
-            <Link href="/admin/tools">
-              <Button variant="ghost" size="sm">
-                View All
-                <ArrowRight className="w-4 h-4" />
-              </Button>
-            </Link>
-          </CardHeader>
-          <CardContent>
-            {recentTools.length === 0 ? (
-              <div className="text-center py-8">
-                <Wrench className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-                <p className="text-slate-500">No tools created yet</p>
-                <Link href="/admin/tools/new" className="mt-4 inline-block">
-                  <Button variant="primary" size="sm">
-                    <Plus className="w-4 h-4" />
-                    Create First Tool
-                  </Button>
-                </Link>
-              </div>
-            ) : (
+      {/* Main Content */}
+      {!hasTools ? (
+        /* Empty State - Get Started */
+        <Card>
+          <CardContent className="p-12 text-center">
+            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-mojitax-green/20 to-mojitax-navy/20 flex items-center justify-center mx-auto mb-6">
+              <Sparkles className="w-10 h-10 text-mojitax-green" />
+            </div>
+            <h3 className="text-2xl font-bold text-mojitax-navy mb-3">
+              Welcome to MojiTax Tools Admin
+            </h3>
+            <p className="text-slate-500 mb-8 max-w-lg mx-auto">
+              Get started by creating your first demo tool. Tools you create will be available
+              to users through the MojiTax platform.
+            </p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Link href="/admin/tools/new">
+                <Button variant="primary" size="lg">
+                  <Plus className="w-5 h-5" />
+                  Create Your First Tool
+                </Button>
+              </Link>
+              <Link href="/admin/courses">
+                <Button variant="outline" size="lg">
+                  <BookOpen className="w-5 h-5" />
+                  Configure Courses
+                </Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        /* Tools & Courses Grid */
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Recent Tools */}
+          <Card className="lg:col-span-2">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle>Recent Tools</CardTitle>
+              <Link href="/admin/tools">
+                <Button variant="ghost" size="sm">
+                  View All
+                  <ArrowRight className="w-4 h-4" />
+                </Button>
+              </Link>
+            </CardHeader>
+            <CardContent>
               <div className="space-y-3">
                 {recentTools.map((tool) => (
                   <Link
@@ -177,52 +201,58 @@ export default async function AdminDashboardPage() {
                   </Link>
                 ))}
               </div>
-            )}
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        {/* Courses Overview */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BookOpen className="w-5 h-5 text-slate-400" />
-              Courses
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {courses.length === 0 ? (
-              <div className="text-center py-4">
-                <p className="text-slate-500 text-sm">No courses configured</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {courses.slice(0, 4).map((course) => (
-                  <div key={course.id} className="flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-full bg-mojitax-green/10 flex items-center justify-center flex-shrink-0">
-                      <BookOpen className="w-4 h-4 text-mojitax-green" />
+          {/* Courses Overview */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BookOpen className="w-5 h-5 text-slate-400" />
+                Courses
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {!hasCourses ? (
+                <div className="text-center py-4">
+                  <p className="text-slate-500 text-sm mb-4">No courses configured yet</p>
+                  <Link href="/admin/courses">
+                    <Button variant="outline" size="sm">
+                      <Plus className="w-4 h-4" />
+                      Add Course
+                    </Button>
+                  </Link>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {courses.slice(0, 4).map((course) => (
+                    <div key={course.id} className="flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-full bg-mojitax-green/10 flex items-center justify-center flex-shrink-0">
+                        <BookOpen className="w-4 h-4 text-mojitax-green" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-mojitax-navy truncate">
+                          {course.name}
+                        </p>
+                        <p className="text-xs text-slate-500">
+                          {course.isActive ? 'Active' : 'Inactive'}
+                        </p>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-mojitax-navy truncate">
-                        {course.name}
-                      </p>
-                      <p className="text-xs text-slate-500">
-                        {course.isActive ? 'Active' : 'Inactive'}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-            <Link
-              href="/admin/courses"
-              className="mt-4 inline-flex items-center gap-1 text-sm text-mojitax-green-dark hover:text-mojitax-green"
-            >
-              Manage all courses
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-          </CardContent>
-        </Card>
-      </div>
+                  ))}
+                </div>
+              )}
+              <Link
+                href="/admin/courses"
+                className="mt-4 inline-flex items-center gap-1 text-sm text-mojitax-green-dark hover:text-mojitax-green"
+              >
+                Manage all courses
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Quick Actions */}
       <div className="mt-8 p-6 bg-gradient-to-r from-mojitax-navy to-mojitax-navy-light rounded-xl text-white">
