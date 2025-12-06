@@ -19,6 +19,7 @@ import {
   Sparkles,
   Table,
   ClipboardList,
+  Wrench,
 } from 'lucide-react';
 import type { Tool, ToolCategory } from '@/types';
 
@@ -71,6 +72,7 @@ export default async function PublicToolsPage() {
   // Fetch tools from database
   const tools = await getPublicTools();
   const categories = groupToolsByCategory(tools);
+  const hasTools = tools.length > 0;
 
   return (
     <div className="min-h-screen bg-white">
@@ -106,11 +108,13 @@ export default async function PublicToolsPage() {
                 Browse Courses
               </Button>
             </Link>
-            <Link href="#tools">
-              <Button size="lg" variant="outline" className="border-white/30 text-white hover:bg-white/10">
-                Preview Tools
-              </Button>
-            </Link>
+            {hasTools && (
+              <Link href="#tools">
+                <Button size="lg" variant="outline" className="border-white/30 text-white hover:bg-white/10">
+                  View Tools
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
       </section>
@@ -120,19 +124,48 @@ export default async function PublicToolsPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-mojitax-navy mb-4">
-              Demo Tools by Category
+              Demo Tools
             </h2>
             <p className="text-slate-600 max-w-2xl mx-auto">
-              These demo tools are included with MojiTax professional courses.
-              Get access by enrolling in the relevant course.
+              {hasTools
+                ? 'These demo tools are included with MojiTax professional courses. Get access by enrolling in the relevant course.'
+                : 'Demo tools are currently being developed. Check back soon!'}
             </p>
           </div>
 
-          {categories.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-slate-500">No tools available at the moment.</p>
-            </div>
+          {!hasTools ? (
+            /* Empty State */
+            <Card className="max-w-2xl mx-auto">
+              <CardContent className="p-12 text-center">
+                <div className="w-20 h-20 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-6">
+                  <Wrench className="w-10 h-10 text-slate-400" />
+                </div>
+                <h3 className="text-xl font-semibold text-mojitax-navy mb-3">
+                  Tools Coming Soon
+                </h3>
+                <p className="text-slate-500 mb-6">
+                  We're building practical demo tools for tax professionals.
+                  These tools will help you practice real-world tax calculations
+                  and scenarios in a safe learning environment.
+                </p>
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                  <Link href="https://mojitax.co.uk/courses">
+                    <Button variant="primary">
+                      <GraduationCap className="w-4 h-4" />
+                      Browse Courses
+                    </Button>
+                  </Link>
+                  <Link href="https://mojitax.co.uk">
+                    <Button variant="outline">
+                      Visit MojiTax
+                      <ExternalLink className="w-4 h-4" />
+                    </Button>
+                  </Link>
+                </div>
+              </CardContent>
+            </Card>
           ) : (
+            /* Tools by Category */
             categories.map((category) => (
               <div key={category.id} className="mb-12">
                 <div className="flex items-center gap-3 mb-6">
@@ -192,11 +225,10 @@ export default async function PublicToolsPage() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <GraduationCap className="w-12 h-12 text-mojitax-green mx-auto mb-6" />
           <h2 className="text-2xl md:text-3xl font-bold text-mojitax-navy mb-4">
-            Get Access to All Demo Tools
+            Learn International Tax with MojiTax
           </h2>
           <p className="text-slate-600 mb-8 max-w-2xl mx-auto">
-            These demo tools are included with MojiTax professional courses.
-            Enroll in a course to access the full toolset and start practicing real-world tax scenarios.
+            Access professional tax courses and practical demo tools to enhance your international tax knowledge.
           </p>
           <Link href="https://mojitax.co.uk/courses">
             <Button size="lg" variant="primary">
