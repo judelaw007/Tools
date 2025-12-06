@@ -20,15 +20,6 @@ function getCookie(name: string): string | null {
   return null;
 }
 
-function setCookie(name: string, value: string, days: number = 7) {
-  const expires = new Date(Date.now() + days * 864e5).toUTCString();
-  document.cookie = `${name}=${value}; expires=${expires}; path=/`;
-}
-
-function deleteCookie(name: string) {
-  document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
-}
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -43,21 +34,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = useCallback(async (role: UserRole) => {
-    setIsLoading(true);
-    // Simulate async login
-    await new Promise(resolve => setTimeout(resolve, 300));
+    // Login is handled by API route, just update local state
     const devUser = DEV_USERS[role];
-    setCookie(AUTH_COOKIE_NAME, role);
     setUser(devUser);
-    setIsLoading(false);
   }, []);
 
   const logout = useCallback(async () => {
     setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 200));
-    deleteCookie(AUTH_COOKIE_NAME);
-    setUser(null);
-    setIsLoading(false);
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      setUser(null);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
   const value: AuthContextType = {

@@ -27,7 +27,7 @@ export function Header({ showSearch = false }: HeaderProps) {
   const handleLogout = async () => {
     setIsProfileOpen(false);
     await logout();
-    router.push('/tools');
+    window.location.href = '/tools';
   };
 
   const handleLogin = () => {
