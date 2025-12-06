@@ -18,13 +18,23 @@ function LoginContent() {
 
   const handleLogin = async (role: 'user' | 'admin') => {
     setSelectedRole(role);
-    await login(role);
 
-    // Use window.location for full page navigation so cookie is sent to middleware
-    if (role === 'admin') {
-      window.location.href = '/admin';
-    } else {
-      window.location.href = returnTo;
+    try {
+      // Call API to set cookie server-side
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role, returnTo }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        // Full page navigation to ensure cookie is sent
+        window.location.href = data.redirectTo;
+      }
+    } catch (error) {
+      console.error('Login failed:', error);
+      setSelectedRole(null);
     }
   };
 
