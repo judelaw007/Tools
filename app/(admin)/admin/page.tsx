@@ -3,6 +3,7 @@ import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
+import { getPlatformStats, getRecentTools, getAllCourses } from '@/lib/db';
 import {
   Wrench,
   BookOpen,
@@ -14,30 +15,12 @@ import {
   Clock,
 } from 'lucide-react';
 
-// Mock stats
-const stats = {
-  totalTools: 6,
-  activeTools: 4,
-  draftTools: 2,
-  totalCourses: 4,
-  totalUsers: 127,
-  usageToday: 45,
-};
+export default async function AdminDashboardPage() {
+  // Fetch real data from database
+  const stats = await getPlatformStats();
+  const recentTools = await getRecentTools(5);
+  const courses = await getAllCourses();
 
-const recentTools = [
-  { name: 'TP Margin Calculator', status: 'active', updated: '2 hours ago' },
-  { name: 'VAT Calculator', status: 'active', updated: '1 day ago' },
-  { name: 'GIIN Search Demo', status: 'draft', updated: '3 days ago' },
-];
-
-const recentActivity = [
-  { user: 'Sarah J.', action: 'Used TP Margin Calculator', time: '5 min ago' },
-  { user: 'John D.', action: 'Saved calculation', time: '15 min ago' },
-  { user: 'Emily R.', action: 'Viewed VAT Rate Lookup', time: '1 hour ago' },
-  { user: 'Michael S.', action: 'Exported PDF', time: '2 hours ago' },
-];
-
-export default function AdminDashboardPage() {
   return (
     <DashboardLayout variant="admin">
       {/* Page Header */}
@@ -57,7 +40,7 @@ export default function AdminDashboardPage() {
           </Button>
         </Link>
       </div>
-      
+
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <Card>
@@ -77,7 +60,7 @@ export default function AdminDashboardPage() {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -98,30 +81,34 @@ export default function AdminDashboardPage() {
             </Link>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-slate-500 mb-1">Total Users</p>
-                <p className="text-2xl font-bold text-mojitax-navy">{stats.totalUsers}</p>
+                <p className="text-2xl font-bold text-mojitax-navy">
+                  {stats.totalUsers > 0 ? stats.totalUsers : '—'}
+                </p>
               </div>
               <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center">
                 <Users className="w-6 h-6 text-purple-600" />
               </div>
             </div>
             <p className="mt-3 text-xs text-slate-500">
-              From LearnWorlds
+              {stats.totalUsers > 0 ? 'From LearnWorlds' : 'Connect LearnWorlds'}
             </p>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-slate-500 mb-1">Usage Today</p>
-                <p className="text-2xl font-bold text-mojitax-navy">{stats.usageToday}</p>
+                <p className="text-2xl font-bold text-mojitax-navy">
+                  {stats.usageToday > 0 ? stats.usageToday : '—'}
+                </p>
               </div>
               <div className="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center">
                 <TrendingUp className="w-6 h-6 text-amber-600" />
@@ -137,7 +124,7 @@ export default function AdminDashboardPage() {
           </CardContent>
         </Card>
       </div>
-      
+
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Recent Tools */}
@@ -152,64 +139,91 @@ export default function AdminDashboardPage() {
             </Link>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {recentTools.map((tool, i) => (
-                <Link
-                  key={i}
-                  href={`/admin/tools/${tool.name.toLowerCase().replace(/\s+/g, '-')}`}
-                  className="flex items-center gap-4 p-3 rounded-lg hover:bg-slate-50 transition-colors"
-                >
-                  <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center">
-                    <Wrench className="w-5 h-5 text-slate-600" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-medium text-mojitax-navy">{tool.name}</p>
-                    <p className="text-xs text-slate-500">Updated {tool.updated}</p>
-                  </div>
-                  <Badge
-                    variant={tool.status === 'active' ? 'active' : 'draft'}
-                    dot
-                    size="sm"
-                  >
-                    {tool.status === 'active' ? 'Live' : 'Draft'}
-                  </Badge>
+            {recentTools.length === 0 ? (
+              <div className="text-center py-8">
+                <Wrench className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+                <p className="text-slate-500">No tools created yet</p>
+                <Link href="/admin/tools/new" className="mt-4 inline-block">
+                  <Button variant="primary" size="sm">
+                    <Plus className="w-4 h-4" />
+                    Create First Tool
+                  </Button>
                 </Link>
-              ))}
-            </div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {recentTools.map((tool) => (
+                  <Link
+                    key={tool.id}
+                    href={`/admin/tools/${tool.id}`}
+                    className="flex items-center gap-4 p-3 rounded-lg hover:bg-slate-50 transition-colors"
+                  >
+                    <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center">
+                      <Wrench className="w-5 h-5 text-slate-600" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-medium text-mojitax-navy">{tool.name}</p>
+                      <p className="text-xs text-slate-500">
+                        Updated {tool.updatedAt.toLocaleDateString()}
+                      </p>
+                    </div>
+                    <Badge
+                      variant={tool.status === 'active' ? 'active' : tool.status === 'draft' ? 'draft' : 'inactive'}
+                      dot
+                      size="sm"
+                    >
+                      {tool.status === 'active' ? 'Live' : tool.status.charAt(0).toUpperCase() + tool.status.slice(1)}
+                    </Badge>
+                  </Link>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
-        
-        {/* Recent Activity */}
+
+        {/* Courses Overview */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Activity className="w-5 h-5 text-slate-400" />
-              Recent Activity
+              <BookOpen className="w-5 h-5 text-slate-400" />
+              Courses
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {recentActivity.map((activity, i) => (
-                <div key={i} className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-full bg-mojitax-navy/10 flex items-center justify-center flex-shrink-0">
-                    <span className="text-xs font-medium text-mojitax-navy">
-                      {activity.user.charAt(0)}
-                    </span>
+            {courses.length === 0 ? (
+              <div className="text-center py-4">
+                <p className="text-slate-500 text-sm">No courses configured</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {courses.slice(0, 4).map((course) => (
+                  <div key={course.id} className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-full bg-mojitax-green/10 flex items-center justify-center flex-shrink-0">
+                      <BookOpen className="w-4 h-4 text-mojitax-green" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-mojitax-navy truncate">
+                        {course.name}
+                      </p>
+                      <p className="text-xs text-slate-500">
+                        {course.isActive ? 'Active' : 'Inactive'}
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-mojitax-navy">
-                      <span className="font-medium">{activity.user}</span>
-                    </p>
-                    <p className="text-xs text-slate-500 truncate">{activity.action}</p>
-                  </div>
-                  <span className="text-xs text-slate-400 flex-shrink-0">{activity.time}</span>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
+            <Link
+              href="/admin/courses"
+              className="mt-4 inline-flex items-center gap-1 text-sm text-mojitax-green-dark hover:text-mojitax-green"
+            >
+              Manage all courses
+              <ArrowRight className="w-4 h-4" />
+            </Link>
           </CardContent>
         </Card>
       </div>
-      
+
       {/* Quick Actions */}
       <div className="mt-8 p-6 bg-gradient-to-r from-mojitax-navy to-mojitax-navy-light rounded-xl text-white">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
@@ -232,10 +246,10 @@ export default function AdminDashboardPage() {
                 Manage Courses
               </Button>
             </Link>
-            <Link href="/admin/analytics">
+            <Link href="/admin/tools">
               <Button variant="outline" size="sm" className="border-white/30 text-white hover:bg-white/10">
-                <TrendingUp className="w-4 h-4" />
-                View Analytics
+                <Wrench className="w-4 h-4" />
+                All Tools
               </Button>
             </Link>
           </div>
