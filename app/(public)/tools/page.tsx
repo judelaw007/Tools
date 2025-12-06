@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { PublicHeader } from '@/components/PublicHeader';
 import { Logo } from '@/components/ui/Logo';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
@@ -142,25 +143,8 @@ export default function PublicToolsPage() {
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
-      <header className="border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <Logo size="md" />
-            <div className="flex items-center gap-4">
-              <Link
-                href="https://mojitax.co.uk"
-                className="text-sm text-slate-600 hover:text-mojitax-navy transition-colors"
-              >
-                Back to MojiTax
-              </Link>
-              <Button variant="primary" size="sm">
-                Log In
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
-      
+      <PublicHeader />
+
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-gradient-to-br from-mojitax-navy via-mojitax-navy-light to-mojitax-navy py-20">
         {/* Background Pattern */}

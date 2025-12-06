@@ -2,7 +2,9 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/lib/auth';
 import { Button } from '@/components/ui/Button';
 import {
   Bell,
@@ -14,16 +16,23 @@ import {
 } from 'lucide-react';
 
 interface HeaderProps {
-  user?: {
-    name: string;
-    email: string;
-    isAdmin?: boolean;
-  };
   showSearch?: boolean;
 }
 
-export function Header({ user, showSearch = false }: HeaderProps) {
+export function Header({ showSearch = false }: HeaderProps) {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const router = useRouter();
+  const { user, logout, isAuthenticated, isAdmin } = useAuth();
+
+  const handleLogout = async () => {
+    setIsProfileOpen(false);
+    await logout();
+    router.push('/tools');
+  };
+
+  const handleLogin = () => {
+    router.push('/auth/login');
+  };
   
   return (
     <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6">
@@ -58,7 +67,7 @@ export function Header({ user, showSearch = false }: HeaderProps) {
         </button>
         
         {/* User Menu */}
-        {user ? (
+        {isAuthenticated && user ? (
           <div className="relative">
             <button
               onClick={() => setIsProfileOpen(!isProfileOpen)}
@@ -71,7 +80,7 @@ export function Header({ user, showSearch = false }: HeaderProps) {
               </div>
               <div className="hidden md:block text-left">
                 <p className="text-sm font-medium text-mojitax-navy">{user.name}</p>
-                {user.isAdmin && (
+                {isAdmin && (
                   <p className="text-xs text-mojitax-green">Admin</p>
                 )}
               </div>
@@ -80,7 +89,7 @@ export function Header({ user, showSearch = false }: HeaderProps) {
                 isProfileOpen && 'rotate-180'
               )} />
             </button>
-            
+
             {/* Dropdown Menu */}
             {isProfileOpen && (
               <>
@@ -93,8 +102,8 @@ export function Header({ user, showSearch = false }: HeaderProps) {
                     <p className="text-sm font-medium text-mojitax-navy">{user.name}</p>
                     <p className="text-xs text-slate-500 truncate">{user.email}</p>
                   </div>
-                  
-                  {user.isAdmin && (
+
+                  {isAdmin && (
                     <Link
                       href="/admin"
                       className="flex items-center gap-3 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 transition-colors"
@@ -104,20 +113,20 @@ export function Header({ user, showSearch = false }: HeaderProps) {
                       Admin Panel
                     </Link>
                   )}
-                  
+
                   <Link
-                    href="/settings"
+                    href="/dashboard"
                     className="flex items-center gap-3 px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 transition-colors"
                     onClick={() => setIsProfileOpen(false)}
                   >
                     <User className="w-4 h-4" />
-                    Account Settings
+                    My Dashboard
                   </Link>
-                  
+
                   <div className="border-t border-slate-100 mt-1 pt-1">
                     <button
                       className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                      onClick={() => setIsProfileOpen(false)}
+                      onClick={handleLogout}
                     >
                       <LogOut className="w-4 h-4" />
                       Sign Out
@@ -128,7 +137,7 @@ export function Header({ user, showSearch = false }: HeaderProps) {
             )}
           </div>
         ) : (
-          <Button variant="primary" size="sm">
+          <Button variant="primary" size="sm" onClick={handleLogin}>
             Log In
           </Button>
         )}

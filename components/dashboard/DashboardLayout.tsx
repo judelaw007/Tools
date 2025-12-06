@@ -10,16 +10,9 @@ interface DashboardLayoutProps {
   variant?: 'user' | 'admin';
 }
 
-// Mock user for now - will be replaced with real auth
-const mockUser = {
-  name: 'Sarah Johnson',
-  email: 'sarah@example.com',
-  isAdmin: true,
-};
-
 export function DashboardLayout({ children, variant = 'user' }: DashboardLayoutProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
-  
+
   return (
     <div className="min-h-screen bg-slate-50">
       <Sidebar
@@ -27,13 +20,13 @@ export function DashboardLayout({ children, variant = 'user' }: DashboardLayoutP
         isCollapsed={isCollapsed}
         onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
       />
-      
+
       <div className={cn(
         'transition-all duration-300',
         isCollapsed ? 'ml-16' : 'ml-64'
       )}>
-        <Header user={mockUser} />
-        
+        <Header />
+
         <main className="p-6">
           {children}
         </main>

@@ -1,8 +1,9 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { PublicHeader } from '@/components/PublicHeader';
 import { Logo } from '@/components/ui/Logo';
-import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
+import { LoginButton } from '@/components/LoginButton';
 import { Badge } from '@/components/ui/Badge';
 import {
   Calculator,
@@ -120,25 +121,8 @@ export default function ToolPreviewPage({ params }: ToolPreviewPageProps) {
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
-      <header className="border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <Logo size="md" />
-            <div className="flex items-center gap-4">
-              <Link
-                href="https://mojitax.co.uk"
-                className="text-sm text-slate-600 hover:text-mojitax-navy transition-colors"
-              >
-                Back to MojiTax
-              </Link>
-              <Button variant="primary" size="sm">
-                Log In
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
-      
+      <PublicHeader />
+
       {/* Breadcrumb */}
       <div className="border-b border-slate-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
@@ -272,9 +256,9 @@ export default function ToolPreviewPage({ params }: ToolPreviewPageProps) {
                   <p className="text-sm text-slate-500 mb-4">
                     Already enrolled?
                   </p>
-                  <Button variant="primary" className="w-full">
+                  <LoginButton variant="primary" className="w-full">
                     Log In to Access
-                  </Button>
+                  </LoginButton>
                 </div>
               </CardContent>
             </Card>

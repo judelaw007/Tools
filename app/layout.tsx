@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { GeistSans } from 'geist/font/sans';
 import { GeistMono } from 'geist/font/mono';
+import { Providers } from '@/components/Providers';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -39,7 +40,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable}`}>
       <body className="min-h-screen bg-slate-50">
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
