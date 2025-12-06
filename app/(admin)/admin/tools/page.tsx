@@ -11,19 +11,20 @@ import { Badge } from '@/components/ui/Badge';
 import { ToolCard } from '@/components/tools/ToolCard';
 import { EmptyState } from '@/components/ui/EmptyState';
 import {
-  Plus,
   Search,
-  Filter,
   MoreVertical,
   Edit,
   Eye,
-  Copy,
   Archive,
   Trash2,
   Wrench,
   LayoutGrid,
   List,
   Loader2,
+  AlertTriangle,
+  Power,
+  PowerOff,
+  FolderOpen,
 } from 'lucide-react';
 import type { Tool, ToolStatus, ToolCategory } from '@/types';
 
@@ -114,15 +115,9 @@ export default function AdminToolsPage() {
             Tools Management
           </h1>
           <p className="text-slate-600">
-            Create, edit, and manage your demo tools
+            Categorise, configure, and manage tools uploaded by developers
           </p>
         </div>
-        <Link href="/admin/tools/new">
-          <Button variant="primary">
-            <Plus className="w-4 h-4" />
-            New Tool
-          </Button>
-        </Link>
       </div>
 
       {/* Filters Bar */}
@@ -223,16 +218,12 @@ export default function AdminToolsPage() {
       {/* Tools Grid/List */}
       {filteredTools.length === 0 ? (
         <EmptyState
-          icon={Wrench}
-          title="No tools found"
+          icon={searchQuery || statusFilter || categoryFilter ? Wrench : FolderOpen}
+          title={searchQuery || statusFilter || categoryFilter ? "No tools found" : "No tools uploaded yet"}
           description={searchQuery || statusFilter || categoryFilter
             ? "Try adjusting your search or filters"
-            : "Create your first demo tool to get started"
+            : "Tools will appear here once developers upload them to the platform. You'll then be able to categorise, describe, and activate them for users."
           }
-          action={!searchQuery && !statusFilter && !categoryFilter ? {
-            label: 'Create Tool',
-            onClick: () => window.location.href = '/admin/tools/new',
-          } : undefined}
         />
       ) : viewMode === 'grid' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -261,14 +252,14 @@ export default function AdminToolsPage() {
                         className="fixed inset-0 z-40"
                         onClick={() => setOpenMenuId(null)}
                       />
-                      <div className="absolute right-0 top-full mt-1 w-40 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-50">
+                      <div className="absolute right-0 top-full mt-1 w-44 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-50">
                         <Link
                           href={`/admin/tools/${tool.id}`}
                           className="flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50"
                           onClick={() => setOpenMenuId(null)}
                         >
                           <Edit className="w-4 h-4" />
-                          Edit
+                          Edit Details
                         </Link>
                         <Link
                           href={`/tools/${tool.slug}`}
@@ -279,16 +270,34 @@ export default function AdminToolsPage() {
                           <Eye className="w-4 h-4" />
                           Preview
                         </Link>
+                        <div className="border-t border-slate-100 my-1" />
+                        {tool.status === 'active' ? (
+                          <button
+                            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-amber-600 hover:bg-amber-50"
+                            onClick={() => setOpenMenuId(null)}
+                          >
+                            <PowerOff className="w-4 h-4" />
+                            Deactivate
+                          </button>
+                        ) : (
+                          <button
+                            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-mojitax-green hover:bg-green-50"
+                            onClick={() => setOpenMenuId(null)}
+                          >
+                            <Power className="w-4 h-4" />
+                            Activate
+                          </button>
+                        )}
                         <button
                           className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50"
                           onClick={() => setOpenMenuId(null)}
                         >
-                          <Copy className="w-4 h-4" />
-                          Duplicate
+                          <AlertTriangle className="w-4 h-4" />
+                          Log Issue
                         </button>
                         <div className="border-t border-slate-100 my-1" />
                         <button
-                          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-amber-600 hover:bg-amber-50"
+                          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-500 hover:bg-slate-50"
                           onClick={() => setOpenMenuId(null)}
                         >
                           <Archive className="w-4 h-4" />
