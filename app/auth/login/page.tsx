@@ -20,11 +20,11 @@ function LoginContent() {
     setSelectedRole(role);
     await login(role);
 
-    // Redirect based on role
+    // Use window.location for full page navigation so cookie is sent to middleware
     if (role === 'admin') {
-      router.push('/admin');
+      window.location.href = '/admin';
     } else {
-      router.push(returnTo);
+      window.location.href = returnTo;
     }
   };
 
