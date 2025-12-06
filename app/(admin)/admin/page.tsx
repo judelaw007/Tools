@@ -9,9 +9,11 @@ import {
   BookOpen,
   Users,
   TrendingUp,
-  Plus,
   ArrowRight,
-  Sparkles,
+  Settings,
+  AlertTriangle,
+  FolderOpen,
+  Plus,
 } from 'lucide-react';
 
 export default async function AdminDashboardPage() {
@@ -32,13 +34,13 @@ export default async function AdminDashboardPage() {
             Admin Dashboard
           </h1>
           <p className="text-slate-600">
-            Manage your demo tools and monitor platform usage
+            Manage tools, courses, and monitor platform usage
           </p>
         </div>
-        <Link href="/admin/tools/new">
+        <Link href="/admin/tools">
           <Button variant="primary">
-            <Plus className="w-4 h-4" />
-            New Tool
+            <Settings className="w-4 h-4" />
+            Manage Tools
           </Button>
         </Link>
       </div>
@@ -131,33 +133,50 @@ export default async function AdminDashboardPage() {
 
       {/* Main Content */}
       {!hasTools ? (
-        /* Empty State - Get Started */
+        /* Empty State - Awaiting Tools */
         <Card>
           <CardContent className="p-12 text-center">
             <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-mojitax-green/20 to-mojitax-navy/20 flex items-center justify-center mx-auto mb-6">
-              <Sparkles className="w-10 h-10 text-mojitax-green" />
+              <FolderOpen className="w-10 h-10 text-mojitax-green" />
             </div>
             <h3 className="text-2xl font-bold text-mojitax-navy mb-3">
               Welcome to MojiTax Tools Admin
             </h3>
-            <p className="text-slate-500 mb-8 max-w-lg mx-auto">
-              Get started by creating your first demo tool. Tools you create will be available
-              to users through the MojiTax platform.
+            <p className="text-slate-500 mb-4 max-w-lg mx-auto">
+              No tools have been uploaded yet. Once developers upload tools to the platform,
+              you&apos;ll be able to manage them here.
             </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link href="/admin/tools/new">
-                <Button variant="primary" size="lg">
-                  <Plus className="w-5 h-5" />
-                  Create Your First Tool
-                </Button>
-              </Link>
-              <Link href="/admin/courses">
-                <Button variant="outline" size="lg">
-                  <BookOpen className="w-5 h-5" />
-                  Configure Courses
-                </Button>
-              </Link>
+            <div className="bg-slate-50 rounded-lg p-6 max-w-md mx-auto mb-8">
+              <h4 className="font-semibold text-mojitax-navy mb-3">Admin Responsibilities:</h4>
+              <ul className="text-sm text-slate-600 text-left space-y-2">
+                <li className="flex items-start gap-2">
+                  <span className="text-mojitax-green mt-0.5">•</span>
+                  Categorise uploaded tools
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-mojitax-green mt-0.5">•</span>
+                  Allocate tools to courses
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-mojitax-green mt-0.5">•</span>
+                  Provide tool descriptions
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-mojitax-green mt-0.5">•</span>
+                  Activate, deactivate, or delete tools
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-mojitax-green mt-0.5">•</span>
+                  Log issues with tools
+                </li>
+              </ul>
             </div>
+            <Link href="/admin/courses">
+              <Button variant="outline" size="lg">
+                <BookOpen className="w-5 h-5" />
+                Configure Courses
+              </Button>
+            </Link>
           </CardContent>
         </Card>
       ) : (
@@ -260,14 +279,14 @@ export default async function AdminDashboardPage() {
           <div>
             <h3 className="text-lg font-semibold mb-1">Quick Actions</h3>
             <p className="text-sm text-white/70">
-              Common tasks to manage your demo tools platform
+              Common tasks for managing the MojiTax tools platform
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
-            <Link href="/admin/tools/new">
+            <Link href="/admin/tools">
               <Button variant="outline" size="sm" className="border-white/30 text-white hover:bg-white/10">
-                <Plus className="w-4 h-4" />
-                New Tool
+                <Wrench className="w-4 h-4" />
+                Manage Tools
               </Button>
             </Link>
             <Link href="/admin/courses">
@@ -276,10 +295,10 @@ export default async function AdminDashboardPage() {
                 Manage Courses
               </Button>
             </Link>
-            <Link href="/admin/tools">
+            <Link href="/admin/issues">
               <Button variant="outline" size="sm" className="border-white/30 text-white hover:bg-white/10">
-                <Wrench className="w-4 h-4" />
-                All Tools
+                <AlertTriangle className="w-4 h-4" />
+                View Issues
               </Button>
             </Link>
           </div>
