@@ -10,8 +10,8 @@ import { SEED_TOOLS, SEED_COURSES, SEED_COURSE_TOOLS } from './seed-data';
 // ============================================
 
 export async function getAllTools(): Promise<Tool[]> {
-  // In production: return supabase.from('tools').select('*')
-  return SEED_TOOLS;
+  const { data } = await supabase.from('tools').select('*');
+  return data || [];
 }
 
 export async function getActiveTools(): Promise<Tool[]> {
