@@ -5,6 +5,8 @@ import { Logo } from '@/components/ui/Logo';
 import { Card, CardContent } from '@/components/ui/Card';
 import { LoginButton } from '@/components/LoginButton';
 import { Badge } from '@/components/ui/Badge';
+import { getToolBySlug, getCoursesForTool } from '@/lib/db';
+import { CATEGORY_METADATA } from '@/lib/tools/registry';
 import {
   Calculator,
   Search,
@@ -18,68 +20,10 @@ import {
   GraduationCap,
   AlertTriangle,
   ArrowRight,
+  Table,
+  ClipboardList,
 } from 'lucide-react';
-import type { Tool, ToolType } from '@/types';
-
-// Mock tool data - will be replaced with database query
-const mockTools: Record<string, Tool> = {
-  'tp-margin-calculator': {
-    id: 'tp-margin-calculator',
-    name: 'TP Margin Calculator',
-    slug: 'tp-margin-calculator',
-    toolType: 'calculator',
-    category: 'transfer_pricing',
-    shortDescription: 'Calculate gross margins, operating margins, and markups for transfer pricing analysis.',
-    description: `This demo tool helps you understand how transfer pricing professionals calculate arm's length margins. Practice with different scenarios to learn:
-
-- **Gross Profit Margin**: Revenue minus COGS, divided by revenue. Used in the Resale Price Method.
-- **Operating Margin**: Revenue minus COGS minus operating expenses, divided by revenue. The primary PLI for TNMM.
-- **Cost Plus Markup**: Gross profit divided by COGS. Used in the Cost Plus Method.
-- **Berry Ratio**: Gross profit divided by operating expenses. Useful for distributors.
-
-Enter sample financial data to see how each margin is calculated and understand when different metrics are appropriate for transfer pricing analysis.`,
-    status: 'active',
-    isPublic: true,
-    isPremium: true,
-    version: '1.0',
-    config: {},
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  'vat-calculator': {
-    id: 'vat-calculator',
-    name: 'VAT Calculator',
-    slug: 'vat-calculator',
-    toolType: 'calculator',
-    category: 'vat',
-    shortDescription: 'Calculate VAT amounts from net or gross figures with support for multiple rates.',
-    description: `Practice VAT calculations with this demo tool. Learn to calculate VAT in both directions:
-
-- **Net to Gross**: Add VAT to a net amount
-- **Gross to Net**: Extract VAT from a gross amount
-
-Support for standard, reduced, and custom VAT rates helps you understand how different rates affect final prices and tax liabilities.`,
-    status: 'active',
-    isPublic: true,
-    isPremium: true,
-    version: '1.0',
-    config: {},
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-};
-
-// Mock courses that include tools
-const toolCourses: Record<string, { name: string; url: string }[]> = {
-  'tp-margin-calculator': [
-    { name: 'Transfer Pricing Fundamentals', url: 'https://mojitax.co.uk/course/tp-fundamentals' },
-    { name: 'Transfer Pricing Professional Bundle', url: 'https://mojitax.co.uk/bundle/tp-professional' },
-  ],
-  'vat-calculator': [
-    { name: 'VAT Compliance Masterclass', url: 'https://mojitax.co.uk/course/vat-masterclass' },
-    { name: 'EU VAT for E-commerce', url: 'https://mojitax.co.uk/course/eu-vat-ecommerce' },
-  ],
-};
+import type { ToolType } from '@/types';
 
 const toolTypeIcons: Record<ToolType, React.ReactNode> = {
   calculator: <Calculator className="w-6 h-6" />,
@@ -89,8 +33,8 @@ const toolTypeIcons: Record<ToolType, React.ReactNode> = {
   tracker: <TrendingUp className="w-6 h-6" />,
   reference: <BookOpen className="w-6 h-6" />,
   'external-link': <ExternalLink className="w-6 h-6" />,
-  spreadsheet: <Calculator className="w-6 h-6" />,
-  form: <FileText className="w-6 h-6" />,
+  spreadsheet: <Table className="w-6 h-6" />,
+  form: <ClipboardList className="w-6 h-6" />,
 };
 
 const toolTypeColors: Record<ToolType, string> = {
@@ -109,15 +53,17 @@ interface ToolPreviewPageProps {
   params: { slug: string };
 }
 
-export default function ToolPreviewPage({ params }: ToolPreviewPageProps) {
-  const tool = mockTools[params.slug];
-  
-  if (!tool) {
+export default async function ToolPreviewPage({ params }: ToolPreviewPageProps) {
+  // Fetch tool from database
+  const tool = await getToolBySlug(params.slug);
+
+  if (!tool || tool.status !== 'active') {
     notFound();
   }
-  
-  const courses = toolCourses[params.slug] || [];
-  
+
+  // Fetch courses that include this tool
+  const courses = await getCoursesForTool(tool.id);
+
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
@@ -135,7 +81,7 @@ export default function ToolPreviewPage({ params }: ToolPreviewPageProps) {
           </Link>
         </div>
       </div>
-      
+
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
@@ -162,7 +108,7 @@ export default function ToolPreviewPage({ params }: ToolPreviewPageProps) {
                 </p>
               </div>
             </div>
-            
+
             {/* Tool Preview/Screenshot */}
             <Card className="mb-8 overflow-hidden">
               <div className="aspect-video bg-gradient-to-br from-slate-100 to-slate-50 flex items-center justify-center relative">
@@ -181,7 +127,7 @@ export default function ToolPreviewPage({ params }: ToolPreviewPageProps) {
                 </div>
               </div>
             </Card>
-            
+
             {/* Tool Description */}
             <div className="mb-8">
               <h2 className="text-xl font-semibold text-mojitax-navy mb-4">
@@ -189,13 +135,42 @@ export default function ToolPreviewPage({ params }: ToolPreviewPageProps) {
               </h2>
               <div className="prose prose-slate max-w-none">
                 {tool.description?.split('\n\n').map((paragraph, i) => {
-                  if (paragraph.startsWith('-')) {
-                    const items = paragraph.split('\n').filter(item => item.startsWith('-'));
+                  // Handle markdown headers
+                  if (paragraph.startsWith('## ')) {
                     return (
-                      <ul key={i} className="space-y-2">
+                      <h3 key={i} className="text-lg font-semibold text-mojitax-navy mt-6 mb-3">
+                        {paragraph.replace('## ', '')}
+                      </h3>
+                    );
+                  }
+                  if (paragraph.startsWith('### ')) {
+                    return (
+                      <h4 key={i} className="text-md font-semibold text-mojitax-navy mt-4 mb-2">
+                        {paragraph.replace('### ', '')}
+                      </h4>
+                    );
+                  }
+                  // Handle blockquotes
+                  if (paragraph.startsWith('> ')) {
+                    return (
+                      <blockquote key={i} className="border-l-4 border-mojitax-green pl-4 py-2 my-4 bg-slate-50 rounded-r-lg">
+                        <p className="text-slate-600 italic">
+                          {paragraph.replace('> ', '').replace(/\*\*(.+?)\*\*/g, '$1')}
+                        </p>
+                      </blockquote>
+                    );
+                  }
+                  // Handle bullet lists
+                  if (paragraph.startsWith('- ')) {
+                    const items = paragraph.split('\n').filter(item => item.startsWith('- '));
+                    return (
+                      <ul key={i} className="space-y-2 my-4">
                         {items.map((item, j) => (
-                          <li key={j} className="text-slate-600">
-                            {item.replace(/^-\s*\*\*(.+)\*\*:/, (_, title) => `**${title}**:`).replace(/^\s*-\s*/, '')}
+                          <li key={j} className="text-slate-600 flex items-start gap-2">
+                            <span className="w-1.5 h-1.5 rounded-full bg-mojitax-green mt-2 flex-shrink-0" />
+                            <span dangerouslySetInnerHTML={{
+                              __html: item.replace(/^-\s*/, '').replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                            }} />
                           </li>
                         ))}
                       </ul>
@@ -209,7 +184,7 @@ export default function ToolPreviewPage({ params }: ToolPreviewPageProps) {
                 })}
               </div>
             </div>
-            
+
             {/* Disclaimer */}
             <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl flex gap-3">
               <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
@@ -221,7 +196,7 @@ export default function ToolPreviewPage({ params }: ToolPreviewPageProps) {
               </div>
             </div>
           </div>
-          
+
           {/* Sidebar */}
           <div className="lg:col-span-1">
             {/* Access Card */}
@@ -232,27 +207,31 @@ export default function ToolPreviewPage({ params }: ToolPreviewPageProps) {
                   Access This Demo Tool
                 </h3>
                 <p className="text-sm text-white/80 mb-4">
-                  This tool is included with the following MojiTax courses:
+                  {courses.length > 0
+                    ? 'This tool is included with the following MojiTax courses:'
+                    : 'Log in to access this demo tool.'}
                 </p>
               </div>
               <CardContent className="p-6">
-                <div className="space-y-3 mb-6">
-                  {courses.map((course, i) => (
-                    <Link
-                      key={i}
-                      href={course.url}
-                      className="flex items-center gap-3 p-3 rounded-lg border border-slate-200 hover:border-mojitax-green/30 hover:bg-slate-50 transition-all group"
-                    >
-                      <GraduationCap className="w-5 h-5 text-mojitax-green flex-shrink-0" />
-                      <span className="text-sm font-medium text-mojitax-navy group-hover:text-mojitax-green-dark transition-colors flex-1">
-                        {course.name}
-                      </span>
-                      <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-mojitax-green group-hover:translate-x-0.5 transition-all" />
-                    </Link>
-                  ))}
-                </div>
-                
-                <div className="border-t border-slate-200 pt-4">
+                {courses.length > 0 && (
+                  <div className="space-y-3 mb-6">
+                    {courses.map((course) => (
+                      <Link
+                        key={course.id}
+                        href={course.learnworldsUrl || `https://mojitax.co.uk/course/${course.slug}`}
+                        className="flex items-center gap-3 p-3 rounded-lg border border-slate-200 hover:border-mojitax-green/30 hover:bg-slate-50 transition-all group"
+                      >
+                        <GraduationCap className="w-5 h-5 text-mojitax-green flex-shrink-0" />
+                        <span className="text-sm font-medium text-mojitax-navy group-hover:text-mojitax-green-dark transition-colors flex-1">
+                          {course.name}
+                        </span>
+                        <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-mojitax-green group-hover:translate-x-0.5 transition-all" />
+                      </Link>
+                    ))}
+                  </div>
+                )}
+
+                <div className={courses.length > 0 ? "border-t border-slate-200 pt-4" : ""}>
                   <p className="text-sm text-slate-500 mb-4">
                     Already enrolled?
                   </p>
@@ -262,7 +241,7 @@ export default function ToolPreviewPage({ params }: ToolPreviewPageProps) {
                 </div>
               </CardContent>
             </Card>
-            
+
             {/* Tool Info */}
             <Card>
               <CardContent className="p-6">
@@ -276,8 +255,8 @@ export default function ToolPreviewPage({ params }: ToolPreviewPageProps) {
                   </div>
                   <div className="flex justify-between">
                     <dt className="text-sm text-slate-500">Category</dt>
-                    <dd className="text-sm font-medium text-mojitax-navy capitalize">
-                      {tool.category?.replace('_', ' ') || 'General'}
+                    <dd className="text-sm font-medium text-mojitax-navy">
+                      {CATEGORY_METADATA[tool.category]?.name || tool.category.replace('_', ' ')}
                     </dd>
                   </div>
                   <div className="flex justify-between">
@@ -292,7 +271,7 @@ export default function ToolPreviewPage({ params }: ToolPreviewPageProps) {
           </div>
         </div>
       </main>
-      
+
       {/* Footer */}
       <footer className="py-8 border-t border-slate-200 mt-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -319,14 +298,14 @@ export default function ToolPreviewPage({ params }: ToolPreviewPageProps) {
 }
 
 export async function generateMetadata({ params }: ToolPreviewPageProps) {
-  const tool = mockTools[params.slug];
-  
+  const tool = await getToolBySlug(params.slug);
+
   if (!tool) {
     return {
       title: 'Tool Not Found',
     };
   }
-  
+
   return {
     title: `${tool.name} | MojiTax Demo Tools`,
     description: tool.shortDescription,

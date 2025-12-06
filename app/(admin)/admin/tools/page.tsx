@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent } from '@/components/ui/Card';
@@ -23,102 +23,9 @@ import {
   Wrench,
   LayoutGrid,
   List,
+  Loader2,
 } from 'lucide-react';
 import type { Tool, ToolStatus, ToolCategory } from '@/types';
-
-// Mock data
-const mockTools: Tool[] = [
-  {
-    id: 'tp-margin-calculator',
-    name: 'TP Margin Calculator',
-    slug: 'tp-margin-calculator',
-    toolType: 'calculator',
-    category: 'transfer_pricing',
-    shortDescription: 'Calculate gross margins, operating margins, and markups for transfer pricing analysis.',
-    status: 'active',
-    isPublic: true,
-    isPremium: true,
-    version: '1.0',
-    config: {},
-    createdAt: new Date('2024-01-15'),
-    updatedAt: new Date('2024-01-20'),
-  },
-  {
-    id: 'vat-calculator',
-    name: 'VAT Calculator',
-    slug: 'vat-calculator',
-    toolType: 'calculator',
-    category: 'vat',
-    shortDescription: 'Calculate VAT amounts from net or gross figures.',
-    status: 'active',
-    isPublic: true,
-    isPremium: true,
-    version: '1.0',
-    config: {},
-    createdAt: new Date('2024-01-10'),
-    updatedAt: new Date('2024-01-18'),
-  },
-  {
-    id: 'vat-rate-lookup',
-    name: 'VAT Rate Lookup',
-    slug: 'vat-rate-lookup',
-    toolType: 'search',
-    category: 'vat',
-    shortDescription: 'Search and compare VAT rates across countries.',
-    status: 'active',
-    isPublic: true,
-    isPremium: true,
-    version: '1.0',
-    config: {},
-    createdAt: new Date('2024-01-12'),
-    updatedAt: new Date('2024-01-12'),
-  },
-  {
-    id: 'giin-search',
-    name: 'GIIN Search Demo',
-    slug: 'giin-search',
-    toolType: 'search',
-    category: 'fatca_crs',
-    shortDescription: 'Practice searching FFI data and understanding GIIN structure.',
-    status: 'draft',
-    isPublic: true,
-    isPremium: true,
-    version: '0.1',
-    config: {},
-    createdAt: new Date('2024-01-08'),
-    updatedAt: new Date('2024-01-08'),
-  },
-  {
-    id: 'pe-day-counter',
-    name: 'PE Day Counter',
-    slug: 'pe-day-counter',
-    toolType: 'tracker',
-    category: 'pe_assessment',
-    shortDescription: 'Track employee presence days for PE risk assessment.',
-    status: 'inactive',
-    isPublic: true,
-    isPremium: true,
-    version: '1.0',
-    config: {},
-    createdAt: new Date('2023-12-01'),
-    updatedAt: new Date('2024-01-05'),
-  },
-  {
-    id: 'old-calculator',
-    name: 'Old Calculator',
-    slug: 'old-calculator',
-    toolType: 'calculator',
-    category: 'transfer_pricing',
-    shortDescription: 'Deprecated calculator tool.',
-    status: 'archived',
-    isPublic: false,
-    isPremium: false,
-    version: '0.5',
-    config: {},
-    createdAt: new Date('2023-06-01'),
-    updatedAt: new Date('2023-12-01'),
-  },
-];
 
 const statusOptions = [
   { value: '', label: 'All Status' },
@@ -139,29 +46,65 @@ const categoryOptions = [
 ];
 
 export default function AdminToolsPage() {
+  const [tools, setTools] = useState<Tool[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-  
+
+  // Fetch tools from API
+  useEffect(() => {
+    async function fetchTools() {
+      try {
+        const response = await fetch('/api/admin/tools');
+        if (response.ok) {
+          const data = await response.json();
+          // Convert date strings to Date objects
+          const toolsWithDates = data.tools.map((tool: Tool) => ({
+            ...tool,
+            createdAt: new Date(tool.createdAt),
+            updatedAt: new Date(tool.updatedAt),
+          }));
+          setTools(toolsWithDates);
+        }
+      } catch (error) {
+        console.error('Failed to fetch tools:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchTools();
+  }, []);
+
   // Filter tools
-  const filteredTools = mockTools.filter((tool) => {
+  const filteredTools = tools.filter((tool) => {
     const matchesSearch = tool.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          tool.shortDescription?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = !statusFilter || tool.status === statusFilter;
     const matchesCategory = !categoryFilter || tool.category === categoryFilter;
     return matchesSearch && matchesStatus && matchesCategory;
   });
-  
+
   const statusCounts = {
-    all: mockTools.length,
-    active: mockTools.filter(t => t.status === 'active').length,
-    draft: mockTools.filter(t => t.status === 'draft').length,
-    inactive: mockTools.filter(t => t.status === 'inactive').length,
-    archived: mockTools.filter(t => t.status === 'archived').length,
+    all: tools.length,
+    active: tools.filter(t => t.status === 'active').length,
+    draft: tools.filter(t => t.status === 'draft').length,
+    inactive: tools.filter(t => t.status === 'inactive').length,
+    archived: tools.filter(t => t.status === 'archived').length,
   };
-  
+
+  if (isLoading) {
+    return (
+      <DashboardLayout variant="admin">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <Loader2 className="w-8 h-8 animate-spin text-mojitax-green" />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout variant="admin">
       {/* Page Header */}
@@ -181,7 +124,7 @@ export default function AdminToolsPage() {
           </Button>
         </Link>
       </div>
-      
+
       {/* Filters Bar */}
       <Card className="mb-6">
         <CardContent className="p-4">
@@ -195,7 +138,7 @@ export default function AdminToolsPage() {
                 leftIcon={<Search className="w-4 h-4" />}
               />
             </div>
-            
+
             {/* Filters */}
             <div className="flex flex-wrap gap-3">
               <div className="w-40">
@@ -212,7 +155,7 @@ export default function AdminToolsPage() {
                   onChange={(e) => setCategoryFilter(e.target.value)}
                 />
               </div>
-              
+
               {/* View Toggle */}
               <div className="flex rounded-lg border border-slate-200 overflow-hidden">
                 <button
@@ -230,7 +173,7 @@ export default function AdminToolsPage() {
               </div>
             </div>
           </div>
-          
+
           {/* Status Quick Filters */}
           <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-slate-100">
             <button
@@ -276,7 +219,7 @@ export default function AdminToolsPage() {
           </div>
         </CardContent>
       </Card>
-      
+
       {/* Tools Grid/List */}
       {filteredTools.length === 0 ? (
         <EmptyState
@@ -298,7 +241,7 @@ export default function AdminToolsPage() {
               <Link href={`/admin/tools/${tool.id}`}>
                 <ToolCard tool={tool} variant="admin" showStatus />
               </Link>
-              
+
               {/* Actions Menu */}
               <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
                 <div className="relative">
@@ -311,7 +254,7 @@ export default function AdminToolsPage() {
                   >
                     <MoreVertical className="w-4 h-4 text-slate-600" />
                   </button>
-                  
+
                   {openMenuId === tool.id && (
                     <>
                       <div
@@ -431,7 +374,7 @@ export default function AdminToolsPage() {
           </div>
         </Card>
       )}
-      
+
       {/* Legend */}
       <div className="mt-6 flex items-center gap-4 text-xs text-slate-500">
         <span className="flex items-center gap-1.5">
