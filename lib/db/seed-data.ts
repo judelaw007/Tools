@@ -140,4 +140,53 @@ The tool provides filing portal details and key notes for major jurisdictions in
     createdAt: new Date('2024-12-08'),
     updatedAt: new Date('2024-12-08'),
   },
+  {
+    id: 'gir-practice-form',
+    name: 'GIR Practice Form',
+    slug: 'gir-practice-form',
+    toolType: 'calculator',
+    category: 'pillar_two',
+    icon: 'Layout',
+    shortDescription: 'Practice completing GloBE Information Return data with real-time validation and contextual help.',
+    description: `This interactive practice tool helps you understand and practice completing the GloBE Information Return (GIR) with comprehensive data entry forms and real-time calculations.
+
+## What You'll Learn
+
+- GIR Section 1: MNE Group identification, reporting period, and filing entity details
+- GIR Section 2: Corporate structure and entity classification
+- GIR Section 3: GloBE income, covered taxes, SBIE, and top-up tax calculations
+- Data point definitions and ERP source mapping
+- Common data entry issues and how to avoid them
+
+## Features
+
+**Contextual Help**
+Click any field to see its data point ID, definition, ERP source mapping, and common issues encountered during filing.
+
+**Real-time Calculations**
+Section 3 automatically calculates GloBE income, adjusted covered taxes, SBIE, ETR, and top-up tax as you enter data.
+
+**Validation Checks**
+Built-in validation ensures jurisdiction coverage between structure and computation sections.
+
+**Case Studies**
+Load pre-populated case studies to practice with realistic MNE group scenarios.
+
+**Data Point Search**
+Search across 40+ data points by ID or name to quickly find field definitions.
+
+> **Note:** This is a practice tool for learning GIR data requirements. It does not generate actual XML files for filing.`,
+    previewImage: undefined,
+    config: {
+      calculatorType: 'gir-practice',
+      version: '1.0',
+    },
+    status: 'active',
+    isPublic: true,
+    isPremium: false,
+    version: '1.0',
+    createdBy: undefined,
+    createdAt: new Date('2024-12-08'),
+    updatedAt: new Date('2024-12-08'),
+  },
 ];
