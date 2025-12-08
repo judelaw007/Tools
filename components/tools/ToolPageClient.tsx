@@ -3,7 +3,9 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth/context';
 import { GloBECalculator } from '@/components/tools/calculator/GloBECalculator';
+import { SafeHarbourQualifier } from '@/components/tools/calculator/SafeHarbourQualifier';
 import type { SavedCalculation } from '@/components/tools/calculator/GloBECalculator';
+import type { SavedAssessment } from '@/components/tools/calculator/SafeHarbourQualifier';
 import type { Tool } from '@/types';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Loader2, Calculator } from 'lucide-react';
@@ -12,9 +14,12 @@ interface ToolPageClientProps {
   tool: Tool;
 }
 
+// Generic saved item type for localStorage persistence
+type SavedItem = SavedCalculation | SavedAssessment;
+
 export function ToolPageClient({ tool }: ToolPageClientProps) {
   const { isAuthenticated, user } = useAuth();
-  const [savedItems, setSavedItems] = useState<SavedCalculation[]>([]);
+  const [savedItems, setSavedItems] = useState<SavedItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // Load saved items from localStorage
@@ -25,7 +30,7 @@ export function ToolPageClient({ tool }: ToolPageClientProps) {
         try {
           const parsed = JSON.parse(saved);
           setSavedItems(
-            parsed.map((item: SavedCalculation) => ({
+            parsed.map((item: SavedItem) => ({
               ...item,
               updatedAt: new Date(item.updatedAt),
             }))
@@ -38,23 +43,23 @@ export function ToolPageClient({ tool }: ToolPageClientProps) {
     setIsLoading(false);
   }, [isAuthenticated, tool?.id]);
 
-  // Handle save calculation
+  // Handle save - works for both calculators and assessments
   const handleSave = async (
-    data: Omit<SavedCalculation, 'id' | 'updatedAt'>
+    data: Omit<SavedItem, 'id' | 'updatedAt'>
   ): Promise<string> => {
     const id = `calc-${Date.now()}`;
-    const savedItem: SavedCalculation = {
+    const savedItem: SavedItem = {
       ...data,
       id,
       updatedAt: new Date(),
-    };
+    } as SavedItem;
 
     const existingItems = JSON.parse(
       localStorage.getItem(`tool-${tool.id}-saves`) || '[]'
     );
     const updatedItems = [
       savedItem,
-      ...existingItems.filter((item: SavedCalculation) => item.id !== id),
+      ...existingItems.filter((item: SavedItem) => item.id !== id),
     ];
     localStorage.setItem(`tool-${tool.id}-saves`, JSON.stringify(updatedItems));
     setSavedItems(updatedItems);
@@ -62,13 +67,13 @@ export function ToolPageClient({ tool }: ToolPageClientProps) {
     return id;
   };
 
-  // Handle delete calculation
+  // Handle delete
   const handleDelete = async (id: string): Promise<void> => {
     const existingItems = JSON.parse(
       localStorage.getItem(`tool-${tool.id}-saves`) || '[]'
     );
     const updatedItems = existingItems.filter(
-      (item: SavedCalculation) => item.id !== id
+      (item: SavedItem) => item.id !== id
     );
     localStorage.setItem(`tool-${tool.id}-saves`, JSON.stringify(updatedItems));
     setSavedItems(updatedItems);
@@ -94,9 +99,21 @@ export function ToolPageClient({ tool }: ToolPageClientProps) {
       return (
         <GloBECalculator
           userId={user?.email}
-          onSave={handleSave}
+          onSave={handleSave as (data: Omit<SavedCalculation, 'id' | 'updatedAt'>) => Promise<string>}
           onDelete={handleDelete}
-          savedItems={savedItems}
+          savedItems={savedItems as SavedCalculation[]}
+        />
+      );
+    }
+
+    // Safe Harbour Qualifier
+    if (tool.id === 'gir-safe-harbour-qualifier' || tool.slug === 'safe-harbour-qualifier') {
+      return (
+        <SafeHarbourQualifier
+          userId={user?.email}
+          onSave={handleSave as (data: Omit<SavedAssessment, 'id' | 'updatedAt'>) => Promise<string>}
+          onDelete={handleDelete}
+          savedItems={savedItems as SavedAssessment[]}
         />
       );
     }
