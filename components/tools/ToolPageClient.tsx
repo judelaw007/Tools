@@ -4,8 +4,10 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth/context';
 import { GloBECalculator } from '@/components/tools/calculator/GloBECalculator';
 import { SafeHarbourQualifier } from '@/components/tools/calculator/SafeHarbourQualifier';
+import { FilingDeadlineCalculator } from '@/components/tools/calculator/FilingDeadlineCalculator';
 import type { SavedCalculation } from '@/components/tools/calculator/GloBECalculator';
 import type { SavedAssessment } from '@/components/tools/calculator/SafeHarbourQualifier';
+import type { SavedDeadlineCalculation } from '@/components/tools/calculator/FilingDeadlineCalculator';
 import type { Tool } from '@/types';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Loader2, Calculator } from 'lucide-react';
@@ -15,7 +17,7 @@ interface ToolPageClientProps {
 }
 
 // Generic saved item type for localStorage persistence
-type SavedItem = SavedCalculation | SavedAssessment;
+type SavedItem = SavedCalculation | SavedAssessment | SavedDeadlineCalculation;
 
 export function ToolPageClient({ tool }: ToolPageClientProps) {
   const { isAuthenticated, user } = useAuth();
@@ -114,6 +116,18 @@ export function ToolPageClient({ tool }: ToolPageClientProps) {
           onSave={handleSave as (data: Omit<SavedAssessment, 'id' | 'updatedAt'>) => Promise<string>}
           onDelete={handleDelete}
           savedItems={savedItems as SavedAssessment[]}
+        />
+      );
+    }
+
+    // Filing Deadline Calculator
+    if (tool.id === 'gir-filing-deadline-calculator' || tool.slug === 'filing-deadline-calculator') {
+      return (
+        <FilingDeadlineCalculator
+          userId={user?.email}
+          onSave={handleSave as (data: Omit<SavedDeadlineCalculation, 'id' | 'updatedAt'>) => Promise<string>}
+          onDelete={handleDelete}
+          savedItems={savedItems as SavedDeadlineCalculation[]}
         />
       );
     }
