@@ -143,11 +143,11 @@ The tool provides filing portal details and key notes for major jurisdictions in
 
 export const SEED_COURSES: Course[] = [
   {
-    id: 'pillar-two-fundamentals',
-    name: 'Pillar Two Fundamentals',
-    slug: 'pillar-two-fundamentals',
-    description: 'Learn the basics of OECD Pillar Two global minimum tax rules including GloBE, IIR, UTPR, and QDMTT.',
-    learnworldsUrl: 'https://mojitax.co.uk/course/pillar-two-fundamentals',
+    id: 'globe-information-return',
+    name: 'GloBE Information Return: Complete Filing Implementation',
+    slug: 'globe-information-return',
+    description: 'Master the GloBE Information Return (GIR) filing process with practical tools for ETR calculations, safe harbour assessments, and deadline tracking.',
+    learnworldsUrl: 'https://mojitax.co.uk/course/globe-information-return',
     category: 'pillar_two',
     displayOrder: 1,
     isActive: true,
@@ -158,7 +158,7 @@ export const SEED_COURSES: Course[] = [
 
 export const SEED_COURSE_TOOLS: Omit<CourseTool, 'id'>[] = [
   {
-    courseId: 'pillar-two-fundamentals',
+    courseId: 'globe-information-return',
     toolId: 'gir-globe-calculator',
     accessLevel: 'full',
     displayOrder: 1,
@@ -166,7 +166,7 @@ export const SEED_COURSE_TOOLS: Omit<CourseTool, 'id'>[] = [
     createdAt: new Date('2024-12-08'),
   },
   {
-    courseId: 'pillar-two-fundamentals',
+    courseId: 'globe-information-return',
     toolId: 'gir-safe-harbour-qualifier',
     accessLevel: 'full',
     displayOrder: 2,
@@ -174,7 +174,7 @@ export const SEED_COURSE_TOOLS: Omit<CourseTool, 'id'>[] = [
     createdAt: new Date('2024-12-08'),
   },
   {
-    courseId: 'pillar-two-fundamentals',
+    courseId: 'globe-information-return',
     toolId: 'gir-filing-deadline-calculator',
     accessLevel: 'full',
     displayOrder: 3,
