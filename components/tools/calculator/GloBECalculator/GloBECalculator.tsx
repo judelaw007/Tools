@@ -42,6 +42,29 @@ import {
   WARNING_THRESHOLD,
 } from './utils';
 
+const CurrencyInput = ({
+  value,
+  onChange,
+  placeholder = '0.00',
+  symbol,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  symbol: string;
+}) => (
+  <div className="relative">
+    <span className="absolute left-3 top-2.5 text-slate-400 font-bold">{symbol}</span>
+    <input
+      type="number"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="w-full pl-8 p-2 border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 outline-none"
+      placeholder={placeholder}
+    />
+  </div>
+);
+
 export function GloBECalculator({
   userId,
   onSave,
@@ -331,27 +354,6 @@ export function GloBECalculator({
     </div>
   );
 
-  // Currency input field
-  const CurrencyInput = ({
-    value,
-    onChange,
-    placeholder = '0.00',
-  }: {
-    value: string;
-    onChange: (value: string) => void;
-    placeholder?: string;
-  }) => (
-    <div className="relative">
-      <span className="absolute left-3 top-2.5 text-slate-400 font-bold">{symbol}</span>
-      <input
-        type="number"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full pl-8 p-2 border border-slate-300 rounded focus:ring-2 focus:ring-blue-500 outline-none"
-        placeholder={placeholder}
-      />
-    </div>
-  );
 
   return (
     <div className="min-h-screen bg-slate-100 p-4 font-sans text-slate-800" ref={topRef}>
@@ -531,6 +533,7 @@ export function GloBECalculator({
                               setS1Data({ ...s1Data, income: value });
                               setS1Result(null);
                             }}
+                            symbol={symbol}
                           />
                         </div>
                         <div>
@@ -543,6 +546,7 @@ export function GloBECalculator({
                               setS1Data({ ...s1Data, taxes: value });
                               setS1Result(null);
                             }}
+                            symbol={symbol}
                           />
                         </div>
                       </div>
@@ -633,6 +637,7 @@ export function GloBECalculator({
                               setS2Data({ ...s2Data, payroll: value });
                               setS2Result(null);
                             }}
+                            symbol={symbol}
                           />
                         </div>
                         <div>
@@ -645,6 +650,7 @@ export function GloBECalculator({
                               setS2Data({ ...s2Data, assets: value });
                               setS2Result(null);
                             }}
+                            symbol={symbol}
                           />
                         </div>
                       </div>
@@ -765,6 +771,7 @@ export function GloBECalculator({
                             setS3Data({ ...s3Data, qdmtt: value });
                             setS3Result(null);
                           }}
+                          symbol={symbol}
                         />
                       </div>
                       {errors.s3 && (
