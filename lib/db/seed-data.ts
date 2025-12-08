@@ -189,4 +189,66 @@ Search across 40+ data points by ID or name to quickly find field definitions.
     createdAt: new Date('2024-12-08'),
     updatedAt: new Date('2024-12-08'),
   },
+  {
+    id: 'gir-dfe-assessment',
+    name: 'DFE Assessment Tool',
+    slug: 'dfe-assessment-tool',
+    toolType: 'calculator',
+    category: 'pillar_two',
+    icon: 'Building',
+    shortDescription: 'Assess and compare Designated Filing Entity candidates for GloBE Information Return filing.',
+    description: `This interactive tool helps you evaluate and select the optimal Designated Filing Entity (DFE) for your MNE Group's GloBE Information Return filing obligations.
+
+## What You'll Learn
+
+- How to evaluate DFE candidates based on multiple criteria
+- The impact of Pillar Two implementation status on DFE selection
+- Resource and capability requirements for GIR filing
+- Notification requirements across jurisdictions
+
+## Assessment Criteria
+
+**UPE Status (25 points)**
+Being the Ultimate Parent Entity simplifies compliance and centralizes filing responsibility.
+
+**Pillar Two Status (20 points)**
+Jurisdictions with full IIR implementation score higher as they have established filing infrastructure.
+
+**Tax Team Resources (20 points)**
+Larger, more experienced tax teams are better equipped to handle GIR complexity.
+
+**Systems Capability (15 points)**
+ERP-integrated systems enable automated data extraction and reduce manual effort.
+
+**Advisor Support (10 points)**
+Access to Big 4 or mid-tier advisory support enhances filing quality.
+
+**Filing Experience (10 points)**
+Prior GIR filing experience reduces learning curve and risk.
+
+## Features
+
+**Candidate Comparison**
+Add multiple entities and compare their scores side-by-side.
+
+**Case Study Mode**
+Load the GlobalTech Manufacturing case study to practice assessment.
+
+**Notification Checklist**
+Get a summary of notification requirements based on your selection.
+
+> **Note:** This is an educational tool. Final DFE selection should involve tax advisors and consider additional factors specific to your group structure.`,
+    previewImage: undefined,
+    config: {
+      calculatorType: 'dfe-assessment',
+      version: '2.0',
+    },
+    status: 'active',
+    isPublic: true,
+    isPremium: false,
+    version: '2.0',
+    createdBy: undefined,
+    createdAt: new Date('2024-12-08'),
+    updatedAt: new Date('2024-12-08'),
+  },
 ];

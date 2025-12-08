@@ -6,10 +6,12 @@ import { GloBECalculator } from '@/components/tools/calculator/GloBECalculator';
 import { SafeHarbourQualifier } from '@/components/tools/calculator/SafeHarbourQualifier';
 import { FilingDeadlineCalculator } from '@/components/tools/calculator/FilingDeadlineCalculator';
 import { GIRPracticeForm } from '@/components/tools/calculator/GIRPracticeForm';
+import { DFEAssessmentTool } from '@/components/tools/calculator/DFEAssessmentTool';
 import type { SavedCalculation } from '@/components/tools/calculator/GloBECalculator';
 import type { SavedAssessment } from '@/components/tools/calculator/SafeHarbourQualifier';
 import type { SavedDeadlineCalculation } from '@/components/tools/calculator/FilingDeadlineCalculator';
 import type { SavedPracticeSession } from '@/components/tools/calculator/GIRPracticeForm';
+import type { SavedDFEAssessment } from '@/components/tools/calculator/DFEAssessmentTool';
 import type { Tool } from '@/types';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Loader2, Calculator } from 'lucide-react';
@@ -19,7 +21,7 @@ interface ToolPageClientProps {
 }
 
 // Generic saved item type for localStorage persistence
-type SavedItem = SavedCalculation | SavedAssessment | SavedDeadlineCalculation | SavedPracticeSession;
+type SavedItem = SavedCalculation | SavedAssessment | SavedDeadlineCalculation | SavedPracticeSession | SavedDFEAssessment;
 
 export function ToolPageClient({ tool }: ToolPageClientProps) {
   const { isAuthenticated, user } = useAuth();
@@ -142,6 +144,18 @@ export function ToolPageClient({ tool }: ToolPageClientProps) {
           onSave={handleSave as (data: Omit<SavedPracticeSession, 'id' | 'updatedAt'>) => Promise<string>}
           onDelete={handleDelete}
           savedItems={savedItems as SavedPracticeSession[]}
+        />
+      );
+    }
+
+    // DFE Assessment Tool
+    if (tool.id === 'gir-dfe-assessment' || tool.slug === 'dfe-assessment-tool') {
+      return (
+        <DFEAssessmentTool
+          userId={user?.email}
+          onSave={handleSave as (data: Omit<SavedDFEAssessment, 'id' | 'updatedAt'>) => Promise<string>}
+          onDelete={handleDelete}
+          savedItems={savedItems as SavedDFEAssessment[]}
         />
       );
     }
