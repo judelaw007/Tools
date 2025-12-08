@@ -1,9 +1,10 @@
 import type { Tool, Course, CourseTool, ToolStatus, ToolCategory } from '@/types';
-import { SEED_TOOLS, SEED_COURSES, SEED_COURSE_TOOLS } from './seed-data';
+import { SEED_TOOLS } from './seed-data';
 
 // Database abstraction layer
-// Currently uses in-memory seed data
-// Will be replaced with Supabase queries in production
+// Currently uses in-memory seed data for tools
+// Courses and course-tool mappings are managed by admins via API (Supabase)
+// Will be fully replaced with Supabase queries in production
 
 // ============================================
 // TOOLS
@@ -54,50 +55,46 @@ export async function searchTools(query: string): Promise<Tool[]> {
 }
 
 // ============================================
-// COURSES
+// COURSES (managed by admin via Supabase)
 // ============================================
 
 export async function getAllCourses(): Promise<Course[]> {
-  // In production: return supabase.from('courses').select('*')
-  return SEED_COURSES;
+  // TODO: return supabase.from('courses').select('*')
+  return [];
 }
 
 export async function getActiveCourses(): Promise<Course[]> {
-  // In production: return supabase.from('courses').select('*').eq('is_active', true)
-  return SEED_COURSES.filter(course => course.isActive);
+  // TODO: return supabase.from('courses').select('*').eq('is_active', true)
+  return [];
 }
 
 export async function getCourseById(id: string): Promise<Course | null> {
-  // In production: return supabase.from('courses').select('*').eq('id', id).single()
-  return SEED_COURSES.find(course => course.id === id) || null;
+  // TODO: return supabase.from('courses').select('*').eq('id', id).single()
+  return null;
 }
 
 export async function getCourseBySlug(slug: string): Promise<Course | null> {
-  // In production: return supabase.from('courses').select('*').eq('slug', slug).single()
-  return SEED_COURSES.find(course => course.slug === slug) || null;
+  // TODO: return supabase.from('courses').select('*').eq('slug', slug).single()
+  return null;
 }
 
 // ============================================
-// COURSE-TOOL MAPPINGS
+// COURSE-TOOL MAPPINGS (managed by admin via Supabase)
 // ============================================
 
 export async function getToolsForCourse(courseId: string): Promise<Tool[]> {
-  // In production: join query with course_tools and tools tables
-  const mappings = SEED_COURSE_TOOLS.filter(ct => ct.courseId === courseId && ct.isActive);
-  const toolIds = mappings.map(m => m.toolId);
-  return SEED_TOOLS.filter(tool => toolIds.includes(tool.id) && tool.status === 'active');
+  // TODO: join query with course_tools and tools tables from Supabase
+  return [];
 }
 
 export async function getCoursesForTool(toolId: string): Promise<Course[]> {
-  // In production: join query with course_tools and courses tables
-  const mappings = SEED_COURSE_TOOLS.filter(ct => ct.toolId === toolId && ct.isActive);
-  const courseIds = mappings.map(m => m.courseId);
-  return SEED_COURSES.filter(course => courseIds.includes(course.id) && course.isActive);
+  // TODO: join query with course_tools and courses tables from Supabase
+  return [];
 }
 
 export async function getCourseToolMapping(courseId: string, toolId: string): Promise<Omit<CourseTool, 'id'> | null> {
-  // In production: return supabase.from('course_tools').select('*').eq('course_id', courseId).eq('tool_id', toolId).single()
-  return SEED_COURSE_TOOLS.find(ct => ct.courseId === courseId && ct.toolId === toolId) || null;
+  // TODO: return supabase.from('course_tools').select('*').eq('course_id', courseId).eq('tool_id', toolId).single()
+  return null;
 }
 
 // ============================================
@@ -116,10 +113,10 @@ export async function getToolStats() {
 }
 
 export async function getCourseStats() {
-  const courses = await getAllCourses();
+  // TODO: Get course stats from Supabase
   return {
-    totalCourses: courses.length,
-    activeCourses: courses.filter(c => c.isActive).length,
+    totalCourses: 0,
+    activeCourses: 0,
   };
 }
 

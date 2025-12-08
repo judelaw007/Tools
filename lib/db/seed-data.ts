@@ -1,8 +1,9 @@
-import type { Tool, Course, CourseTool } from '@/types';
+import type { Tool } from '@/types';
 
 // Seed data for tools
-// This tool is added by developers for testing
+// Tools are added by developers for testing
 // In production, tools will be managed via admin interface and stored in Supabase
+// Course allocation is done by admins via the admin interface (not in seed data)
 
 export const SEED_TOOLS: Tool[] = [
   {
@@ -138,47 +139,5 @@ The tool provides filing portal details and key notes for major jurisdictions in
     createdBy: undefined,
     createdAt: new Date('2024-12-08'),
     updatedAt: new Date('2024-12-08'),
-  },
-];
-
-export const SEED_COURSES: Course[] = [
-  {
-    id: 'globe-information-return',
-    name: 'GloBE Information Return: Complete Filing Implementation',
-    slug: 'globe-information-return',
-    description: 'Master the GloBE Information Return (GIR) filing process with practical tools for ETR calculations, safe harbour assessments, and deadline tracking.',
-    learnworldsUrl: 'https://mojitax.co.uk/course/globe-information-return',
-    category: 'pillar_two',
-    displayOrder: 1,
-    isActive: true,
-    createdAt: new Date('2024-12-08'),
-    updatedAt: new Date('2024-12-08'),
-  },
-];
-
-export const SEED_COURSE_TOOLS: Omit<CourseTool, 'id'>[] = [
-  {
-    courseId: 'globe-information-return',
-    toolId: 'gir-globe-calculator',
-    accessLevel: 'full',
-    displayOrder: 1,
-    isActive: true,
-    createdAt: new Date('2024-12-08'),
-  },
-  {
-    courseId: 'globe-information-return',
-    toolId: 'gir-safe-harbour-qualifier',
-    accessLevel: 'full',
-    displayOrder: 2,
-    isActive: true,
-    createdAt: new Date('2024-12-08'),
-  },
-  {
-    courseId: 'globe-information-return',
-    toolId: 'gir-filing-deadline-calculator',
-    accessLevel: 'full',
-    displayOrder: 3,
-    isActive: true,
-    createdAt: new Date('2024-12-08'),
   },
 ];
