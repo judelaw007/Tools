@@ -1,8 +1,9 @@
-import type { Tool, Course, CourseTool } from '@/types';
+import type { Tool } from '@/types';
 
 // Seed data for tools
-// This tool is added by developers for testing
+// Tools are added by developers for testing
 // In production, tools will be managed via admin interface and stored in Supabase
+// Course allocation is done by admins via the admin interface (not in seed data)
 
 export const SEED_TOOLS: Tool[] = [
   {
@@ -93,38 +94,50 @@ Profit before tax must not exceed the Substance-Based Income Exclusion (SBIE) ca
     createdAt: new Date('2024-12-08'),
     updatedAt: new Date('2024-12-08'),
   },
-];
-
-export const SEED_COURSES: Course[] = [
   {
-    id: 'pillar-two-fundamentals',
-    name: 'Pillar Two Fundamentals',
-    slug: 'pillar-two-fundamentals',
-    description: 'Learn the basics of OECD Pillar Two global minimum tax rules including GloBE, IIR, UTPR, and QDMTT.',
-    learnworldsUrl: 'https://mojitax.co.uk/course/pillar-two-fundamentals',
+    id: 'gir-filing-deadline-calculator',
+    name: 'Filing Deadline Calculator',
+    slug: 'filing-deadline-calculator',
+    toolType: 'calculator',
     category: 'pillar_two',
-    displayOrder: 1,
-    isActive: true,
+    icon: 'Calendar',
+    shortDescription: 'Calculate GIR filing deadlines and track compliance milestones for Pillar Two reporting.',
+    description: `This demo tool helps you determine your GloBE Information Return (GIR) filing deadlines and plan your compliance timeline.
+
+## What You'll Learn
+
+- Standard 15-month filing deadline calculation
+- First-year 18-month transitional extension
+- Jurisdiction-specific filing requirements
+- Recommended milestone timeline for GIR preparation
+
+## How It Works
+
+**Enter Your Details**
+Provide your fiscal year end date, filing jurisdiction, UPE location, and whether this is your first GIR filing year.
+
+**Get Your Deadline**
+The calculator determines your applicable filing deadline, accounting for the transitional 18-month extension for first-year filers.
+
+**Track Milestones**
+View recommended preparation milestones including data collection, safe harbour assessment, GloBE calculations, internal review, and XML generation.
+
+## Jurisdiction Information
+
+The tool provides filing portal details and key notes for major jurisdictions including UK (HMRC), Ireland (Revenue), Netherlands, Germany, France, Switzerland, US, Australia, Japan, and Singapore.
+
+> **Note:** This is an educational tool. Always verify deadlines with local tax authorities as implementation details may vary.`,
+    previewImage: undefined,
+    config: {
+      calculatorType: 'filing-deadline',
+      version: '1.0',
+    },
+    status: 'active',
+    isPublic: true,
+    isPremium: false,
+    version: '1.0',
+    createdBy: undefined,
     createdAt: new Date('2024-12-08'),
     updatedAt: new Date('2024-12-08'),
-  },
-];
-
-export const SEED_COURSE_TOOLS: Omit<CourseTool, 'id'>[] = [
-  {
-    courseId: 'pillar-two-fundamentals',
-    toolId: 'gir-globe-calculator',
-    accessLevel: 'full',
-    displayOrder: 1,
-    isActive: true,
-    createdAt: new Date('2024-12-08'),
-  },
-  {
-    courseId: 'pillar-two-fundamentals',
-    toolId: 'gir-safe-harbour-qualifier',
-    accessLevel: 'full',
-    displayOrder: 2,
-    isActive: true,
-    createdAt: new Date('2024-12-08'),
   },
 ];
