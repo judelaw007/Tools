@@ -251,4 +251,69 @@ Get a summary of notification requirements based on your selection.
     createdAt: new Date('2024-12-08'),
     updatedAt: new Date('2024-12-08'),
   },
+  {
+    id: 'gir-audit-file-checklist',
+    name: 'Audit File Checklist',
+    slug: 'audit-file-checklist',
+    toolType: 'calculator',
+    category: 'pillar_two',
+    icon: 'CheckCircle',
+    shortDescription: 'Comprehensive checklist for GloBE Information Return documentation and audit file preparation.',
+    description: `This interactive tool provides a comprehensive checklist to ensure your GloBE Information Return (GIR) audit file is complete and compliant.
+
+## What You'll Learn
+
+- Required documentation for each GIR section
+- Priority levels for different documentation items
+- Gap analysis to identify missing items
+- Progress tracking across all sections
+
+## Checklist Sections
+
+**Section 1: General Information (10 items)**
+UPE identification, group structure, DFE appointment, and threshold analysis documentation.
+
+**Section 2: Corporate Structure (10 items)**
+Entity listings, ownership schedules, entity classifications, and structural change documentation.
+
+**Section 3: GloBE Computation (18 items)**
+Financial accounting data, GloBE adjustments, covered taxes, ETR calculations, and top-up tax workpapers.
+
+**Elections Documentation (10 items)**
+Election inventory, specific election documentation, and approval records.
+
+**Safe Harbour Documentation (8 items)**
+CbCR Safe Harbour qualification, test calculations, and reconciliation workpapers.
+
+**System & Process Controls (10 items)**
+Data collection processes, validation procedures, and audit trail documentation.
+
+## Features
+
+**Progress Dashboard**
+Visual overview of completion status across all sections.
+
+**Priority Filtering**
+Focus on Critical, High, or Medium priority items.
+
+**Gap Analysis Report**
+Automated identification of incomplete items with recommended actions.
+
+**Export Options**
+Generate PDF reports or Excel workbooks for your audit file.
+
+> **Note:** This checklist is based on OECD GloBE Model Rules and Administrative Guidance. Requirements may vary by jurisdiction.`,
+    previewImage: undefined,
+    config: {
+      calculatorType: 'audit-file-checklist',
+      version: '1.0',
+    },
+    status: 'active',
+    isPublic: true,
+    isPremium: false,
+    version: '1.0',
+    createdBy: undefined,
+    createdAt: new Date('2024-12-08'),
+    updatedAt: new Date('2024-12-08'),
+  },
 ];
