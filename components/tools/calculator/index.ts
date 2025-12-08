@@ -13,11 +13,15 @@ export type { FilingDeadlineCalculatorProps, SavedDeadlineCalculation } from './
 export { GIRPracticeForm } from './GIRPracticeForm';
 export type { GIRPracticeFormProps, SavedPracticeSession } from './GIRPracticeForm';
 
+export { DFEAssessmentTool } from './DFEAssessmentTool';
+export type { DFEAssessmentToolProps, SavedDFEAssessment } from './DFEAssessmentTool';
+
 // Calculator registry - maps calculator IDs to their components
 import { GloBECalculator } from './GloBECalculator';
 import { SafeHarbourQualifier } from './SafeHarbourQualifier';
 import { FilingDeadlineCalculator } from './FilingDeadlineCalculator';
 import { GIRPracticeForm } from './GIRPracticeForm';
+import { DFEAssessmentTool } from './DFEAssessmentTool';
 import type { ComponentType } from 'react';
 
 export const CALCULATOR_COMPONENTS: Record<string, ComponentType<any>> = {
@@ -28,6 +32,8 @@ export const CALCULATOR_COMPONENTS: Record<string, ComponentType<any>> = {
   'gir-filing-deadline-calculator': FilingDeadlineCalculator,
   'filing-deadline-calculator': FilingDeadlineCalculator, // alias
   'gir-practice-form': GIRPracticeForm,
+  'gir-dfe-assessment': DFEAssessmentTool,
+  'dfe-assessment-tool': DFEAssessmentTool, // alias
 };
 
 export function getCalculatorComponent(calculatorId: string): ComponentType<any> | null {
