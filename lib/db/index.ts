@@ -11,8 +11,8 @@ import { SEED_TOOLS } from './seed-data';
 // ============================================
 
 export async function getAllTools(): Promise<Tool[]> {
-  const { data } = await supabase.from('tools').select('*');
-  return data || [];
+  // In production: return supabase.from('tools').select('*')
+  return SEED_TOOLS;
 }
 
 export async function getActiveTools(): Promise<Tool[]> {
