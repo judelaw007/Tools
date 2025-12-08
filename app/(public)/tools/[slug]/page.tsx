@@ -1,12 +1,16 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { cookies } from 'next/headers';
 import { PublicHeader } from '@/components/PublicHeader';
+import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Logo } from '@/components/ui/Logo';
 import { Card, CardContent } from '@/components/ui/Card';
 import { LoginButton } from '@/components/LoginButton';
 import { Badge } from '@/components/ui/Badge';
+import { ToolPageClient } from '@/components/tools/ToolPageClient';
 import { getToolBySlug, getCoursesForTool } from '@/lib/db';
 import { CATEGORY_METADATA } from '@/lib/tools/registry';
+import { AUTH_COOKIE_NAME } from '@/lib/auth/types';
 import {
   Calculator,
   Search,
@@ -49,11 +53,11 @@ const toolTypeColors: Record<ToolType, string> = {
   form: 'bg-indigo-100 text-indigo-600',
 };
 
-interface ToolPreviewPageProps {
+interface ToolPageProps {
   params: { slug: string };
 }
 
-export default async function ToolPreviewPage({ params }: ToolPreviewPageProps) {
+export default async function ToolPage({ params }: ToolPageProps) {
   // Fetch tool from database
   const tool = await getToolBySlug(params.slug);
 
@@ -61,9 +65,47 @@ export default async function ToolPreviewPage({ params }: ToolPreviewPageProps) 
     notFound();
   }
 
+  // Check if user is authenticated
+  const cookieStore = cookies();
+  const authCookie = cookieStore.get(AUTH_COOKIE_NAME);
+  const isAuthenticated = !!authCookie?.value;
+
   // Fetch courses that include this tool
   const courses = await getCoursesForTool(tool.id);
 
+  // If authenticated, render the tool in the dashboard layout
+  if (isAuthenticated) {
+    return (
+      <DashboardLayout>
+        {/* Breadcrumb */}
+        <div className="mb-6">
+          <Link
+            href="/dashboard"
+            className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-mojitax-navy transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Dashboard
+          </Link>
+        </div>
+
+        {/* Tool Disclaimer */}
+        <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl flex gap-3">
+          <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="font-medium text-amber-800 mb-1">Demo Tool for Learning</p>
+            <p className="text-sm text-amber-700">
+              This is an educational demo tool. Results are illustrative only and should not be used for actual tax filings or professional advice.
+            </p>
+          </div>
+        </div>
+
+        {/* Tool Component */}
+        <ToolPageClient tool={tool} />
+      </DashboardLayout>
+    );
+  }
+
+  // Public preview for unauthenticated users
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
@@ -297,7 +339,7 @@ export default async function ToolPreviewPage({ params }: ToolPreviewPageProps) 
   );
 }
 
-export async function generateMetadata({ params }: ToolPreviewPageProps) {
+export async function generateMetadata({ params }: ToolPageProps) {
   const tool = await getToolBySlug(params.slug);
 
   if (!tool) {
