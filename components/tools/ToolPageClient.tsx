@@ -5,9 +5,11 @@ import { useAuth } from '@/lib/auth/context';
 import { GloBECalculator } from '@/components/tools/calculator/GloBECalculator';
 import { SafeHarbourQualifier } from '@/components/tools/calculator/SafeHarbourQualifier';
 import { FilingDeadlineCalculator } from '@/components/tools/calculator/FilingDeadlineCalculator';
+import { GIRPracticeForm } from '@/components/tools/calculator/GIRPracticeForm';
 import type { SavedCalculation } from '@/components/tools/calculator/GloBECalculator';
 import type { SavedAssessment } from '@/components/tools/calculator/SafeHarbourQualifier';
 import type { SavedDeadlineCalculation } from '@/components/tools/calculator/FilingDeadlineCalculator';
+import type { SavedPracticeSession } from '@/components/tools/calculator/GIRPracticeForm';
 import type { Tool } from '@/types';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Loader2, Calculator } from 'lucide-react';
@@ -17,7 +19,7 @@ interface ToolPageClientProps {
 }
 
 // Generic saved item type for localStorage persistence
-type SavedItem = SavedCalculation | SavedAssessment | SavedDeadlineCalculation;
+type SavedItem = SavedCalculation | SavedAssessment | SavedDeadlineCalculation | SavedPracticeSession;
 
 export function ToolPageClient({ tool }: ToolPageClientProps) {
   const { isAuthenticated, user } = useAuth();
@@ -128,6 +130,18 @@ export function ToolPageClient({ tool }: ToolPageClientProps) {
           onSave={handleSave as (data: Omit<SavedDeadlineCalculation, 'id' | 'updatedAt'>) => Promise<string>}
           onDelete={handleDelete}
           savedItems={savedItems as SavedDeadlineCalculation[]}
+        />
+      );
+    }
+
+    // GIR Practice Form
+    if (tool.id === 'gir-practice-form' || tool.slug === 'gir-practice-form') {
+      return (
+        <GIRPracticeForm
+          userId={user?.email}
+          onSave={handleSave as (data: Omit<SavedPracticeSession, 'id' | 'updatedAt'>) => Promise<string>}
+          onDelete={handleDelete}
+          savedItems={savedItems as SavedPracticeSession[]}
         />
       );
     }
