@@ -144,14 +144,32 @@ class LearnWorldsClient {
   // ============================================
 
   /**
-   * Get all courses from LearnWorlds
+   * Get all courses from LearnWorlds (handles pagination)
    */
   async getCourses(): Promise<LearnWorldsProduct[]> {
     try {
-      const response = await this.request<LearnWorldsApiResponse<LearnWorldsProduct[]>>(
-        '/v2/courses'
-      );
-      return response.data || [];
+      const allCourses: LearnWorldsProduct[] = [];
+      let page = 1;
+      const itemsPerPage = 50; // Max items per page
+      let hasMore = true;
+
+      while (hasMore) {
+        const response = await this.request<LearnWorldsApiResponse<LearnWorldsProduct[]>>(
+          `/v2/courses?page=${page}&items_per_page=${itemsPerPage}`
+        );
+
+        const courses = response.data || [];
+        allCourses.push(...courses);
+
+        // If we got fewer items than requested, we've reached the end
+        if (courses.length < itemsPerPage) {
+          hasMore = false;
+        } else {
+          page++;
+        }
+      }
+
+      return allCourses;
     } catch (error) {
       console.error('Error fetching courses:', error);
       return [];
