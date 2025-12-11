@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAllTools } from '@/lib/db';
-
-// In-memory storage for course-tool allocations (replace with Supabase in production)
-// Key: courseId, Value: array of toolIds
-const courseToolAllocations: Map<string, string[]> = new Map();
+import {
+  getToolsForCourse,
+  setToolsForCourse,
+  clearCourseAllocations,
+} from '@/lib/course-allocations';
 
 /**
  * GET /api/admin/courses/[courseId]/tools
@@ -16,7 +17,7 @@ export async function GET(
   const { courseId } = await params;
 
   try {
-    const allocatedToolIds = courseToolAllocations.get(courseId) || [];
+    const allocatedToolIds = getToolsForCourse(courseId);
     const allTools = await getAllTools();
 
     const allocatedTools = allTools.filter(tool =>
@@ -58,8 +59,8 @@ export async function POST(
       );
     }
 
-    // Store the allocation
-    courseToolAllocations.set(courseId, toolIds);
+    // Store the allocation using shared storage
+    setToolsForCourse(courseId, toolIds);
 
     return NextResponse.json({
       success: true,
@@ -86,7 +87,7 @@ export async function DELETE(
   const { courseId } = await params;
 
   try {
-    courseToolAllocations.delete(courseId);
+    clearCourseAllocations(courseId);
 
     return NextResponse.json({
       success: true,
