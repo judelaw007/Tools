@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { learnWorldsClient } from '@/lib/learnworlds';
+import { learnworlds } from '@/lib/learnworlds';
 
 /**
  * GET /api/learnworlds/test
@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
 
   try {
     // Use the LearnWorlds client to fetch all courses (with pagination)
-    const allCourses = await learnWorldsClient.getCourses();
+    const allCourses = await learnworlds.getCourses();
 
     const courses = allCourses.map((course) => ({
       id: course.id,
