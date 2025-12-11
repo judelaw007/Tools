@@ -2,10 +2,9 @@
 
 import { Suspense, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Logo } from '@/components/ui/Logo';
-import { GraduationCap, Shield, ArrowRight, Lock, Loader2, ExternalLink } from 'lucide-react';
+import { GraduationCap, Shield, ArrowRight, Lock, Loader2, ExternalLink, AlertTriangle } from 'lucide-react';
 
 function LoginContent() {
   const searchParams = useSearchParams();
@@ -13,6 +12,7 @@ function LoginContent() {
   const [selectedOption, setSelectedOption] = useState<'sso' | 'admin' | null>(null);
 
   const returnTo = searchParams.get('returnTo') || '/dashboard';
+  const ssoError = searchParams.get('sso_error');
 
   // Handle LearnWorlds SSO login
   const handleSSOLogin = () => {
@@ -54,16 +54,32 @@ function LoginContent() {
         <p className="text-slate-600 mt-2">Sign in to access your tax tools</p>
       </div>
 
-      {/* Platform Notice */}
-      <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 mb-6 flex items-start gap-3">
-        <Lock className="w-5 h-5 text-slate-500 flex-shrink-0 mt-0.5" />
-        <div>
-          <p className="text-sm font-medium text-slate-700">Secure Platform</p>
-          <p className="text-sm text-slate-600 mt-1">
-            This platform is exclusively for MojiTax course members. Sign in with your MojiTax Learning account to access your tools.
-          </p>
+      {/* SSO Error Message */}
+      {ssoError === 'not_configured' && (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6 flex items-start gap-3">
+          <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-medium text-amber-800">SSO Setup Required</p>
+            <p className="text-sm text-amber-700 mt-1">
+              Single Sign-On with MojiTax Learning requires additional configuration.
+              Please contact the administrator or use the Admin login for now.
+            </p>
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Platform Notice */}
+      {!ssoError && (
+        <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 mb-6 flex items-start gap-3">
+          <Lock className="w-5 h-5 text-slate-500 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-medium text-slate-700">Secure Platform</p>
+            <p className="text-sm text-slate-600 mt-1">
+              This platform is exclusively for MojiTax course members. Sign in with your MojiTax Learning account to access your tools.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Login Options */}
       <div className="space-y-4">
