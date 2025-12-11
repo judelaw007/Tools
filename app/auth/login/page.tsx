@@ -1,40 +1,47 @@
 'use client';
 
 import { Suspense, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { useAuth } from '@/lib/auth';
+import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Logo } from '@/components/ui/Logo';
-import { User, Shield, ArrowRight, AlertCircle, Loader2 } from 'lucide-react';
+import { GraduationCap, Shield, ArrowRight, Lock, Loader2, ExternalLink } from 'lucide-react';
 
 function LoginContent() {
-  const router = useRouter();
   const searchParams = useSearchParams();
-  const { login, isLoading } = useAuth();
-  const [selectedRole, setSelectedRole] = useState<'user' | 'admin' | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [selectedOption, setSelectedOption] = useState<'sso' | 'admin' | null>(null);
 
   const returnTo = searchParams.get('returnTo') || '/dashboard';
 
-  const handleLogin = async (role: 'user' | 'admin') => {
-    setSelectedRole(role);
+  // Handle LearnWorlds SSO login
+  const handleSSOLogin = () => {
+    setSelectedOption('sso');
+    setIsLoading(true);
+    // Redirect to LearnWorlds SSO endpoint
+    window.location.href = `/api/auth/learnworlds/login?returnTo=${encodeURIComponent(returnTo)}`;
+  };
+
+  // Handle Admin login (dev mode)
+  const handleAdminLogin = async () => {
+    setSelectedOption('admin');
+    setIsLoading(true);
 
     try {
-      // Call API to set cookie server-side
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ role, returnTo }),
+        body: JSON.stringify({ role: 'admin', returnTo }),
       });
 
       if (response.ok) {
         const data = await response.json();
-        // Full page navigation to ensure cookie is sent
         window.location.href = data.redirectTo;
       }
     } catch (error) {
       console.error('Login failed:', error);
-      setSelectedRole(null);
+      setSelectedOption(null);
+      setIsLoading(false);
     }
   };
 
@@ -43,78 +50,100 @@ function LoginContent() {
       {/* Logo */}
       <div className="text-center mb-8">
         <Logo className="h-12 mx-auto mb-4" />
-        <h1 className="text-2xl font-bold text-slate-900">Welcome to MojiTax Tools</h1>
-        <p className="text-slate-600 mt-2">Select a login option to continue</p>
+        <h1 className="text-2xl font-bold text-slate-900">MojiTax Tools Platform</h1>
+        <p className="text-slate-600 mt-2">Sign in to access your tax tools</p>
       </div>
 
-      {/* Dev Mode Notice */}
-      <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6 flex items-start gap-3">
-        <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+      {/* Platform Notice */}
+      <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 mb-6 flex items-start gap-3">
+        <Lock className="w-5 h-5 text-slate-500 flex-shrink-0 mt-0.5" />
         <div>
-          <p className="text-sm font-medium text-amber-800">Development Mode</p>
-          <p className="text-sm text-amber-700 mt-1">
-            This is a simplified login for development. Production will use MojiTax LMS authentication.
+          <p className="text-sm font-medium text-slate-700">Secure Platform</p>
+          <p className="text-sm text-slate-600 mt-1">
+            This platform is exclusively for MojiTax course members. Sign in with your MojiTax Learning account to access your tools.
           </p>
         </div>
       </div>
 
       {/* Login Options */}
       <div className="space-y-4">
-        {/* User Login */}
+        {/* LearnWorlds SSO Login - Primary */}
         <Card
-          className={`cursor-pointer transition-all hover:shadow-md ${
-            selectedRole === 'user' ? 'ring-2 ring-emerald-500' : ''
+          className={`cursor-pointer transition-all hover:shadow-md border-2 ${
+            selectedOption === 'sso' ? 'border-mojitax-green ring-2 ring-mojitax-green/20' : 'border-mojitax-green/50 hover:border-mojitax-green'
           }`}
-          onClick={() => !isLoading && handleLogin('user')}
+          onClick={() => !isLoading && handleSSOLogin()}
         >
           <div className="p-6">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center">
-                <User className="w-6 h-6 text-emerald-600" />
+              <div className="w-12 h-12 bg-mojitax-green/10 rounded-full flex items-center justify-center">
+                <GraduationCap className="w-6 h-6 text-mojitax-green" />
               </div>
               <div className="flex-1">
-                <h3 className="font-semibold text-slate-900">Login as User</h3>
-                <p className="text-sm text-slate-600">Access your enrolled tools and dashboard</p>
-                <p className="text-xs text-slate-500 mt-1">user@mojitax.co.uk</p>
+                <h3 className="font-semibold text-slate-900">MojiTax Learning Member</h3>
+                <p className="text-sm text-slate-600">Sign in via mojitax.co.uk</p>
+                <p className="text-xs text-mojitax-green mt-1 flex items-center gap-1">
+                  <ExternalLink className="w-3 h-3" />
+                  Redirects to MojiTax Learning
+                </p>
               </div>
-              <ArrowRight className={`w-5 h-5 text-slate-400 transition-transform ${
-                selectedRole === 'user' && isLoading ? 'animate-pulse' : ''
-              }`} />
+              {selectedOption === 'sso' && isLoading ? (
+                <Loader2 className="w-5 h-5 text-mojitax-green animate-spin" />
+              ) : (
+                <ArrowRight className="w-5 h-5 text-mojitax-green" />
+              )}
             </div>
           </div>
         </Card>
 
-        {/* Admin Login */}
+        {/* Divider */}
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-slate-200"></div>
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="px-2 bg-gradient-to-br from-slate-50 to-slate-100 text-slate-500">or</span>
+          </div>
+        </div>
+
+        {/* Admin Login - Secondary */}
         <Card
           className={`cursor-pointer transition-all hover:shadow-md ${
-            selectedRole === 'admin' ? 'ring-2 ring-purple-500' : ''
+            selectedOption === 'admin' ? 'ring-2 ring-purple-500' : ''
           }`}
-          onClick={() => !isLoading && handleLogin('admin')}
+          onClick={() => !isLoading && handleAdminLogin()}
         >
-          <div className="p-6">
+          <div className="p-5">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-                <Shield className="w-6 h-6 text-purple-600" />
+              <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                <Shield className="w-5 h-5 text-purple-600" />
               </div>
               <div className="flex-1">
-                <h3 className="font-semibold text-slate-900">Login as Admin</h3>
-                <p className="text-sm text-slate-600">Full access to admin dashboard and settings</p>
-                <p className="text-xs text-slate-500 mt-1">admin@mojitax.co.uk</p>
+                <h3 className="font-medium text-slate-900">Administrator Login</h3>
+                <p className="text-xs text-slate-500">Platform management access</p>
               </div>
-              <ArrowRight className={`w-5 h-5 text-slate-400 transition-transform ${
-                selectedRole === 'admin' && isLoading ? 'animate-pulse' : ''
-              }`} />
+              {selectedOption === 'admin' && isLoading ? (
+                <Loader2 className="w-5 h-5 text-purple-600 animate-spin" />
+              ) : (
+                <ArrowRight className="w-5 h-5 text-slate-400" />
+              )}
             </div>
           </div>
         </Card>
       </div>
 
-      {/* Back to tools link */}
-      <div className="text-center mt-8">
-        <Button variant="ghost" onClick={() => router.push('/tools')}>
-          Back to Public Tools
-        </Button>
-      </div>
+      {/* Help text */}
+      <p className="text-center text-xs text-slate-500 mt-6">
+        Don&apos;t have access?{' '}
+        <a
+          href="https://www.mojitax.co.uk"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-mojitax-green hover:underline"
+        >
+          Enroll in a MojiTax course
+        </a>
+      </p>
     </div>
   );
 }

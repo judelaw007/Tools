@@ -4,10 +4,11 @@ import type { NextRequest } from 'next/server';
 /**
  * Authentication & Access Control Middleware
  *
- * Access Model (from MASTER-PLAN-v2.md):
+ * LOCKED PLATFORM MODEL:
+ * - ALL routes require authentication except login/auth routes
  * - Admin users: Full access to everything
- * - MojiTax users: Access only to tools allocated to their enrolled courses
- * - Public users: Can view public tool previews only
+ * - MojiTax users (via LearnWorlds SSO): Access to tools allocated to their enrolled courses
+ * - No public access - must login via mojitax.co.uk or admin login
  *
  * Cookie Strategy:
  * - mojitax-auth: Contains user role ('user' | 'admin')
@@ -19,18 +20,16 @@ const AUTH_COOKIE_NAME = 'mojitax-auth';
 const SESSION_COOKIE_NAME = 'mojitax-session';
 const DEV_AUTH_COOKIE_NAME = 'mojitax-dev-auth';
 
+// Routes that DON'T require authentication (public access)
+const publicRoutes = [
+  '/auth/login',
+  '/login',
+  '/api/auth',
+  '/api/learnworlds',
+];
+
 // Routes that require admin role ONLY
 const adminOnlyRoutes = ['/admin'];
-
-// Routes that require authentication (admin OR enrolled user)
-const protectedRoutes = ['/dashboard'];
-
-// Routes that require authentication for full access (tool pages)
-// Public can preview, but need auth for full access
-const toolRoutes = ['/tools/'];
-
-// Public routes - no auth required
-const publicRoutes = ['/', '/tools', '/auth'];
 
 /**
  * Parse session data from cookie
@@ -90,8 +89,22 @@ function isAdmin(
   return false;
 }
 
+/**
+ * Check if route is public (doesn't require auth)
+ */
+function isPublicRoute(pathname: string): boolean {
+  return publicRoutes.some((route) => pathname.startsWith(route));
+}
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // ========================================
+  // PUBLIC ROUTES - No auth required
+  // ========================================
+  if (isPublicRoute(pathname)) {
+    return NextResponse.next();
+  }
 
   // Get all auth cookies
   const authCookie = request.cookies.get(AUTH_COOKIE_NAME)?.value;
@@ -106,56 +119,32 @@ export function middleware(request: NextRequest) {
   const admin = isAdmin(authCookie, devAuthCookie, session);
 
   // ========================================
+  // LOCKED PLATFORM - Require authentication for ALL routes
+  // ========================================
+  if (!authenticated) {
+    // Not authenticated - redirect to login
+    const loginUrl = new URL('/auth/login', request.url);
+    loginUrl.searchParams.set('returnTo', pathname);
+    return NextResponse.redirect(loginUrl);
+  }
+
+  // ========================================
   // ADMIN ROUTES - Admin only access
   // ========================================
   const isAdminRoute = adminOnlyRoutes.some((route) =>
     pathname.startsWith(route)
   );
 
-  if (isAdminRoute) {
-    if (!admin) {
-      // Not an admin - redirect to login
-      const loginUrl = new URL('/auth/login', request.url);
-      loginUrl.searchParams.set('returnTo', pathname);
-      loginUrl.searchParams.set('reason', 'admin_required');
-      return NextResponse.redirect(loginUrl);
-    }
-    return NextResponse.next();
+  if (isAdminRoute && !admin) {
+    // Authenticated but not admin - redirect to dashboard with error
+    const dashboardUrl = new URL('/dashboard', request.url);
+    dashboardUrl.searchParams.set('error', 'admin_required');
+    return NextResponse.redirect(dashboardUrl);
   }
 
   // ========================================
-  // PROTECTED ROUTES - Any authenticated user
-  // ========================================
-  const isProtectedRoute = protectedRoutes.some((route) =>
-    pathname.startsWith(route)
-  );
-
-  if (isProtectedRoute) {
-    if (!authenticated) {
-      // Not authenticated - redirect to login
-      const loginUrl = new URL('/auth/login', request.url);
-      loginUrl.searchParams.set('returnTo', pathname);
-      return NextResponse.redirect(loginUrl);
-    }
-    return NextResponse.next();
-  }
-
-  // ========================================
-  // TOOL ROUTES - Check enrollment for full access
-  // ========================================
-  // Tool routes allow public preview, but full access requires enrollment
-  // The actual enrollment check happens at the page level (server component)
-  // Middleware just ensures basic auth for non-preview routes
-  const isToolRoute = pathname.match(/^\/tools\/[^/]+$/);
-
-  if (isToolRoute) {
-    // Tool detail pages - allow access (page will check enrollment)
-    // The page component will show preview or full access based on enrollment
-    return NextResponse.next();
-  }
-
-  // ========================================
-  // PUBLIC ROUTES - Allow all
+  // AUTHENTICATED USER - Allow access
+  // Tool access control happens at page/component level
   // ========================================
   return NextResponse.next();
 }
@@ -164,12 +153,11 @@ export const config = {
   matcher: [
     /*
      * Match all request paths except for:
-     * - api (API routes)
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      * - public files (images, etc.)
      */
-    '/((?!api|_next/static|_next/image|favicon.ico|.*\\..*|auth).*)',
+    '/((?!_next/static|_next/image|favicon.ico|.*\\..*).*)',
   ],
 };

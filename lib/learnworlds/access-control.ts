@@ -11,7 +11,8 @@
 
 import { learnworlds } from './client';
 import { AccessCheckResult, LearnWorldsEnrollment } from './types';
-import { getCoursesByToolId, getToolBySlug } from '@/lib/db';
+import { getToolBySlug } from '@/lib/db';
+import { getCoursesForTool } from '@/lib/course-allocations';
 
 interface UserProfile {
   id: string;
@@ -52,11 +53,11 @@ export async function checkToolAccess(
     };
   }
 
-  // Get courses this tool is allocated to
-  const allocatedCourses = await getCoursesByToolId(tool.id);
+  // Get course IDs this tool is allocated to
+  const allocatedCourseIds = getCoursesForTool(tool.id);
 
   // If tool has no course allocations, it might be free/public
-  if (allocatedCourses.length === 0) {
+  if (allocatedCourseIds.length === 0) {
     // Check if tool is marked as public and not premium
     if (tool.isPublic && !tool.isPremium) {
       return {
@@ -64,6 +65,7 @@ export async function checkToolAccess(
         reason: 'enrolled', // Free tool
       };
     }
+    // No allocations - deny access (tool must be allocated to a course)
     return {
       hasAccess: false,
       reason: 'no_enrollment',
@@ -85,16 +87,16 @@ export async function checkToolAccess(
   const enrolledProductIds = enrollments.map((e) => e.product_id);
 
   // Check for overlap between allocated courses and user enrollments
-  const matchingCourses = allocatedCourses.filter((course) =>
-    enrolledProductIds.includes(course.id)
+  const matchingCourseIds = allocatedCourseIds.filter((courseId) =>
+    enrolledProductIds.includes(courseId)
   );
 
-  if (matchingCourses.length > 0) {
+  if (matchingCourseIds.length > 0) {
     return {
       hasAccess: true,
       reason: 'enrolled',
       enrolledCourses: enrollments.filter((e) =>
-        matchingCourses.some((c) => c.id === e.product_id)
+        matchingCourseIds.includes(e.product_id)
       ),
     };
   }
@@ -103,10 +105,10 @@ export async function checkToolAccess(
   return {
     hasAccess: false,
     reason: 'no_enrollment',
-    requiredCourses: allocatedCourses.map((course) => ({
-      id: course.id,
-      name: course.name,
-      url: course.learnworldsUrl,
+    requiredCourses: allocatedCourseIds.map((courseId) => ({
+      id: courseId,
+      name: courseId, // Will be replaced with actual course name when using database
+      url: `https://www.mojitax.co.uk/course/${courseId}`,
     })),
   };
 }
