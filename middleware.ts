@@ -11,11 +11,19 @@ import type { NextRequest } from 'next/server';
  * - No visible login page - unauthenticated users redirect to mojitax.co.uk
  * - Admin has hidden access via /auth/admin
  *
+ * ENROLLMENT REFRESH POLICY:
+ * - Enrollments are refreshed every 24 hours
+ * - If user no longer exists in LearnWorlds → immediate session invalidation
+ * - This ensures access is revoked within 24 hours of losing course access
+ *
  * Cookie Strategy:
  * - mojitax-auth: Contains user role ('user' | 'admin')
  * - mojitax-session: Contains full session data (LearnWorlds user info, enrollments)
  * - mojitax-dev-auth: Development mode auth (backward compatibility)
  */
+
+// Enrollment refresh interval: 24 hours in milliseconds
+const ENROLLMENT_REFRESH_INTERVAL = 24 * 60 * 60 * 1000;
 
 // Main site URL for redirect
 const MAIN_SITE_URL = 'https://www.mojitax.co.uk';
@@ -42,6 +50,7 @@ function parseSession(sessionCookie: string | undefined): {
   role?: 'user' | 'admin' | 'super_admin';
   learnworldsId?: string;
   enrollments?: Array<{ product_id: string }>;
+  lastEnrollmentCheck?: string;
 } | null {
   if (!sessionCookie) return null;
 
@@ -50,6 +59,31 @@ function parseSession(sessionCookie: string | undefined): {
   } catch {
     return null;
   }
+}
+
+/**
+ * Check if enrollment refresh is needed (every 24 hours)
+ */
+function needsEnrollmentRefresh(session: ReturnType<typeof parseSession>): boolean {
+  // No session or admin - no refresh needed
+  if (!session || session.role === 'admin' || session.role === 'super_admin') {
+    return false;
+  }
+
+  // No LearnWorlds ID - not a LearnWorlds user, no refresh needed
+  if (!session.learnworldsId) {
+    return false;
+  }
+
+  // No previous check - needs refresh
+  if (!session.lastEnrollmentCheck) {
+    return true;
+  }
+
+  // Check if 24 hours have passed since last check
+  const lastCheck = new Date(session.lastEnrollmentCheck).getTime();
+  const now = Date.now();
+  return now - lastCheck > ENROLLMENT_REFRESH_INTERVAL;
 }
 
 /**
@@ -128,6 +162,17 @@ export function middleware(request: NextRequest) {
     // Not authenticated - redirect to MojiTax main site
     // Users must log in via mojitax.co.uk first
     return NextResponse.redirect(MAIN_SITE_URL);
+  }
+
+  // ========================================
+  // ENROLLMENT REFRESH - Check every 24 hours
+  // If user no longer exists in LearnWorlds, session will be invalidated
+  // ========================================
+  if (needsEnrollmentRefresh(session)) {
+    // Redirect to refresh endpoint, which will verify user and update enrollments
+    const refreshUrl = new URL('/api/auth/refresh-session', request.url);
+    refreshUrl.searchParams.set('returnTo', pathname);
+    return NextResponse.redirect(refreshUrl);
   }
 
   // ========================================

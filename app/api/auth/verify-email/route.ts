@@ -47,6 +47,7 @@ export async function POST(request: NextRequest) {
     const enrollments = await learnworlds.getUserEnrollments(lwUser.id);
 
     // Create session data
+    const now = new Date().toISOString();
     const sessionData = {
       email: normalizedEmail,
       role: 'user' as const,
@@ -62,7 +63,8 @@ export async function POST(request: NextRequest) {
         product_type: e.product_type,
         enrolled_date: e.enrolled_date,
       })),
-      authenticatedAt: new Date().toISOString(),
+      authenticatedAt: now,
+      lastEnrollmentCheck: now, // Set initial check time to prevent immediate refresh
     };
 
     // Encode session data
