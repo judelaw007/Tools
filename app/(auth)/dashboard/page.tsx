@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/Badge';
 import { ToolCard } from '@/components/tools/ToolCard';
 import { getActiveTools, getActiveCourses } from '@/lib/db';
 import { CATEGORY_METADATA } from '@/lib/tools/registry';
+import { filterToolsByAccess, getServerSession } from '@/lib/server-session';
 import {
   Calculator,
   BookOpen,
@@ -14,12 +15,23 @@ import {
   ExternalLink,
   Sparkles,
   Star,
+  Lock,
+  Unlock,
 } from 'lucide-react';
 
 export default async function DashboardPage() {
   // Fetch tools and courses from database
-  const allTools = await getActiveTools();
+  const allToolsRaw = await getActiveTools();
   const courses = await getActiveCourses();
+
+  // Get current user session
+  const session = await getServerSession();
+
+  // Add access flags to tools based on user's enrollments
+  const allTools = await filterToolsByAccess(allToolsRaw);
+
+  // Count accessible tools
+  const accessibleToolsCount = allTools.filter((t) => t.hasAccess).length;
 
   const hasTools = allTools.length > 0;
   const hasCourses = courses.length > 0;
@@ -40,25 +52,30 @@ export default async function DashboardPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
         <Card>
           <CardContent className="p-4 flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center">
-              <Wrench className="w-6 h-6 text-blue-600" />
+            <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center">
+              <Unlock className="w-6 h-6 text-green-600" />
             </div>
             <div>
-              <p className="text-sm text-slate-500">Available Tools</p>
-              <p className="text-2xl font-bold text-mojitax-navy">{allTools.length}</p>
+              <p className="text-sm text-slate-500">Your Tools</p>
+              <p className="text-2xl font-bold text-mojitax-navy">
+                {accessibleToolsCount}
+                <span className="text-sm font-normal text-slate-400 ml-1">
+                  / {allTools.length}
+                </span>
+              </p>
             </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardContent className="p-4 flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center">
-              <Star className="w-6 h-6 text-green-600" />
+            <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center">
+              <Lock className="w-6 h-6 text-slate-500" />
             </div>
             <div>
-              <p className="text-sm text-slate-500">Tool Types</p>
+              <p className="text-sm text-slate-500">Locked Tools</p>
               <p className="text-2xl font-bold text-mojitax-navy">
-                {hasTools ? new Set(allTools.map(t => t.toolType)).size : 0}
+                {allTools.length - accessibleToolsCount}
               </p>
             </div>
           </CardContent>
@@ -84,8 +101,10 @@ export default async function DashboardPage() {
               <BookOpen className="w-6 h-6 text-amber-600" />
             </div>
             <div>
-              <p className="text-sm text-slate-500">Courses</p>
-              <p className="text-2xl font-bold text-mojitax-navy">{courses.length}</p>
+              <p className="text-sm text-slate-500">Your Courses</p>
+              <p className="text-2xl font-bold text-mojitax-navy">
+                {session?.enrollments?.length || 0}
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -106,7 +125,7 @@ export default async function DashboardPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {allTools.slice(0, 6).map((tool) => (
-              <ToolCard key={tool.id} tool={tool} hasAccess={true} />
+              <ToolCard key={tool.id} tool={tool} hasAccess={tool.hasAccess} />
             ))}
           </div>
         </div>
