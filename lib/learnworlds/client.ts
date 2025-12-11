@@ -144,18 +144,26 @@ class LearnWorldsClient {
   // ============================================
 
   /**
-   * Get all products (courses, bundles, subscriptions)
+   * Get all courses from LearnWorlds
    */
-  async getProducts(): Promise<LearnWorldsProduct[]> {
+  async getCourses(): Promise<LearnWorldsProduct[]> {
     try {
       const response = await this.request<LearnWorldsApiResponse<LearnWorldsProduct[]>>(
-        '/v2/products'
+        '/v2/courses'
       );
       return response.data || [];
     } catch (error) {
-      console.error('Error fetching products:', error);
+      console.error('Error fetching courses:', error);
       return [];
     }
+  }
+
+  /**
+   * Get all products (courses, bundles, subscriptions)
+   * @deprecated Use getCourses() instead
+   */
+  async getProducts(): Promise<LearnWorldsProduct[]> {
+    return this.getCourses();
   }
 
   /**

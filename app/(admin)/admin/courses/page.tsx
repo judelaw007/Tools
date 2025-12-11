@@ -28,8 +28,8 @@ interface ConnectionStatus {
   success: boolean;
   configured: boolean;
   message: string;
-  productCount?: number;
-  products?: LearnWorldsProduct[];
+  courseCount?: number;
+  courses?: LearnWorldsProduct[];
   missing?: string[];
 }
 
@@ -115,21 +115,21 @@ export default function AdminCoursesPage() {
                 <div>
                   <p className="font-medium text-green-800">Connected to LearnWorlds</p>
                   <p className="text-sm text-green-600">
-                    Found {connectionStatus.productCount} courses/products
+                    Found {connectionStatus.courseCount} courses
                   </p>
                 </div>
               </div>
 
-              {/* Products from LearnWorlds */}
-              {connectionStatus.products && connectionStatus.products.length > 0 && (
+              {/* Courses from LearnWorlds */}
+              {connectionStatus.courses && connectionStatus.courses.length > 0 && (
                 <div>
                   <h3 className="font-medium text-slate-700 mb-3">
                     Available Courses from LearnWorlds
                   </h3>
                   <div className="space-y-2">
-                    {connectionStatus.products.map((product) => (
+                    {connectionStatus.courses.map((course) => (
                       <div
-                        key={product.id}
+                        key={course.id}
                         className="flex items-center justify-between p-3 bg-slate-50 rounded-lg"
                       >
                         <div className="flex items-center gap-3">
@@ -137,12 +137,12 @@ export default function AdminCoursesPage() {
                             <BookOpen className="w-4 h-4 text-mojitax-green" />
                           </div>
                           <div>
-                            <p className="font-medium text-mojitax-navy">{product.title}</p>
-                            <p className="text-xs text-slate-500">ID: {product.id}</p>
+                            <p className="font-medium text-mojitax-navy">{course.title}</p>
+                            <p className="text-xs text-slate-500">ID: {course.id}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Badge variant="active" size="sm">{product.type}</Badge>
+                          <Badge variant="active" size="sm">{course.type}</Badge>
                           <Button variant="outline" size="sm">
                             <Wrench className="w-3 h-3" />
                             Allocate Tools
