@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -16,6 +16,9 @@ import {
   Loader2,
   Wrench,
   ArrowLeft,
+  Search,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 
 interface LearnWorldsProduct {
@@ -33,10 +36,14 @@ interface ConnectionStatus {
   missing?: string[];
 }
 
+const ITEMS_PER_PAGE = 10;
+
 export default function AdminCoursesPage() {
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
 
   const testConnection = async () => {
     setIsRefreshing(true);
@@ -59,6 +66,31 @@ export default function AdminCoursesPage() {
   useEffect(() => {
     testConnection();
   }, []);
+
+  // Filter courses based on search query
+  const filteredCourses = useMemo(() => {
+    if (!connectionStatus?.courses) return [];
+    if (!searchQuery.trim()) return connectionStatus.courses;
+
+    const query = searchQuery.toLowerCase();
+    return connectionStatus.courses.filter(
+      (course) =>
+        course.title.toLowerCase().includes(query) ||
+        course.id.toLowerCase().includes(query)
+    );
+  }, [connectionStatus?.courses, searchQuery]);
+
+  // Pagination
+  const totalPages = Math.ceil(filteredCourses.length / ITEMS_PER_PAGE);
+  const paginatedCourses = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredCourses.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredCourses, currentPage]);
+
+  // Reset to page 1 when search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
 
   return (
     <DashboardLayout variant="admin">
@@ -123,34 +155,87 @@ export default function AdminCoursesPage() {
               {/* Courses from LearnWorlds */}
               {connectionStatus.courses && connectionStatus.courses.length > 0 && (
                 <div>
-                  <h3 className="font-medium text-slate-700 mb-3">
-                    Available Courses from LearnWorlds
-                  </h3>
-                  <div className="space-y-2">
-                    {connectionStatus.courses.map((course) => (
-                      <div
-                        key={course.id}
-                        className="flex items-center justify-between p-3 bg-slate-50 rounded-lg"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-mojitax-green/10 flex items-center justify-center">
-                            <BookOpen className="w-4 h-4 text-mojitax-green" />
-                          </div>
-                          <div>
-                            <p className="font-medium text-mojitax-navy">{course.title}</p>
-                            <p className="text-xs text-slate-500">ID: {course.id}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Badge variant="active" size="sm">{course.type}</Badge>
-                          <Button variant="outline" size="sm">
-                            <Wrench className="w-3 h-3" />
-                            Allocate Tools
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-medium text-slate-700">
+                      Available Courses from LearnWorlds
+                    </h3>
+                    {/* Search Input */}
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                      <input
+                        type="text"
+                        placeholder="Search courses..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-mojitax-green/50 focus:border-mojitax-green w-64"
+                      />
+                    </div>
                   </div>
+
+                  {/* Course List */}
+                  <div className="space-y-2">
+                    {paginatedCourses.length > 0 ? (
+                      paginatedCourses.map((course) => (
+                        <div
+                          key={course.id}
+                          className="flex items-center justify-between p-3 bg-slate-50 rounded-lg"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-mojitax-green/10 flex items-center justify-center">
+                              <BookOpen className="w-4 h-4 text-mojitax-green" />
+                            </div>
+                            <div>
+                              <p className="font-medium text-mojitax-navy">{course.title}</p>
+                              <p className="text-xs text-slate-500">ID: {course.id}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="active" size="sm">{course.type}</Badge>
+                            <Button variant="outline" size="sm">
+                              <Wrench className="w-3 h-3" />
+                              Allocate Tools
+                            </Button>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-6 text-slate-500">
+                        No courses found matching &quot;{searchQuery}&quot;
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Pagination Controls */}
+                  {filteredCourses.length > ITEMS_PER_PAGE && (
+                    <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-200">
+                      <p className="text-sm text-slate-600">
+                        Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1} - {Math.min(currentPage * ITEMS_PER_PAGE, filteredCourses.length)} of {filteredCourses.length} courses
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                          disabled={currentPage === 1}
+                        >
+                          <ChevronLeft className="w-4 h-4" />
+                          Previous
+                        </Button>
+                        <span className="text-sm text-slate-600 px-2">
+                          Page {currentPage} of {totalPages}
+                        </span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                          disabled={currentPage === totalPages}
+                        >
+                          Next
+                          <ChevronRight className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
