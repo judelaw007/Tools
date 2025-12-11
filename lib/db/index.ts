@@ -82,19 +82,79 @@ export async function getCourseBySlug(slug: string): Promise<Course | null> {
 // COURSE-TOOL MAPPINGS (managed by admin via Supabase)
 // ============================================
 
+// IMPORTANT: Course IDs should match LearnWorlds product IDs
+// This allows the access control to work with LearnWorlds enrollments
+
 export async function getToolsForCourse(courseId: string): Promise<Tool[]> {
   // TODO: join query with course_tools and tools tables from Supabase
+  // Example: return supabase.from('course_tools')
+  //   .select('tool:tools(*)')
+  //   .eq('course_id', courseId)
+  //   .eq('is_active', true)
   return [];
 }
 
 export async function getCoursesForTool(toolId: string): Promise<Course[]> {
   // TODO: join query with course_tools and courses tables from Supabase
+  // Example: return supabase.from('course_tools')
+  //   .select('course:courses(*)')
+  //   .eq('tool_id', toolId)
+  //   .eq('is_active', true)
+  return [];
+}
+
+/**
+ * Get courses that a tool is allocated to
+ * Used by access control to check user enrollments
+ * Returns courses with LearnWorlds product IDs for matching
+ */
+export async function getCoursesByToolId(toolId: string): Promise<Course[]> {
+  // TODO: Implement with Supabase
+  // This is critical for access control - returns courses that include this tool
+  // The course.id should match the LearnWorlds product ID
+  // Example: return supabase.from('course_tools')
+  //   .select('course:courses(*)')
+  //   .eq('tool_id', toolId)
+  //   .eq('is_active', true)
   return [];
 }
 
 export async function getCourseToolMapping(courseId: string, toolId: string): Promise<Omit<CourseTool, 'id'> | null> {
   // TODO: return supabase.from('course_tools').select('*').eq('course_id', courseId).eq('tool_id', toolId).single()
   return null;
+}
+
+/**
+ * Allocate a tool to a course
+ * Admin function to create course-tool mappings
+ */
+export async function allocateToolToCourse(
+  toolId: string,
+  courseId: string,
+  accessLevel: 'full' | 'limited' | 'preview' = 'full',
+  displayOrder: number = 0
+): Promise<CourseTool | null> {
+  // TODO: Implement with Supabase
+  // Example: return supabase.from('course_tools').insert({
+  //   tool_id: toolId,
+  //   course_id: courseId,
+  //   access_level: accessLevel,
+  //   display_order: displayOrder,
+  //   is_active: true
+  // }).select().single()
+  return null;
+}
+
+/**
+ * Remove tool allocation from a course
+ */
+export async function removeToolFromCourse(toolId: string, courseId: string): Promise<boolean> {
+  // TODO: Implement with Supabase
+  // Example: return supabase.from('course_tools')
+  //   .delete()
+  //   .eq('tool_id', toolId)
+  //   .eq('course_id', courseId)
+  return false;
 }
 
 // ============================================
