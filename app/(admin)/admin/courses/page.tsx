@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -19,6 +19,8 @@ import {
   Search,
   ChevronLeft,
   ChevronRight,
+  X,
+  Check,
 } from 'lucide-react';
 
 interface LearnWorldsProduct {
@@ -36,6 +38,15 @@ interface ConnectionStatus {
   missing?: string[];
 }
 
+interface ToolItem {
+  id: string;
+  name: string;
+  slug: string;
+  category: string;
+  status: string;
+  shortDescription?: string;
+}
+
 const ITEMS_PER_PAGE = 10;
 
 export default function AdminCoursesPage() {
@@ -44,6 +55,15 @@ export default function AdminCoursesPage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+
+  // Tool allocation modal state
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedCourse, setSelectedCourse] = useState<LearnWorldsProduct | null>(null);
+  const [availableTools, setAvailableTools] = useState<ToolItem[]>([]);
+  const [selectedToolIds, setSelectedToolIds] = useState<string[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isLoadingTools, setIsLoadingTools] = useState(false);
+  const [courseAllocations, setCourseAllocations] = useState<Record<string, string[]>>({});
 
   const testConnection = async () => {
     setIsRefreshing(true);
@@ -91,6 +111,90 @@ export default function AdminCoursesPage() {
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery]);
+
+  // Fetch available tools
+  const fetchTools = useCallback(async () => {
+    setIsLoadingTools(true);
+    try {
+      const response = await fetch('/api/admin/tools');
+      const data = await response.json();
+      if (data.tools) {
+        setAvailableTools(data.tools);
+      }
+    } catch (error) {
+      console.error('Failed to fetch tools:', error);
+    } finally {
+      setIsLoadingTools(false);
+    }
+  }, []);
+
+  // Fetch allocated tools for a course
+  const fetchAllocatedTools = useCallback(async (courseId: string) => {
+    try {
+      const response = await fetch(`/api/admin/courses/${courseId}/tools`);
+      const data = await response.json();
+      if (data.success && data.toolIds) {
+        setCourseAllocations(prev => ({ ...prev, [courseId]: data.toolIds }));
+        return data.toolIds;
+      }
+    } catch (error) {
+      console.error('Failed to fetch allocated tools:', error);
+    }
+    return [];
+  }, []);
+
+  // Open modal for a course
+  const openAllocationModal = async (course: LearnWorldsProduct) => {
+    setSelectedCourse(course);
+    setIsModalOpen(true);
+
+    // Fetch tools if not already loaded
+    if (availableTools.length === 0) {
+      await fetchTools();
+    }
+
+    // Fetch current allocations for this course
+    const allocatedIds = await fetchAllocatedTools(course.id);
+    setSelectedToolIds(allocatedIds);
+  };
+
+  // Toggle tool selection
+  const toggleToolSelection = (toolId: string) => {
+    setSelectedToolIds(prev =>
+      prev.includes(toolId)
+        ? prev.filter(id => id !== toolId)
+        : [...prev, toolId]
+    );
+  };
+
+  // Save allocations
+  const saveAllocations = async () => {
+    if (!selectedCourse) return;
+
+    setIsSaving(true);
+    try {
+      const response = await fetch(`/api/admin/courses/${selectedCourse.id}/tools`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ toolIds: selectedToolIds }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        setCourseAllocations(prev => ({ ...prev, [selectedCourse.id]: selectedToolIds }));
+        setIsModalOpen(false);
+      }
+    } catch (error) {
+      console.error('Failed to save allocations:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Get allocation count for a course
+  const getAllocationCount = (courseId: string) => {
+    return courseAllocations[courseId]?.length || 0;
+  };
 
   return (
     <DashboardLayout variant="admin">
@@ -191,7 +295,16 @@ export default function AdminCoursesPage() {
                           </div>
                           <div className="flex items-center gap-2">
                             <Badge variant="active" size="sm">{course.type}</Badge>
-                            <Button variant="outline" size="sm">
+                            {getAllocationCount(course.id) > 0 && (
+                              <Badge variant="default" size="sm">
+                                {getAllocationCount(course.id)} tools
+                              </Badge>
+                            )}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => openAllocationModal(course)}
+                            >
                               <Wrench className="w-3 h-3" />
                               Allocate Tools
                             </Button>
@@ -321,6 +434,121 @@ export default function AdminCoursesPage() {
           <li>Users see only the tools for courses they&apos;ve purchased</li>
         </ol>
       </div>
+
+      {/* Tool Allocation Modal */}
+      {isModalOpen && selectedCourse && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => setIsModalOpen(false)}
+          />
+
+          {/* Modal */}
+          <div className="relative bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[80vh] overflow-hidden mx-4">
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-slate-200">
+              <div>
+                <h2 className="text-lg font-semibold text-mojitax-navy">
+                  Allocate Tools to Course
+                </h2>
+                <p className="text-sm text-slate-600">{selectedCourse.title}</p>
+              </div>
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-slate-500" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-4 overflow-y-auto max-h-[50vh]">
+              {isLoadingTools ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+                  <span className="ml-2 text-slate-600">Loading tools...</span>
+                </div>
+              ) : availableTools.length === 0 ? (
+                <div className="text-center py-8 text-slate-500">
+                  No tools available. Create tools first.
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-sm text-slate-600 mb-3">
+                    Select the tools that users enrolled in this course should have access to:
+                  </p>
+                  {availableTools.map((tool) => (
+                    <div
+                      key={tool.id}
+                      onClick={() => toggleToolSelection(tool.id)}
+                      className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${
+                        selectedToolIds.includes(tool.id)
+                          ? 'bg-mojitax-green/10 border-2 border-mojitax-green'
+                          : 'bg-slate-50 border-2 border-transparent hover:bg-slate-100'
+                      }`}
+                    >
+                      <div
+                        className={`w-5 h-5 rounded flex items-center justify-center ${
+                          selectedToolIds.includes(tool.id)
+                            ? 'bg-mojitax-green text-white'
+                            : 'border-2 border-slate-300'
+                        }`}
+                      >
+                        {selectedToolIds.includes(tool.id) && (
+                          <Check className="w-3 h-3" />
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-medium text-mojitax-navy">{tool.name}</p>
+                        {tool.shortDescription && (
+                          <p className="text-xs text-slate-500">{tool.shortDescription}</p>
+                        )}
+                      </div>
+                      <Badge variant="default" size="sm">
+                        {tool.category.replace(/_/g, ' ')}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-between p-4 border-t border-slate-200 bg-slate-50">
+              <p className="text-sm text-slate-600">
+                {selectedToolIds.length} tool{selectedToolIds.length !== 1 ? 's' : ''} selected
+              </p>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setIsModalOpen(false)}
+                  disabled={isSaving}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="primary"
+                  onClick={saveAllocations}
+                  disabled={isSaving}
+                >
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-4 h-4" />
+                      Save Allocations
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 }
