@@ -5,9 +5,10 @@ import type { NextRequest } from 'next/server';
  * Authentication & Access Control Middleware
  *
  * NO-DOOR PLATFORM MODEL:
- * - Users authenticate via mojitax.co.uk (LearnWorlds)
- * - No public login page on tools site
- * - Unauthenticated users are redirected to mojitax.co.uk
+ * - Users authenticate via "Access Tools" button in LearnWorlds courses
+ * - URL: tools.mojitax.co.uk/auth?email={{user.email}}
+ * - Email is verified against LearnWorlds API
+ * - No visible login page - unauthenticated users redirect to mojitax.co.uk
  * - Admin has hidden access via /auth/admin
  *
  * Cookie Strategy:
@@ -25,7 +26,7 @@ const DEV_AUTH_COOKIE_NAME = 'mojitax-dev-auth';
 
 // Routes that DON'T require authentication
 const publicRoutes = [
-  '/auth/admin',     // Hidden admin login
+  '/auth',           // All auth routes (email verification, admin login, etc.)
   '/api/auth',       // Auth API endpoints
   '/api/learnworlds', // LearnWorlds API (for SSO callbacks)
 ];
