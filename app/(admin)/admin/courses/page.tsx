@@ -21,7 +21,19 @@ import {
   ChevronRight,
   X,
   Check,
+  Package,
+  CreditCard,
+  Layers,
 } from 'lucide-react';
+
+// Product type filter options
+type ProductTypeFilter = 'all' | 'course' | 'bundle' | 'subscription';
+
+const productTypeConfig: Record<string, { icon: React.ReactNode; label: string; color: string }> = {
+  course: { icon: <BookOpen className="w-4 h-4" />, label: 'Course', color: 'bg-blue-100 text-blue-600' },
+  bundle: { icon: <Package className="w-4 h-4" />, label: 'Bundle', color: 'bg-purple-100 text-purple-600' },
+  subscription: { icon: <CreditCard className="w-4 h-4" />, label: 'Subscription', color: 'bg-green-100 text-green-600' },
+};
 
 interface LearnWorldsProduct {
   id: string;
@@ -55,6 +67,7 @@ export default function AdminCoursesPage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [typeFilter, setTypeFilter] = useState<ProductTypeFilter>('all');
 
   // Tool allocation modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -87,30 +100,53 @@ export default function AdminCoursesPage() {
     testConnection();
   }, []);
 
-  // Filter courses based on search query
-  const filteredCourses = useMemo(() => {
+  // Filter products based on search query and type filter
+  const filteredProducts = useMemo(() => {
     if (!connectionStatus?.courses) return [];
-    if (!searchQuery.trim()) return connectionStatus.courses;
 
-    const query = searchQuery.toLowerCase();
-    return connectionStatus.courses.filter(
-      (course) =>
-        course.title.toLowerCase().includes(query) ||
-        course.id.toLowerCase().includes(query)
-    );
-  }, [connectionStatus?.courses, searchQuery]);
+    let filtered = connectionStatus.courses;
+
+    // Apply type filter
+    if (typeFilter !== 'all') {
+      filtered = filtered.filter((product) => product.type === typeFilter);
+    }
+
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (product) =>
+          product.title.toLowerCase().includes(query) ||
+          product.id.toLowerCase().includes(query)
+      );
+    }
+
+    return filtered;
+  }, [connectionStatus?.courses, searchQuery, typeFilter]);
+
+  // Get counts by type
+  const typeCounts = useMemo(() => {
+    if (!connectionStatus?.courses) return { all: 0, course: 0, bundle: 0, subscription: 0 };
+    const products = connectionStatus.courses;
+    return {
+      all: products.length,
+      course: products.filter(p => p.type === 'course').length,
+      bundle: products.filter(p => p.type === 'bundle').length,
+      subscription: products.filter(p => p.type === 'subscription').length,
+    };
+  }, [connectionStatus?.courses]);
 
   // Pagination
-  const totalPages = Math.ceil(filteredCourses.length / ITEMS_PER_PAGE);
-  const paginatedCourses = useMemo(() => {
+  const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
+  const paginatedProducts = useMemo(() => {
     const start = (currentPage - 1) * ITEMS_PER_PAGE;
-    return filteredCourses.slice(start, start + ITEMS_PER_PAGE);
-  }, [filteredCourses, currentPage]);
+    return filteredProducts.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredProducts, currentPage]);
 
-  // Reset to page 1 when search changes
+  // Reset to page 1 when search or filter changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery]);
+  }, [searchQuery, typeFilter]);
 
   // Fetch available tools
   const fetchTools = useCallback(async () => {
@@ -209,11 +245,11 @@ export default function AdminCoursesPage() {
               <ArrowLeft className="w-5 h-5" />
             </Link>
             <h1 className="text-2xl md:text-3xl font-bold text-mojitax-navy">
-              Course Management
+              Product Management
             </h1>
           </div>
           <p className="text-slate-600">
-            Connect courses from LearnWorlds and allocate tools to them
+            Manage courses, bundles, and subscriptions from LearnWorlds. Allocate tools to each product.
           </p>
         </div>
         <Button
@@ -256,19 +292,67 @@ export default function AdminCoursesPage() {
                 </div>
               </div>
 
-              {/* Courses from LearnWorlds */}
+              {/* Products from LearnWorlds */}
               {connectionStatus.courses && connectionStatus.courses.length > 0 && (
                 <div>
+                  {/* Type Filter Tabs */}
+                  <div className="flex items-center gap-2 mb-4 pb-4 border-b border-slate-200">
+                    <button
+                      onClick={() => setTypeFilter('all')}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        typeFilter === 'all'
+                          ? 'bg-mojitax-green text-white'
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      }`}
+                    >
+                      <Layers className="w-4 h-4 inline mr-2" />
+                      All ({typeCounts.all})
+                    </button>
+                    <button
+                      onClick={() => setTypeFilter('course')}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        typeFilter === 'course'
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
+                      }`}
+                    >
+                      <BookOpen className="w-4 h-4 inline mr-2" />
+                      Courses ({typeCounts.course})
+                    </button>
+                    <button
+                      onClick={() => setTypeFilter('bundle')}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        typeFilter === 'bundle'
+                          ? 'bg-purple-600 text-white'
+                          : 'bg-purple-50 text-purple-600 hover:bg-purple-100'
+                      }`}
+                    >
+                      <Package className="w-4 h-4 inline mr-2" />
+                      Bundles ({typeCounts.bundle})
+                    </button>
+                    <button
+                      onClick={() => setTypeFilter('subscription')}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        typeFilter === 'subscription'
+                          ? 'bg-green-600 text-white'
+                          : 'bg-green-50 text-green-600 hover:bg-green-100'
+                      }`}
+                    >
+                      <CreditCard className="w-4 h-4 inline mr-2" />
+                      Subscriptions ({typeCounts.subscription})
+                    </button>
+                  </div>
+
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="font-medium text-slate-700">
-                      Available Courses from LearnWorlds
+                      {typeFilter === 'all' ? 'All Products' : `${typeFilter.charAt(0).toUpperCase() + typeFilter.slice(1)}s`} from LearnWorlds
                     </h3>
                     {/* Search Input */}
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                       <input
                         type="text"
-                        placeholder="Search courses..."
+                        placeholder="Search products..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-mojitax-green/50 focus:border-mojitax-green w-64"
@@ -276,53 +360,58 @@ export default function AdminCoursesPage() {
                     </div>
                   </div>
 
-                  {/* Course List */}
+                  {/* Product List */}
                   <div className="space-y-2">
-                    {paginatedCourses.length > 0 ? (
-                      paginatedCourses.map((course) => (
-                        <div
-                          key={course.id}
-                          className="flex items-center justify-between p-3 bg-slate-50 rounded-lg"
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-mojitax-green/10 flex items-center justify-center">
-                              <BookOpen className="w-4 h-4 text-mojitax-green" />
+                    {paginatedProducts.length > 0 ? (
+                      paginatedProducts.map((product) => {
+                        const config = productTypeConfig[product.type] || productTypeConfig.course;
+                        return (
+                          <div
+                            key={product.id}
+                            className="flex items-center justify-between p-3 bg-slate-50 rounded-lg"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${config.color}`}>
+                                {config.icon}
+                              </div>
+                              <div>
+                                <p className="font-medium text-mojitax-navy">{product.title}</p>
+                                <p className="text-xs text-slate-500">ID: {product.id}</p>
+                              </div>
                             </div>
-                            <div>
-                              <p className="font-medium text-mojitax-navy">{course.title}</p>
-                              <p className="text-xs text-slate-500">ID: {course.id}</p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Badge variant="active" size="sm">{course.type}</Badge>
-                            {getAllocationCount(course.id) > 0 && (
-                              <Badge variant="default" size="sm">
-                                {getAllocationCount(course.id)} tools
+                            <div className="flex items-center gap-2">
+                              <Badge variant="active" size="sm" className={config.color}>
+                                {config.label}
                               </Badge>
-                            )}
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => openAllocationModal(course)}
-                            >
-                              <Wrench className="w-3 h-3" />
-                              Allocate Tools
-                            </Button>
+                              {getAllocationCount(product.id) > 0 && (
+                                <Badge variant="default" size="sm">
+                                  {getAllocationCount(product.id)} tools
+                                </Badge>
+                              )}
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => openAllocationModal(product)}
+                              >
+                                <Wrench className="w-3 h-3" />
+                                Allocate Tools
+                              </Button>
+                            </div>
                           </div>
-                        </div>
-                      ))
+                        );
+                      })
                     ) : (
                       <div className="text-center py-6 text-slate-500">
-                        No courses found matching &quot;{searchQuery}&quot;
+                        No products found matching &quot;{searchQuery}&quot;
                       </div>
                     )}
                   </div>
 
                   {/* Pagination Controls */}
-                  {filteredCourses.length > ITEMS_PER_PAGE && (
+                  {filteredProducts.length > ITEMS_PER_PAGE && (
                     <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-200">
                       <p className="text-sm text-slate-600">
-                        Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1} - {Math.min(currentPage * ITEMS_PER_PAGE, filteredCourses.length)} of {filteredCourses.length} courses
+                        Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1} - {Math.min(currentPage * ITEMS_PER_PAGE, filteredProducts.length)} of {filteredProducts.length} products
                       </p>
                       <div className="flex items-center gap-2">
                         <Button
@@ -422,16 +511,16 @@ export default function AdminCoursesPage() {
 
       {/* Help Card */}
       <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-        <h4 className="font-medium text-blue-800 mb-2">How Course-Tool Allocation Works</h4>
+        <h4 className="font-medium text-blue-800 mb-2">How Product-Tool Allocation Works</h4>
         <p className="text-sm text-blue-700 mb-3">
-          When a user purchases a course on LearnWorlds, they automatically get access to all tools
-          allocated to that course on this platform.
+          When a user purchases a course, bundle, or subscription on LearnWorlds, they automatically
+          get access to all tools allocated to that product on this platform.
         </p>
         <ol className="text-sm text-blue-600 space-y-1 list-decimal list-inside">
-          <li>Courses are synced from LearnWorlds (or added manually)</li>
-          <li>Admin allocates tools to each course</li>
-          <li>When users log in via SSO, we check their LearnWorlds enrollments</li>
-          <li>Users see only the tools for courses they&apos;ve purchased</li>
+          <li>Products (courses, bundles, subscriptions) are synced from LearnWorlds</li>
+          <li>Admin allocates tools to each product</li>
+          <li>When users authenticate, we check their LearnWorlds enrollments</li>
+          <li>Users see only the tools for products they&apos;ve purchased or subscribed to</li>
         </ol>
       </div>
 
@@ -450,9 +539,14 @@ export default function AdminCoursesPage() {
             <div className="flex items-center justify-between p-4 border-b border-slate-200">
               <div>
                 <h2 className="text-lg font-semibold text-mojitax-navy">
-                  Allocate Tools to Course
+                  Allocate Tools to {productTypeConfig[selectedCourse.type]?.label || 'Product'}
                 </h2>
-                <p className="text-sm text-slate-600">{selectedCourse.title}</p>
+                <div className="flex items-center gap-2 mt-1">
+                  <Badge variant="active" size="sm" className={productTypeConfig[selectedCourse.type]?.color}>
+                    {productTypeConfig[selectedCourse.type]?.label || selectedCourse.type}
+                  </Badge>
+                  <span className="text-sm text-slate-600">{selectedCourse.title}</span>
+                </div>
               </div>
               <button
                 onClick={() => setIsModalOpen(false)}
@@ -476,7 +570,7 @@ export default function AdminCoursesPage() {
               ) : (
                 <div className="space-y-2">
                   <p className="text-sm text-slate-600 mb-3">
-                    Select the tools that users enrolled in this course should have access to:
+                    Select the tools that users enrolled in this {selectedCourse.type} should have access to:
                   </p>
                   {availableTools.map((tool) => (
                     <div

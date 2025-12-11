@@ -177,8 +177,97 @@ class LearnWorldsClient {
   }
 
   /**
-   * Get all products (courses, bundles, subscriptions)
-   * @deprecated Use getCourses() instead
+   * Get all bundles from LearnWorlds (handles pagination)
+   */
+  async getBundles(): Promise<LearnWorldsProduct[]> {
+    try {
+      const allBundles: LearnWorldsProduct[] = [];
+      let page = 1;
+      const itemsPerPage = 50;
+      let hasMore = true;
+
+      while (hasMore) {
+        const response = await this.request<LearnWorldsApiResponse<LearnWorldsProduct[]>>(
+          `/v2/bundles?page=${page}&items_per_page=${itemsPerPage}`
+        );
+
+        const bundles = response.data || [];
+        // Mark type explicitly
+        bundles.forEach(b => b.type = 'bundle');
+        allBundles.push(...bundles);
+
+        if (bundles.length < itemsPerPage) {
+          hasMore = false;
+        } else {
+          page++;
+        }
+      }
+
+      return allBundles;
+    } catch (error) {
+      console.error('Error fetching bundles:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get all subscriptions from LearnWorlds (handles pagination)
+   */
+  async getSubscriptions(): Promise<LearnWorldsProduct[]> {
+    try {
+      const allSubscriptions: LearnWorldsProduct[] = [];
+      let page = 1;
+      const itemsPerPage = 50;
+      let hasMore = true;
+
+      while (hasMore) {
+        const response = await this.request<LearnWorldsApiResponse<LearnWorldsProduct[]>>(
+          `/v2/subscriptions?page=${page}&items_per_page=${itemsPerPage}`
+        );
+
+        const subscriptions = response.data || [];
+        // Mark type explicitly
+        subscriptions.forEach(s => s.type = 'subscription');
+        allSubscriptions.push(...subscriptions);
+
+        if (subscriptions.length < itemsPerPage) {
+          hasMore = false;
+        } else {
+          page++;
+        }
+      }
+
+      return allSubscriptions;
+    } catch (error) {
+      console.error('Error fetching subscriptions:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get all products (courses, bundles, AND subscriptions)
+   * Use this for admin allocation pages to show all available products
+   */
+  async getAllProducts(): Promise<LearnWorldsProduct[]> {
+    try {
+      const [courses, bundles, subscriptions] = await Promise.all([
+        this.getCourses(),
+        this.getBundles(),
+        this.getSubscriptions(),
+      ]);
+
+      // Mark course type explicitly
+      courses.forEach(c => c.type = 'course');
+
+      return [...courses, ...bundles, ...subscriptions];
+    } catch (error) {
+      console.error('Error fetching all products:', error);
+      return [];
+    }
+  }
+
+  /**
+   * @deprecated Use getAllProducts() for all product types, or getCourses() for courses only
    */
   async getProducts(): Promise<LearnWorldsProduct[]> {
     return this.getCourses();
