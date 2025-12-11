@@ -4,11 +4,11 @@ import type { NextRequest } from 'next/server';
 /**
  * Authentication & Access Control Middleware
  *
- * LOCKED PLATFORM MODEL:
- * - ALL routes require authentication except login/auth routes
- * - Admin users: Full access to everything
- * - MojiTax users (via LearnWorlds SSO): Access to tools allocated to their enrolled courses
- * - No public access - must login via mojitax.co.uk or admin login
+ * NO-DOOR PLATFORM MODEL:
+ * - Users authenticate via mojitax.co.uk (LearnWorlds)
+ * - No public login page on tools site
+ * - Unauthenticated users are redirected to mojitax.co.uk
+ * - Admin has hidden access via /auth/admin
  *
  * Cookie Strategy:
  * - mojitax-auth: Contains user role ('user' | 'admin')
@@ -16,16 +16,18 @@ import type { NextRequest } from 'next/server';
  * - mojitax-dev-auth: Development mode auth (backward compatibility)
  */
 
+// Main site URL for redirect
+const MAIN_SITE_URL = 'https://www.mojitax.co.uk';
+
 const AUTH_COOKIE_NAME = 'mojitax-auth';
 const SESSION_COOKIE_NAME = 'mojitax-session';
 const DEV_AUTH_COOKIE_NAME = 'mojitax-dev-auth';
 
-// Routes that DON'T require authentication (public access)
+// Routes that DON'T require authentication
 const publicRoutes = [
-  '/auth/login',
-  '/login',
-  '/api/auth',
-  '/api/learnworlds',
+  '/auth/admin',     // Hidden admin login
+  '/api/auth',       // Auth API endpoints
+  '/api/learnworlds', // LearnWorlds API (for SSO callbacks)
 ];
 
 // Routes that require admin role ONLY
@@ -119,13 +121,12 @@ export function middleware(request: NextRequest) {
   const admin = isAdmin(authCookie, devAuthCookie, session);
 
   // ========================================
-  // LOCKED PLATFORM - Require authentication for ALL routes
+  // NO-DOOR PLATFORM - Redirect to main site if not authenticated
   // ========================================
   if (!authenticated) {
-    // Not authenticated - redirect to login
-    const loginUrl = new URL('/auth/login', request.url);
-    loginUrl.searchParams.set('returnTo', pathname);
-    return NextResponse.redirect(loginUrl);
+    // Not authenticated - redirect to MojiTax main site
+    // Users must log in via mojitax.co.uk first
+    return NextResponse.redirect(MAIN_SITE_URL);
   }
 
   // ========================================
