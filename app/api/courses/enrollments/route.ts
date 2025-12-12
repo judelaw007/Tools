@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { learnworlds } from '@/lib/learnworlds';
+import { learnworlds, LearnWorldsEnrollment } from '@/lib/learnworlds';
 
 const SESSION_COOKIE_NAME = 'mojitax-session';
 
@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get enrollments from LearnWorlds
-    let enrollments = [];
+    let enrollments: LearnWorldsEnrollment[] = [];
 
     if (session.learnworldsId) {
       enrollments = await learnworlds.getUserEnrollments(session.learnworldsId);

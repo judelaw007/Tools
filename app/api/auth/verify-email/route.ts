@@ -66,9 +66,9 @@ export async function POST(request: NextRequest) {
       // Also store enrollments for display
       enrollments: enrollments.map((e) => ({
         product_id: e.product_id,
-        product_name: e.product_name,
-        product_type: e.product_type,
-        enrolled_date: e.enrolled_date,
+        product_name: e.product_title || 'Unknown',
+        product_type: e.product_type || 'course',
+        enrolled_date: e.enrolled_at,
       })),
       authenticatedAt: now,
       lastEnrollmentCheck: now, // Set initial check time to prevent immediate refresh

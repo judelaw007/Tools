@@ -131,9 +131,9 @@ export async function refreshEnrollments(
       accessibleCourseIds,
       enrollments: enrollments.map((e) => ({
         product_id: e.product_id,
-        product_name: e.product_name,
-        product_type: e.product_type,
-        enrolled_date: e.enrolled_date,
+        product_name: e.product_title || 'Unknown',
+        product_type: e.product_type || 'course',
+        enrolled_date: e.enrolled_at,
       })),
       lastEnrollmentCheck: new Date().toISOString(),
     };

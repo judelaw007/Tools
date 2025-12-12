@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { learnworlds, syncLearnWorldsUser } from '@/lib/learnworlds';
+import { learnworlds, syncLearnWorldsUser, LearnWorldsEnrollment } from '@/lib/learnworlds';
 import { cookies } from 'next/headers';
 
 const AUTH_COOKIE_NAME = 'mojitax-auth';
@@ -70,11 +70,19 @@ export async function GET(request: NextRequest) {
     const syncResult = await syncLearnWorldsUser(userEmail);
 
     // Create session data
-    const sessionData = {
+    const sessionData: {
+      email: string;
+      learnworldsId: string | null;
+      name: string | null;
+      role: 'user' | 'admin';
+      enrollments: LearnWorldsEnrollment[];
+      accessToken: string;
+      expiresAt: number;
+    } = {
       email: userEmail,
       learnworldsId: syncResult?.learnworldsId || userId,
       name: userName,
-      role: 'user' as const, // Default role, can be upgraded if user is admin
+      role: 'user', // Default role, can be upgraded if user is admin
       enrollments: syncResult?.enrollments || [],
       accessToken: tokenResponse.access_token,
       expiresAt: tokenResponse.expires_in
