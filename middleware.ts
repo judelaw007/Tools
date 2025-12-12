@@ -34,6 +34,8 @@ const DEV_AUTH_COOKIE_NAME = 'mojitax-dev-auth';
 
 // Routes that DON'T require authentication
 const publicRoutes = [
+  '/',               // Home page
+  '/tools',          // Public tools page
   '/auth',           // All auth routes (email verification, admin login, etc.)
   '/api/auth',       // Auth API endpoints
   '/api/learnworlds', // LearnWorlds API (for SSO callbacks)
