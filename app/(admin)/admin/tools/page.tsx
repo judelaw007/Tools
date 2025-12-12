@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent } from '@/components/ui/Card';
@@ -15,16 +15,15 @@ import {
   MoreVertical,
   Edit,
   Eye,
-  Archive,
-  Trash2,
   Wrench,
   LayoutGrid,
   List,
   Loader2,
-  AlertTriangle,
   Power,
   PowerOff,
   FolderOpen,
+  X,
+  Check,
 } from 'lucide-react';
 import type { Tool, ToolStatus, ToolCategory } from '@/types';
 
@@ -55,29 +54,101 @@ export default function AdminToolsPage() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
+  // Edit modal state
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingTool, setEditingTool] = useState<Tool | null>(null);
+  const [editForm, setEditForm] = useState({
+    name: '',
+    shortDescription: '',
+    category: '' as ToolCategory | '',
+    status: '' as ToolStatus,
+  });
+  const [isSaving, setIsSaving] = useState(false);
+
   // Fetch tools from API
-  useEffect(() => {
-    async function fetchTools() {
-      try {
-        const response = await fetch('/api/admin/tools');
-        if (response.ok) {
-          const data = await response.json();
-          // Convert date strings to Date objects
-          const toolsWithDates = data.tools.map((tool: Tool) => ({
-            ...tool,
-            createdAt: new Date(tool.createdAt),
-            updatedAt: new Date(tool.updatedAt),
-          }));
-          setTools(toolsWithDates);
-        }
-      } catch (error) {
-        console.error('Failed to fetch tools:', error);
-      } finally {
-        setIsLoading(false);
+  const fetchTools = useCallback(async () => {
+    try {
+      const response = await fetch('/api/admin/tools');
+      if (response.ok) {
+        const data = await response.json();
+        // Convert date strings to Date objects
+        const toolsWithDates = data.tools.map((tool: Tool) => ({
+          ...tool,
+          createdAt: new Date(tool.createdAt),
+          updatedAt: new Date(tool.updatedAt),
+        }));
+        setTools(toolsWithDates);
       }
+    } catch (error) {
+      console.error('Failed to fetch tools:', error);
+    } finally {
+      setIsLoading(false);
     }
-    fetchTools();
   }, []);
+
+  useEffect(() => {
+    fetchTools();
+  }, [fetchTools]);
+
+  // Open edit modal
+  const openEditModal = (tool: Tool) => {
+    setEditingTool(tool);
+    setEditForm({
+      name: tool.name,
+      shortDescription: tool.shortDescription || '',
+      category: tool.category,
+      status: tool.status,
+    });
+    setIsEditModalOpen(true);
+    setOpenMenuId(null);
+  };
+
+  // Save tool changes
+  const saveTool = async () => {
+    if (!editingTool) return;
+
+    setIsSaving(true);
+    try {
+      const response = await fetch('/api/admin/tools', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: editingTool.id,
+          ...editForm,
+        }),
+      });
+
+      if (response.ok) {
+        // Refresh tools list
+        await fetchTools();
+        setIsEditModalOpen(false);
+        setEditingTool(null);
+      }
+    } catch (error) {
+      console.error('Failed to save tool:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Quick status toggle
+  const toggleToolStatus = async (tool: Tool) => {
+    const newStatus: ToolStatus = tool.status === 'active' ? 'inactive' : 'active';
+    try {
+      const response = await fetch('/api/admin/tools', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: tool.id, status: newStatus }),
+      });
+
+      if (response.ok) {
+        await fetchTools();
+      }
+    } catch (error) {
+      console.error('Failed to toggle tool status:', error);
+    }
+    setOpenMenuId(null);
+  };
 
   // Filter tools
   const filteredTools = tools.filter((tool) => {
@@ -229,9 +300,9 @@ export default function AdminToolsPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredTools.map((tool) => (
             <div key={tool.id} className="relative group">
-              <Link href={`/admin/tools/${tool.id}`}>
+              <div onClick={() => openEditModal(tool)} className="cursor-pointer">
                 <ToolCard tool={tool} variant="admin" showStatus />
-              </Link>
+              </div>
 
               {/* Actions Menu */}
               <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -239,6 +310,7 @@ export default function AdminToolsPage() {
                   <button
                     onClick={(e) => {
                       e.preventDefault();
+                      e.stopPropagation();
                       setOpenMenuId(openMenuId === tool.id ? null : tool.id);
                     }}
                     className="p-1.5 rounded-lg bg-white shadow-sm border border-slate-200 hover:bg-slate-50"
@@ -253,14 +325,13 @@ export default function AdminToolsPage() {
                         onClick={() => setOpenMenuId(null)}
                       />
                       <div className="absolute right-0 top-full mt-1 w-44 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-50">
-                        <Link
-                          href={`/admin/tools/${tool.id}`}
-                          className="flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50"
-                          onClick={() => setOpenMenuId(null)}
+                        <button
+                          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50"
+                          onClick={() => openEditModal(tool)}
                         >
                           <Edit className="w-4 h-4" />
                           Edit Details
-                        </Link>
+                        </button>
                         <Link
                           href={`/tools/${tool.slug}`}
                           target="_blank"
@@ -274,7 +345,7 @@ export default function AdminToolsPage() {
                         {tool.status === 'active' ? (
                           <button
                             className="w-full flex items-center gap-2 px-3 py-2 text-sm text-amber-600 hover:bg-amber-50"
-                            onClick={() => setOpenMenuId(null)}
+                            onClick={() => toggleToolStatus(tool)}
                           >
                             <PowerOff className="w-4 h-4" />
                             Deactivate
@@ -282,34 +353,12 @@ export default function AdminToolsPage() {
                         ) : (
                           <button
                             className="w-full flex items-center gap-2 px-3 py-2 text-sm text-mojitax-green hover:bg-green-50"
-                            onClick={() => setOpenMenuId(null)}
+                            onClick={() => toggleToolStatus(tool)}
                           >
                             <Power className="w-4 h-4" />
                             Activate
                           </button>
                         )}
-                        <button
-                          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50"
-                          onClick={() => setOpenMenuId(null)}
-                        >
-                          <AlertTriangle className="w-4 h-4" />
-                          Log Issue
-                        </button>
-                        <div className="border-t border-slate-100 my-1" />
-                        <button
-                          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-500 hover:bg-slate-50"
-                          onClick={() => setOpenMenuId(null)}
-                        >
-                          <Archive className="w-4 h-4" />
-                          Archive
-                        </button>
-                        <button
-                          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50"
-                          onClick={() => setOpenMenuId(null)}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                          Delete
-                        </button>
                       </div>
                     </>
                   )}
@@ -346,12 +395,12 @@ export default function AdminToolsPage() {
                       </Badge>
                     </td>
                     <td className="px-4 py-3">
-                      <Link
-                        href={`/admin/tools/${tool.id}`}
+                      <button
+                        onClick={() => openEditModal(tool)}
                         className="font-medium text-mojitax-navy hover:text-mojitax-green-dark"
                       >
                         {tool.name}
-                      </Link>
+                      </button>
                     </td>
                     <td className="px-4 py-3 text-sm text-slate-600 capitalize">
                       {tool.toolType.replace('-', ' ')}
@@ -364,11 +413,9 @@ export default function AdminToolsPage() {
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex items-center justify-end gap-1">
-                        <Link href={`/admin/tools/${tool.id}`}>
-                          <Button variant="ghost" size="sm">
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                        </Link>
+                        <Button variant="ghost" size="sm" onClick={() => openEditModal(tool)}>
+                          <Edit className="w-4 h-4" />
+                        </Button>
                         <Link href={`/tools/${tool.slug}`} target="_blank">
                           <Button variant="ghost" size="sm">
                             <Eye className="w-4 h-4" />
@@ -403,6 +450,127 @@ export default function AdminToolsPage() {
           Archived - No longer available
         </span>
       </div>
+
+      {/* Edit Tool Modal */}
+      {isEditModalOpen && editingTool && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => setIsEditModalOpen(false)}
+          />
+
+          {/* Modal */}
+          <div className="relative bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[80vh] overflow-hidden mx-4">
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-slate-200">
+              <div>
+                <h2 className="text-lg font-semibold text-mojitax-navy">
+                  Edit Tool
+                </h2>
+                <p className="text-sm text-slate-500">{editingTool.slug}</p>
+              </div>
+              <button
+                onClick={() => setIsEditModalOpen(false)}
+                className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-slate-500" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-4 space-y-4 overflow-y-auto max-h-[50vh]">
+              {/* Name */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  Name
+                </label>
+                <Input
+                  value={editForm.name}
+                  onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                  placeholder="Tool name"
+                />
+              </div>
+
+              {/* Short Description */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  Short Description
+                </label>
+                <textarea
+                  value={editForm.shortDescription}
+                  onChange={(e) => setEditForm({ ...editForm, shortDescription: e.target.value })}
+                  placeholder="Brief description of the tool"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-mojitax-green/50 focus:border-mojitax-green resize-none"
+                  rows={3}
+                />
+              </div>
+
+              {/* Category */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  Category
+                </label>
+                <Select
+                  options={categoryOptions.filter(o => o.value !== '')}
+                  value={editForm.category}
+                  onChange={(e) => setEditForm({ ...editForm, category: e.target.value as ToolCategory })}
+                />
+              </div>
+
+              {/* Status */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">
+                  Status
+                </label>
+                <Select
+                  options={statusOptions.filter(o => o.value !== '')}
+                  value={editForm.status}
+                  onChange={(e) => setEditForm({ ...editForm, status: e.target.value as ToolStatus })}
+                />
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-between p-4 border-t border-slate-200 bg-slate-50">
+              <Link
+                href={`/tools/${editingTool.slug}`}
+                target="_blank"
+                className="text-sm text-slate-600 hover:text-mojitax-green flex items-center gap-1"
+              >
+                <Eye className="w-4 h-4" />
+                Preview Tool
+              </Link>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setIsEditModalOpen(false)}
+                  disabled={isSaving}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="primary"
+                  onClick={saveTool}
+                  disabled={isSaving}
+                >
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-4 h-4" />
+                      Save Changes
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 }

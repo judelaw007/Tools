@@ -11,7 +11,6 @@ import {
   TrendingUp,
   ArrowRight,
   Settings,
-  AlertTriangle,
   FolderOpen,
   Plus,
 } from 'lucide-react';
@@ -120,13 +119,9 @@ export default async function AdminDashboardPage() {
                 <TrendingUp className="w-6 h-6 text-amber-600" />
               </div>
             </div>
-            <Link
-              href="/admin/analytics"
-              className="mt-3 inline-flex items-center gap-1 text-xs text-mojitax-green-dark hover:text-mojitax-green"
-            >
-              View analytics
-              <ArrowRight className="w-3 h-3" />
-            </Link>
+            <p className="mt-3 text-xs text-slate-500">
+              Tool submissions today
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -196,10 +191,9 @@ export default async function AdminDashboardPage() {
             <CardContent>
               <div className="space-y-3">
                 {recentTools.map((tool) => (
-                  <Link
+                  <div
                     key={tool.id}
-                    href={`/admin/tools/${tool.id}`}
-                    className="flex items-center gap-4 p-3 rounded-lg hover:bg-slate-50 transition-colors"
+                    className="flex items-center gap-4 p-3 rounded-lg bg-slate-50"
                   >
                     <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center">
                       <Wrench className="w-5 h-5 text-slate-600" />
@@ -217,7 +211,7 @@ export default async function AdminDashboardPage() {
                     >
                       {tool.status === 'active' ? 'Live' : tool.status.charAt(0).toUpperCase() + tool.status.slice(1)}
                     </Badge>
-                  </Link>
+                  </div>
                 ))}
               </div>
             </CardContent>
@@ -273,37 +267,6 @@ export default async function AdminDashboardPage() {
         </div>
       )}
 
-      {/* Quick Actions */}
-      <div className="mt-8 p-6 bg-gradient-to-r from-mojitax-navy to-mojitax-navy-light rounded-xl text-white">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div>
-            <h3 className="text-lg font-semibold mb-1">Quick Actions</h3>
-            <p className="text-sm text-white/70">
-              Common tasks for managing the MojiTax tools platform
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            <Link href="/admin/tools">
-              <Button variant="outline" size="sm" className="border-white/30 text-white hover:bg-white/10">
-                <Wrench className="w-4 h-4" />
-                Manage Tools
-              </Button>
-            </Link>
-            <Link href="/admin/courses">
-              <Button variant="outline" size="sm" className="border-white/30 text-white hover:bg-white/10">
-                <BookOpen className="w-4 h-4" />
-                Manage Courses
-              </Button>
-            </Link>
-            <Link href="/admin/issues">
-              <Button variant="outline" size="sm" className="border-white/30 text-white hover:bg-white/10">
-                <AlertTriangle className="w-4 h-4" />
-                View Issues
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </div>
     </DashboardLayout>
   );
 }
