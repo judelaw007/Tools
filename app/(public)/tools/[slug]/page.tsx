@@ -1,16 +1,16 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { cookies } from 'next/headers';
 import { PublicHeader } from '@/components/PublicHeader';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Logo } from '@/components/ui/Logo';
 import { Card, CardContent } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
 import { LoginButton } from '@/components/LoginButton';
 import { Badge } from '@/components/ui/Badge';
 import { ToolPageClient } from '@/components/tools/ToolPageClient';
 import { getToolBySlug, getCoursesForTool } from '@/lib/db';
 import { CATEGORY_METADATA } from '@/lib/tools/registry';
-import { AUTH_COOKIE_NAME } from '@/lib/auth/types';
+import { getServerSession, hasToolAccess } from '@/lib/server-session';
 import {
   Calculator,
   Search,
@@ -65,16 +65,16 @@ export default async function ToolPage({ params }: ToolPageProps) {
     notFound();
   }
 
-  // Check if user is authenticated
-  const cookieStore = cookies();
-  const authCookie = cookieStore.get(AUTH_COOKIE_NAME);
-  const isAuthenticated = !!authCookie?.value;
+  // Get session and check access
+  const session = await getServerSession();
+  const isAuthenticated = !!session;
+  const canAccessTool = await hasToolAccess(tool.id);
 
-  // Fetch courses that include this tool
+  // Fetch courses that include this tool (from LearnWorlds allocations)
   const courses = await getCoursesForTool(tool.id);
 
-  // If authenticated, render the tool in the dashboard layout
-  if (isAuthenticated) {
+  // If authenticated AND has access, render the tool
+  if (isAuthenticated && canAccessTool) {
     return (
       <DashboardLayout>
         {/* Breadcrumb */}
@@ -101,6 +101,110 @@ export default async function ToolPage({ params }: ToolPageProps) {
 
         {/* Tool Component */}
         <ToolPageClient tool={tool} />
+      </DashboardLayout>
+    );
+  }
+
+  // Authenticated but no access - show locked state in dashboard
+  if (isAuthenticated && !canAccessTool) {
+    return (
+      <DashboardLayout>
+        {/* Breadcrumb */}
+        <div className="mb-6">
+          <Link
+            href="/dashboard"
+            className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-mojitax-navy transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Dashboard
+          </Link>
+        </div>
+
+        {/* Tool Header */}
+        <div className="flex items-start gap-6 mb-8">
+          <div className={`w-20 h-20 rounded-2xl flex items-center justify-center flex-shrink-0 opacity-50 ${toolTypeColors[tool.toolType]}`}>
+            {toolTypeIcons[tool.toolType]}
+          </div>
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+              <Badge variant="warning" size="sm">
+                <Lock className="w-3 h-3 mr-1" />
+                Locked
+              </Badge>
+              <Badge variant="default" size="sm" className="capitalize">
+                {tool.toolType.replace('-', ' ')}
+              </Badge>
+            </div>
+            <h1 className="text-3xl font-bold text-mojitax-navy mb-2">
+              {tool.name}
+            </h1>
+            <p className="text-lg text-slate-600">
+              {tool.shortDescription}
+            </p>
+          </div>
+        </div>
+
+        {/* Locked State */}
+        <Card className="mb-8 overflow-hidden border-amber-200">
+          <div className="bg-gradient-to-br from-amber-50 to-orange-50 p-8 text-center">
+            <div className="w-16 h-16 rounded-2xl bg-amber-100 flex items-center justify-center mx-auto mb-4">
+              <Lock className="w-8 h-8 text-amber-600" />
+            </div>
+            <h2 className="text-xl font-semibold text-mojitax-navy mb-2">
+              Tool Access Required
+            </h2>
+            <p className="text-slate-600 mb-6 max-w-lg mx-auto">
+              You need to be enrolled in a course that includes this tool.
+              Enroll in one of the courses below to unlock access.
+            </p>
+
+            {courses.length > 0 ? (
+              <div className="space-y-3 max-w-md mx-auto mb-6">
+                {courses.map((course) => (
+                  <a
+                    key={course.id}
+                    href={course.learnworldsUrl || `https://www.mojitax.co.uk/course/${course.slug}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-3 p-4 rounded-xl bg-white border border-slate-200 hover:border-mojitax-green/30 hover:shadow-md transition-all group"
+                  >
+                    <GraduationCap className="w-6 h-6 text-mojitax-green flex-shrink-0" />
+                    <span className="text-sm font-medium text-mojitax-navy group-hover:text-mojitax-green-dark transition-colors flex-1 text-left">
+                      {course.name}
+                    </span>
+                    <ExternalLink className="w-4 h-4 text-slate-400 group-hover:text-mojitax-green transition-colors" />
+                  </a>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-slate-500 mb-6">
+                No courses currently offer this tool. Check back later or contact support.
+              </p>
+            )}
+
+            <a href="https://www.mojitax.co.uk/courses" target="_blank" rel="noopener noreferrer">
+              <Button variant="primary" size="lg">
+                <GraduationCap className="w-5 h-5" />
+                Browse All Courses
+              </Button>
+            </a>
+          </div>
+        </Card>
+
+        {/* Tool Description (read-only preview) */}
+        <Card>
+          <CardContent className="p-6">
+            <h3 className="text-lg font-semibold text-mojitax-navy mb-4">
+              About This Tool
+            </h3>
+            <div className="prose prose-slate max-w-none text-slate-600">
+              <p>{tool.shortDescription}</p>
+              {tool.description && (
+                <p className="mt-2 text-sm">{tool.description.slice(0, 300)}...</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       </DashboardLayout>
     );
   }

@@ -23,6 +23,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Check if SSO is enabled (requires NEXT_PUBLIC_APP_URL for callback)
+    if (!process.env.NEXT_PUBLIC_APP_URL) {
+      return NextResponse.json(
+        {
+          error: 'SSO not configured - NEXT_PUBLIC_APP_URL required',
+          message: 'SSO requires callback URL configuration',
+        },
+        { status: 500 }
+      );
+    }
+
     // Generate the SSO login URL
     const loginUrl = learnworlds.generateSSOLoginUrl(returnTo || '/dashboard');
 
@@ -43,6 +54,7 @@ export async function POST(request: NextRequest) {
  * GET /api/auth/learnworlds/login
  *
  * Direct redirect to LearnWorlds login
+ * If SSO not configured, shows helpful error
  */
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -50,11 +62,16 @@ export async function GET(request: NextRequest) {
 
   // Check if LearnWorlds is configured
   const configStatus = learnworlds.getConfigStatus();
-  if (!configStatus.configured) {
-    // Fallback to dev auth if LearnWorlds not configured
-    return NextResponse.redirect(
-      new URL(`/auth/login?returnTo=${encodeURIComponent(returnTo)}`, request.url)
-    );
+
+  // Check if SSO callback URL is configured
+  const callbackUrl = process.env.NEXT_PUBLIC_APP_URL;
+
+  if (!configStatus.configured || !callbackUrl) {
+    // SSO not ready - redirect back to login with message
+    const loginUrl = new URL('/auth/login', request.url);
+    loginUrl.searchParams.set('returnTo', returnTo);
+    loginUrl.searchParams.set('sso_error', 'not_configured');
+    return NextResponse.redirect(loginUrl);
   }
 
   // Generate and redirect to the SSO login URL

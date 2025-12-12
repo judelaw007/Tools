@@ -4,11 +4,17 @@ import type { NextRequest } from 'next/server';
 /**
  * Authentication & Access Control Middleware
  *
- * LOCKED PLATFORM MODEL:
- * - ALL routes require authentication except login/auth routes
- * - Admin users: Full access to everything
- * - MojiTax users (via LearnWorlds SSO): Access to tools allocated to their enrolled courses
- * - No public access - must login via mojitax.co.uk or admin login
+ * NO-DOOR PLATFORM MODEL:
+ * - Users authenticate via "Access Tools" button in LearnWorlds courses
+ * - URL: tools.mojitax.co.uk/auth?email={{user.email}}
+ * - Email is verified against LearnWorlds API
+ * - No visible login page - unauthenticated users redirect to mojitax.co.uk
+ * - Admin has hidden access via /auth/admin
+ *
+ * ENROLLMENT REFRESH POLICY:
+ * - Enrollments are refreshed every 24 hours
+ * - If user no longer exists in LearnWorlds → immediate session invalidation
+ * - This ensures access is revoked within 24 hours of losing course access
  *
  * Cookie Strategy:
  * - mojitax-auth: Contains user role ('user' | 'admin')
@@ -16,16 +22,21 @@ import type { NextRequest } from 'next/server';
  * - mojitax-dev-auth: Development mode auth (backward compatibility)
  */
 
+// Enrollment refresh interval: 24 hours in milliseconds
+const ENROLLMENT_REFRESH_INTERVAL = 24 * 60 * 60 * 1000;
+
+// Main site URL for redirect
+const MAIN_SITE_URL = 'https://www.mojitax.co.uk';
+
 const AUTH_COOKIE_NAME = 'mojitax-auth';
 const SESSION_COOKIE_NAME = 'mojitax-session';
 const DEV_AUTH_COOKIE_NAME = 'mojitax-dev-auth';
 
-// Routes that DON'T require authentication (public access)
+// Routes that DON'T require authentication
 const publicRoutes = [
-  '/auth/login',
-  '/login',
-  '/api/auth',
-  '/api/learnworlds',
+  '/auth',           // All auth routes (email verification, admin login, etc.)
+  '/api/auth',       // Auth API endpoints
+  '/api/learnworlds', // LearnWorlds API (for SSO callbacks)
 ];
 
 // Routes that require admin role ONLY
@@ -39,6 +50,7 @@ function parseSession(sessionCookie: string | undefined): {
   role?: 'user' | 'admin' | 'super_admin';
   learnworldsId?: string;
   enrollments?: Array<{ product_id: string }>;
+  lastEnrollmentCheck?: string;
 } | null {
   if (!sessionCookie) return null;
 
@@ -47,6 +59,31 @@ function parseSession(sessionCookie: string | undefined): {
   } catch {
     return null;
   }
+}
+
+/**
+ * Check if enrollment refresh is needed (every 24 hours)
+ */
+function needsEnrollmentRefresh(session: ReturnType<typeof parseSession>): boolean {
+  // No session or admin - no refresh needed
+  if (!session || session.role === 'admin' || session.role === 'super_admin') {
+    return false;
+  }
+
+  // No LearnWorlds ID - not a LearnWorlds user, no refresh needed
+  if (!session.learnworldsId) {
+    return false;
+  }
+
+  // No previous check - needs refresh
+  if (!session.lastEnrollmentCheck) {
+    return true;
+  }
+
+  // Check if 24 hours have passed since last check
+  const lastCheck = new Date(session.lastEnrollmentCheck).getTime();
+  const now = Date.now();
+  return now - lastCheck > ENROLLMENT_REFRESH_INTERVAL;
 }
 
 /**
@@ -119,13 +156,23 @@ export function middleware(request: NextRequest) {
   const admin = isAdmin(authCookie, devAuthCookie, session);
 
   // ========================================
-  // LOCKED PLATFORM - Require authentication for ALL routes
+  // NO-DOOR PLATFORM - Redirect to main site if not authenticated
   // ========================================
   if (!authenticated) {
-    // Not authenticated - redirect to login
-    const loginUrl = new URL('/auth/login', request.url);
-    loginUrl.searchParams.set('returnTo', pathname);
-    return NextResponse.redirect(loginUrl);
+    // Not authenticated - redirect to MojiTax main site
+    // Users must log in via mojitax.co.uk first
+    return NextResponse.redirect(MAIN_SITE_URL);
+  }
+
+  // ========================================
+  // ENROLLMENT REFRESH - Check every 24 hours
+  // If user no longer exists in LearnWorlds, session will be invalidated
+  // ========================================
+  if (needsEnrollmentRefresh(session)) {
+    // Redirect to refresh endpoint, which will verify user and update enrollments
+    const refreshUrl = new URL('/api/auth/refresh-session', request.url);
+    refreshUrl.searchParams.set('returnTo', pathname);
+    return NextResponse.redirect(refreshUrl);
   }
 
   // ========================================
