@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Logo } from '@/components/ui/Logo';
 import { Loader2, AlertCircle, CheckCircle } from 'lucide-react';
@@ -15,7 +15,7 @@ import { Loader2, AlertCircle, CheckCircle } from 'lucide-react';
  * 4. If valid, session is created and user is redirected to dashboard
  * 5. If invalid, user is redirected back to mojitax.co.uk
  */
-export default function AuthPage() {
+function AuthContent() {
   const searchParams = useSearchParams();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [message, setMessage] = useState('Verifying your access...');
@@ -136,5 +136,17 @@ export default function AuthPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function AuthPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-mojitax-green" />
+      </div>
+    }>
+      <AuthContent />
+    </Suspense>
   );
 }
