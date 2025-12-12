@@ -24,6 +24,16 @@ export interface SessionData {
     email: string;
     username?: string;
   };
+  /**
+   * Course IDs the user has access to (via direct purchase, bundle, or subscription)
+   * This is the KEY field for tool access control - tools are allocated to courses,
+   * and users get access if they can access ANY course with the tool allocated.
+   */
+  accessibleCourseIds?: string[];
+  /**
+   * Enrollments are kept for display purposes (showing what products user owns)
+   * but NOT used for access control - use accessibleCourseIds instead.
+   */
   enrollments?: Array<{
     product_id: string;
     product_name: string;
@@ -103,8 +113,11 @@ export async function refreshEnrollments(
       return null;
     }
 
-    // User exists - fetch fresh enrollments
-    const enrollments = await learnworlds.getUserEnrollments(session.learnworldsId);
+    // User exists - fetch fresh course access and enrollments
+    const [accessibleCourseIds, enrollments] = await Promise.all([
+      learnworlds.getUserCourseAccess(session.learnworldsId),
+      learnworlds.getUserEnrollments(session.learnworldsId),
+    ]);
 
     // Update session with fresh data
     const updatedSession: SessionData = {
@@ -114,6 +127,8 @@ export async function refreshEnrollments(
         email: user.email,
         username: user.username,
       },
+      // KEY: Refresh accessible course IDs for tool access control
+      accessibleCourseIds,
       enrollments: enrollments.map((e) => ({
         product_id: e.product_id,
         product_name: e.product_name,
@@ -132,7 +147,17 @@ export async function refreshEnrollments(
 }
 
 /**
- * Get enrolled product IDs from session
+ * Get accessible course IDs from session
+ * These are courses the user can access via direct purchase, bundle, or subscription
+ */
+export function getAccessibleCourseIds(session: SessionData | null): string[] {
+  if (!session || !session.accessibleCourseIds) return [];
+  return session.accessibleCourseIds;
+}
+
+/**
+ * @deprecated Use getAccessibleCourseIds for access control
+ * Get enrolled product IDs from session (for display purposes only)
  */
 export function getEnrolledProductIds(session: SessionData | null): string[] {
   if (!session || !session.enrollments) return [];
@@ -141,6 +166,7 @@ export function getEnrolledProductIds(session: SessionData | null): string[] {
 
 /**
  * Check if session has access to a specific course
+ * Access can be via direct purchase, bundle, or subscription
  */
 export function hasAccessToCourse(
   session: SessionData | null,
@@ -149,6 +175,6 @@ export function hasAccessToCourse(
   if (!session) return false;
   if (session.role === 'admin') return true;
 
-  const enrolledIds = getEnrolledProductIds(session);
-  return enrolledIds.includes(courseId);
+  const accessibleIds = getAccessibleCourseIds(session);
+  return accessibleIds.includes(courseId);
 }

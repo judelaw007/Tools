@@ -245,11 +245,11 @@ export default function AdminCoursesPage() {
               <ArrowLeft className="w-5 h-5" />
             </Link>
             <h1 className="text-2xl md:text-3xl font-bold text-mojitax-navy">
-              Product Management
+              Course &amp; Product Management
             </h1>
           </div>
           <p className="text-slate-600">
-            Manage courses, bundles, and subscriptions from LearnWorlds. Allocate tools to each product.
+            View products from LearnWorlds and allocate tools to courses. Users access courses via direct purchase, bundle, or subscription.
           </p>
         </div>
         <Button
@@ -383,19 +383,28 @@ export default function AdminCoursesPage() {
                               <Badge variant="active" size="sm" className={config.color}>
                                 {config.label}
                               </Badge>
-                              {getAllocationCount(product.id) > 0 && (
-                                <Badge variant="default" size="sm">
-                                  {getAllocationCount(product.id)} tools
-                                </Badge>
+                              {/* Only courses can have tools allocated */}
+                              {product.type === 'course' ? (
+                                <>
+                                  {getAllocationCount(product.id) > 0 && (
+                                    <Badge variant="default" size="sm">
+                                      {getAllocationCount(product.id)} tools
+                                    </Badge>
+                                  )}
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => openAllocationModal(product)}
+                                  >
+                                    <Wrench className="w-3 h-3" />
+                                    Allocate Tools
+                                  </Button>
+                                </>
+                              ) : (
+                                <span className="text-xs text-slate-400 italic">
+                                  Tools allocated to included courses
+                                </span>
                               )}
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => openAllocationModal(product)}
-                              >
-                                <Wrench className="w-3 h-3" />
-                                Allocate Tools
-                              </Button>
                             </div>
                           </div>
                         );
@@ -511,17 +520,21 @@ export default function AdminCoursesPage() {
 
       {/* Help Card */}
       <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-        <h4 className="font-medium text-blue-800 mb-2">How Product-Tool Allocation Works</h4>
+        <h4 className="font-medium text-blue-800 mb-2">How Course-Based Tool Access Works</h4>
         <p className="text-sm text-blue-700 mb-3">
-          When a user purchases a course, bundle, or subscription on LearnWorlds, they automatically
-          get access to all tools allocated to that product on this platform.
+          Tools are allocated to <strong>courses only</strong>. Users gain access to tools by having access to courses -
+          whether through direct course purchase, a bundle that includes the course, or a subscription.
         </p>
         <ol className="text-sm text-blue-600 space-y-1 list-decimal list-inside">
-          <li>Products (courses, bundles, subscriptions) are synced from LearnWorlds</li>
-          <li>Admin allocates tools to each product</li>
-          <li>When users authenticate, we check their LearnWorlds enrollments</li>
-          <li>Users see only the tools for products they&apos;ve purchased or subscribed to</li>
+          <li>Admin allocates tools to specific <strong>courses</strong> (not bundles or subscriptions)</li>
+          <li>Users can access courses via: direct purchase, bundle, or subscription</li>
+          <li>When users authenticate, we fetch all courses they can access from LearnWorlds</li>
+          <li>Users see tools for any course they have access to, regardless of how they got access</li>
         </ol>
+        <p className="text-xs text-blue-500 mt-3 italic">
+          Example: If &quot;Tax Calculator&quot; tool is allocated to &quot;VAT Course&quot;, any user who can access that course
+          (via direct purchase, a bundle, or subscription) will have access to the tool.
+        </p>
       </div>
 
       {/* Tool Allocation Modal */}
@@ -539,7 +552,7 @@ export default function AdminCoursesPage() {
             <div className="flex items-center justify-between p-4 border-b border-slate-200">
               <div>
                 <h2 className="text-lg font-semibold text-mojitax-navy">
-                  Allocate Tools to {productTypeConfig[selectedCourse.type]?.label || 'Product'}
+                  Allocate Tools to Course
                 </h2>
                 <div className="flex items-center gap-2 mt-1">
                   <Badge variant="active" size="sm" className={productTypeConfig[selectedCourse.type]?.color}>
@@ -570,7 +583,7 @@ export default function AdminCoursesPage() {
               ) : (
                 <div className="space-y-2">
                   <p className="text-sm text-slate-600 mb-3">
-                    Select the tools that users enrolled in this {selectedCourse.type} should have access to:
+                    Select the tools that users with access to this course should have. Access can be via direct purchase, bundle, or subscription.
                   </p>
                   {availableTools.map((tool) => (
                     <div

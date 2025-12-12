@@ -43,7 +43,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Fetch user's enrollments from LearnWorlds
+    // Fetch user's COURSE ACCESS from LearnWorlds
+    // This returns all courses the user can access (via direct purchase, bundle, or subscription)
+    const accessibleCourseIds = await learnworlds.getUserCourseAccess(lwUser.id);
+
+    // Also fetch enrollments for display purposes
     const enrollments = await learnworlds.getUserEnrollments(lwUser.id);
 
     // Create session data
@@ -57,6 +61,9 @@ export async function POST(request: NextRequest) {
         email: lwUser.email,
         username: lwUser.username,
       },
+      // KEY: Store accessible course IDs for tool access control
+      accessibleCourseIds,
+      // Also store enrollments for display
       enrollments: enrollments.map((e) => ({
         product_id: e.product_id,
         product_name: e.product_name,

@@ -289,12 +289,11 @@ class LearnWorldsClient {
   }
 
   // ============================================
-  // ENROLLMENT METHODS
+  // ENROLLMENT & ACCESS METHODS
   // ============================================
 
   /**
-   * Get all enrollments for a user
-   * This is the key method for access control
+   * Get all enrollments for a user (products they own/purchased)
    */
   async getUserEnrollments(userId: string): Promise<LearnWorldsEnrollment[]> {
     try {
@@ -306,6 +305,45 @@ class LearnWorldsClient {
       console.error('Error fetching user enrollments:', error);
       return [];
     }
+  }
+
+  /**
+   * Get all COURSES a user has access to
+   *
+   * This is the KEY method for tool access control.
+   * Returns course IDs the user can access regardless of HOW they got access:
+   * - Direct course purchase
+   * - Bundle that includes the course
+   * - Subscription that grants access to the course
+   *
+   * LearnWorlds /v2/users/{id}/courses returns all accessible courses
+   */
+  async getUserCourseAccess(userId: string): Promise<string[]> {
+    try {
+      // This endpoint returns all courses the user has access to
+      const response = await this.request<LearnWorldsApiResponse<Array<{ id: string; title?: string }>>>(
+        `/v2/users/${userId}/courses`
+      );
+
+      const courses = response.data || [];
+      return courses.map((c) => c.id);
+    } catch (error) {
+      console.error('Error fetching user course access:', error);
+      // Fallback: extract course IDs from enrollments if endpoint fails
+      const enrollments = await this.getUserEnrollments(userId);
+      return enrollments
+        .filter((e) => e.product_type === 'course')
+        .map((e) => e.product_id);
+    }
+  }
+
+  /**
+   * Get course access by email (convenience method)
+   */
+  async getUserCourseAccessByEmail(email: string): Promise<string[]> {
+    const user = await this.getUserByEmail(email);
+    if (!user) return [];
+    return this.getUserCourseAccess(user.id);
   }
 
   /**

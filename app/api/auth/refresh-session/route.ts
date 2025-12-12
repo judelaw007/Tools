@@ -57,8 +57,11 @@ export async function GET(request: NextRequest) {
       return response;
     }
 
-    // User exists - fetch fresh enrollments
-    const enrollments = await learnworlds.getUserEnrollments(session.learnworldsId);
+    // User exists - fetch fresh course access and enrollments
+    const [accessibleCourseIds, enrollments] = await Promise.all([
+      learnworlds.getUserCourseAccess(session.learnworldsId),
+      learnworlds.getUserEnrollments(session.learnworldsId),
+    ]);
 
     // Update session with fresh data
     const updatedSession: SessionData = {
@@ -68,6 +71,8 @@ export async function GET(request: NextRequest) {
         email: user.email,
         username: user.username,
       },
+      // KEY: Refresh accessible course IDs for tool access control
+      accessibleCourseIds,
       enrollments: enrollments.map((e) => ({
         product_id: e.product_id,
         product_name: e.product_name,

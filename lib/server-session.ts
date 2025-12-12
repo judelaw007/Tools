@@ -17,6 +17,14 @@ export interface ServerSessionData {
     email: string;
     username?: string;
   };
+  /**
+   * Course IDs the user has access to (via direct purchase, bundle, or subscription)
+   * This is the KEY field for tool access control.
+   */
+  accessibleCourseIds?: string[];
+  /**
+   * Enrollments are kept for display purposes only - NOT used for access control
+   */
   enrollments?: Array<{
     product_id: string;
     product_name: string;
@@ -45,7 +53,18 @@ export async function getServerSession(): Promise<ServerSessionData | null> {
 }
 
 /**
- * Get enrolled course/product IDs from session
+ * Get accessible course IDs from session
+ * These are courses the user can access via direct purchase, bundle, or subscription
+ */
+export async function getAccessibleCourseIds(): Promise<string[]> {
+  const session = await getServerSession();
+  if (!session?.accessibleCourseIds) return [];
+  return session.accessibleCourseIds;
+}
+
+/**
+ * @deprecated Use getAccessibleCourseIds for access control
+ * Get enrolled product IDs from session (for display purposes only)
  */
 export async function getEnrolledCourseIds(): Promise<string[]> {
   const session = await getServerSession();
@@ -66,7 +85,8 @@ export async function isCurrentUserAdmin(): Promise<boolean> {
  *
  * Access is granted if:
  * 1. User is admin (always has access)
- * 2. User is enrolled in ANY course that has this tool allocated
+ * 2. User can access ANY course that has this tool allocated
+ *    (access can be via direct purchase, bundle, or subscription)
  */
 export async function hasToolAccess(toolId: string): Promise<boolean> {
   const session = await getServerSession();
@@ -78,15 +98,15 @@ export async function hasToolAccess(toolId: string): Promise<boolean> {
     return true;
   }
 
-  // Get user's enrolled course IDs
-  const enrolledCourseIds = session.enrollments?.map((e) => e.product_id) || [];
+  // Get user's accessible course IDs (from direct purchase, bundle, or subscription)
+  const userCourseIds = session.accessibleCourseIds || [];
 
   // Get courses that have this tool allocated
   const allocatedCourseIds = getCoursesForTool(toolId);
 
-  // User has access if enrolled in any course with this tool
+  // User has access if they can access any course with this tool
   return allocatedCourseIds.some((courseId) =>
-    enrolledCourseIds.includes(courseId)
+    userCourseIds.includes(courseId)
   );
 }
 
@@ -95,6 +115,8 @@ export async function hasToolAccess(toolId: string): Promise<boolean> {
  *
  * Returns a Map of toolId -> hasAccess
  * Efficient for checking access to many tools at once
+ *
+ * Access is based on accessible courses (via direct purchase, bundle, or subscription)
  */
 export async function getToolAccessMap(
   toolIds: string[]
@@ -114,16 +136,14 @@ export async function getToolAccessMap(
     return accessMap;
   }
 
-  // Get user's enrolled course IDs
-  const enrolledCourseIds = new Set(
-    session.enrollments?.map((e) => e.product_id) || []
-  );
+  // Get user's accessible course IDs (from direct purchase, bundle, or subscription)
+  const userCourseIds = new Set(session.accessibleCourseIds || []);
 
   // Check each tool
   for (const toolId of toolIds) {
     const allocatedCourseIds = getCoursesForTool(toolId);
     const hasAccess = allocatedCourseIds.some((courseId) =>
-      enrolledCourseIds.has(courseId)
+      userCourseIds.has(courseId)
     );
     accessMap.set(toolId, hasAccess);
   }
