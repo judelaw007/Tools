@@ -8,8 +8,6 @@ import {
   LayoutDashboard,
   Wrench,
   BookOpen,
-  Users,
-  BarChart3,
   Settings,
   HelpCircle,
   LogOut,
@@ -42,8 +40,6 @@ export function Sidebar({ variant = 'user', isCollapsed = false, onToggleCollaps
     { href: '/admin', label: 'Overview', icon: <LayoutDashboard className="w-5 h-5" /> },
     { href: '/admin/tools', label: 'Tools', icon: <Wrench className="w-5 h-5" /> },
     { href: '/admin/courses', label: 'Courses', icon: <BookOpen className="w-5 h-5" /> },
-    { href: '/admin/users', label: 'Users', icon: <Users className="w-5 h-5" />, badge: 'View Only' },
-    { href: '/admin/analytics', label: 'Analytics', icon: <BarChart3 className="w-5 h-5" /> },
   ];
   
   const navItems = variant === 'admin' ? adminNavItems : userNavItems;

@@ -6,52 +6,76 @@ import { SEED_TOOLS } from './seed-data';
 // Courses and course-tool mappings are managed by admins via API (Supabase)
 // Will be fully replaced with Supabase queries in production
 
+// Mutable tools array for admin updates (in production, this would be Supabase)
+let toolsData: Tool[] = [...SEED_TOOLS];
+
 // ============================================
 // TOOLS
 // ============================================
 
 export async function getAllTools(): Promise<Tool[]> {
   // In production: return supabase.from('tools').select('*')
-  return SEED_TOOLS;
+  return toolsData;
 }
 
 export async function getActiveTools(): Promise<Tool[]> {
   // In production: return supabase.from('tools').select('*').eq('status', 'active')
-  return SEED_TOOLS.filter(tool => tool.status === 'active');
+  return toolsData.filter(tool => tool.status === 'active');
 }
 
 export async function getPublicTools(): Promise<Tool[]> {
   // In production: return supabase.from('tools').select('*').eq('status', 'active').eq('is_public', true)
-  return SEED_TOOLS.filter(tool => tool.status === 'active' && tool.isPublic);
+  return toolsData.filter(tool => tool.status === 'active' && tool.isPublic);
 }
 
 export async function getToolBySlug(slug: string): Promise<Tool | null> {
   // In production: return supabase.from('tools').select('*').eq('slug', slug).single()
-  return SEED_TOOLS.find(tool => tool.slug === slug) || null;
+  return toolsData.find(tool => tool.slug === slug) || null;
 }
 
 export async function getToolById(id: string): Promise<Tool | null> {
   // In production: return supabase.from('tools').select('*').eq('id', id).single()
-  return SEED_TOOLS.find(tool => tool.id === id) || null;
+  return toolsData.find(tool => tool.id === id) || null;
 }
 
 export async function getToolsByCategory(category: ToolCategory): Promise<Tool[]> {
   // In production: return supabase.from('tools').select('*').eq('category', category).eq('status', 'active')
-  return SEED_TOOLS.filter(tool => tool.category === category && tool.status === 'active');
+  return toolsData.filter(tool => tool.category === category && tool.status === 'active');
 }
 
 export async function getToolsByStatus(status: ToolStatus): Promise<Tool[]> {
   // In production: return supabase.from('tools').select('*').eq('status', status)
-  return SEED_TOOLS.filter(tool => tool.status === status);
+  return toolsData.filter(tool => tool.status === status);
 }
 
 export async function searchTools(query: string): Promise<Tool[]> {
   const lowerQuery = query.toLowerCase();
-  return SEED_TOOLS.filter(tool =>
+  return toolsData.filter(tool =>
     tool.name.toLowerCase().includes(lowerQuery) ||
     tool.shortDescription?.toLowerCase().includes(lowerQuery) ||
     tool.description?.toLowerCase().includes(lowerQuery)
   );
+}
+
+/**
+ * Update a tool's properties
+ * Admin function to modify tool metadata
+ */
+export async function updateTool(
+  id: string,
+  updates: Partial<Pick<Tool, 'name' | 'shortDescription' | 'description' | 'category' | 'status'>>
+): Promise<Tool | null> {
+  const index = toolsData.findIndex(tool => tool.id === id);
+  if (index === -1) return null;
+
+  // In production: return supabase.from('tools').update(updates).eq('id', id).select().single()
+  toolsData[index] = {
+    ...toolsData[index],
+    ...updates,
+    updatedAt: new Date(),
+  };
+
+  return toolsData[index];
 }
 
 // ============================================
