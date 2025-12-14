@@ -9,7 +9,6 @@ import {
   Wrench,
   BookOpen,
   Settings,
-  HelpCircle,
   LogOut,
   ChevronLeft,
   ExternalLink,
@@ -133,19 +132,6 @@ export function Sidebar({ variant = 'user', isCollapsed = false, onToggleCollaps
             {!isCollapsed && <span>Exit Admin</span>}
           </Link>
         )}
-        
-        <Link
-          href="https://mojitax.co.uk/help"
-          target="_blank"
-          className={cn(
-            'flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-mojitax-navy transition-colors',
-            isCollapsed && 'justify-center'
-          )}
-          title={isCollapsed ? 'Help & Support' : undefined}
-        >
-          <HelpCircle className="w-5 h-5" />
-          {!isCollapsed && <span>Help & Support</span>}
-        </Link>
         
         <button
           className={cn(
