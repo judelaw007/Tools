@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
     const normalizedCode = code.trim();
 
     // Verify the code
-    const verifyResult = verifyCode(normalizedEmail, normalizedCode);
+    const verifyResult = await verifyCode(normalizedEmail, normalizedCode);
 
     if (!verifyResult.success) {
       return NextResponse.json(
