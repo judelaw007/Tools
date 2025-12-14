@@ -71,26 +71,66 @@ class LearnWorldsClient {
 
   /**
    * Get a user by their email address
+   *
+   * Note: LearnWorlds API /v2/users?email=xxx doesn't filter correctly,
+   * so we need to paginate through all users and find the match.
    */
   async getUserByEmail(email: string): Promise<LearnWorldsUser | null> {
+    const normalizedEmail = email.toLowerCase().trim();
+    console.log(`Looking up user in LearnWorlds: ${normalizedEmail}`);
+
     try {
-      const response = await this.request<LearnWorldsApiResponse<LearnWorldsUser[]>>(
-        `/v2/users?email=${encodeURIComponent(email)}`
+      // First try the direct email query (in case it works for some schools)
+      const directResponse = await this.request<LearnWorldsApiResponse<LearnWorldsUser[]>>(
+        `/v2/users?email=${encodeURIComponent(normalizedEmail)}`
       );
 
-      const user = response.data?.[0];
+      const directUser = directResponse.data?.find(
+        (u: LearnWorldsUser) => u.email?.toLowerCase() === normalizedEmail
+      );
 
-      // IMPORTANT: Verify the returned user's email actually matches
-      // LearnWorlds API may return other users if no exact match found
-      if (user && user.email?.toLowerCase() === email.toLowerCase()) {
-        return user;
+      if (directUser) {
+        console.log(`Found user via direct query: ${directUser.email}`);
+        return directUser;
       }
 
-      // Log mismatch for debugging
-      if (user && user.email?.toLowerCase() !== email.toLowerCase()) {
-        console.warn(`LearnWorlds email mismatch: searched for "${email}" but got "${user.email}"`);
+      // If direct query didn't work, search through paginated results
+      console.log(`Direct query failed, searching through all users...`);
+      let page = 1;
+      const itemsPerPage = 50;
+      let hasMore = true;
+
+      while (hasMore) {
+        const response = await this.request<LearnWorldsApiResponse<LearnWorldsUser[]>>(
+          `/v2/users?page=${page}&items_per_page=${itemsPerPage}`
+        );
+
+        const users = response.data || [];
+
+        // Find user with matching email
+        const matchingUser = users.find(
+          (u: LearnWorldsUser) => u.email?.toLowerCase() === normalizedEmail
+        );
+
+        if (matchingUser) {
+          console.log(`Found user on page ${page}: ${matchingUser.email}`);
+          return matchingUser;
+        }
+
+        // Check if there are more pages
+        if (users.length < itemsPerPage) {
+          hasMore = false;
+        } else {
+          page++;
+          // Safety limit to prevent infinite loops
+          if (page > 100) {
+            console.warn('Reached page limit (100) searching for user');
+            hasMore = false;
+          }
+        }
       }
 
+      console.log(`User not found in LearnWorlds: ${normalizedEmail}`);
       return null;
     } catch (error) {
       console.error('Error fetching user by email:', error);
