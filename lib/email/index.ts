@@ -140,29 +140,29 @@ export async function sendVerificationCodeEmail(
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
     </head>
-    <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #292929; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #ffffff;">
       <div style="text-align: center; margin-bottom: 30px;">
-        <h1 style="color: #1a365d; margin: 0; font-size: 24px;">MojiTax Tools</h1>
+        <h1 style="color: #044493; margin: 0; font-size: 24px;">Moji<span style="color: #43A5F5;">Tax</span> Tools</h1>
       </div>
 
-      <div style="background: #f8fafc; border-radius: 12px; padding: 30px; text-align: center;">
-        <h2 style="color: #1a365d; margin: 0 0 10px 0; font-size: 20px;">Your Verification Code</h2>
-        <p style="color: #64748b; margin: 0 0 20px 0;">Enter this code to access your tools:</p>
+      <div style="background: #E0E8F0; border-radius: 12px; padding: 30px; text-align: center;">
+        <h2 style="color: #044493; margin: 0 0 10px 0; font-size: 20px;">Your Verification Code</h2>
+        <p style="color: #5182B4; margin: 0 0 20px 0;">Enter this code to access your tools:</p>
 
-        <div style="background: #ffffff; border: 2px solid #e2e8f0; border-radius: 8px; padding: 20px; margin: 20px 0;">
-          <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #1a365d;">${code}</span>
+        <div style="background: #ffffff; border: 2px solid #43A5F5; border-radius: 8px; padding: 20px; margin: 20px 0;">
+          <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #044493;">${code}</span>
         </div>
 
-        <p style="color: #94a3b8; font-size: 14px; margin: 20px 0 0 0;">
+        <p style="color: #5182B4; font-size: 14px; margin: 20px 0 0 0;">
           This code expires in 5 minutes.
         </p>
       </div>
 
-      <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
-        <p style="color: #94a3b8; font-size: 12px; margin: 0;">
+      <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #E0E8F0;">
+        <p style="color: #5182B4; font-size: 12px; margin: 0;">
           If you didn't request this code, you can safely ignore this email.
         </p>
-        <p style="color: #94a3b8; font-size: 12px; margin: 10px 0 0 0;">
+        <p style="color: #5182B4; font-size: 12px; margin: 10px 0 0 0;">
           © ${new Date().getFullYear()} MojiTax. All rights reserved.
         </p>
       </div>

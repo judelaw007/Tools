@@ -216,15 +216,15 @@ function AuthContent() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-mojitax-bg-light to-white flex items-center justify-center p-4">
       <div className="text-center max-w-md w-full">
-        <Logo className="h-12 mx-auto mb-8" />
+        <Logo size="lg" className="justify-center mb-8" />
 
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8">
+        <div className="bg-white rounded-xl shadow-navy border border-mojitax-bg-light p-8">
           {/* Sending Code */}
           {step === 'sending' && (
             <>
-              <Loader2 className="w-12 h-12 animate-spin text-mojitax-green mx-auto mb-4" />
+              <Loader2 className="w-12 h-12 animate-spin text-mojitax-blue mx-auto mb-4" />
               <h2 className="text-lg font-semibold text-slate-800 mb-2">
                 Sending Verification Code
               </h2>
@@ -240,8 +240,8 @@ function AuthContent() {
           {/* Code Entry */}
           {step === 'code_entry' && (
             <>
-              <div className="w-12 h-12 bg-mojitax-green/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Mail className="w-6 h-6 text-mojitax-green" />
+              <div className="w-12 h-12 bg-mojitax-blue/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Mail className="w-6 h-6 text-mojitax-blue" />
               </div>
               <h2 className="text-lg font-semibold text-slate-800 mb-2">
                 Check Your Email
@@ -263,7 +263,7 @@ function AuthContent() {
                     value={digit}
                     onChange={(e) => handleCodeChange(index, e.target.value)}
                     onKeyDown={(e) => handleKeyDown(index, e)}
-                    className="w-11 h-14 text-center text-2xl font-bold border-2 border-slate-200 rounded-lg focus:border-mojitax-green focus:ring-2 focus:ring-mojitax-green/20 outline-none transition-all"
+                    className="w-11 h-14 text-center text-2xl font-bold border-2 border-slate-200 rounded-lg focus:border-mojitax-blue focus:ring-2 focus:ring-mojitax-blue/20 outline-none transition-all"
                     disabled={step === 'verifying'}
                   />
                 ))}
@@ -289,7 +289,7 @@ function AuthContent() {
               <button
                 onClick={resendCode}
                 disabled={retryAfter > 0}
-                className="text-sm text-mojitax-green hover:text-mojitax-green-dark disabled:text-slate-400 disabled:cursor-not-allowed"
+                className="text-sm text-mojitax-blue hover:text-mojitax-blue-dark disabled:text-slate-400 disabled:cursor-not-allowed"
               >
                 {retryAfter > 0
                   ? `Resend code in ${retryAfter}s`
@@ -301,7 +301,7 @@ function AuthContent() {
           {/* Verifying */}
           {step === 'verifying' && (
             <>
-              <Loader2 className="w-12 h-12 animate-spin text-mojitax-green mx-auto mb-4" />
+              <Loader2 className="w-12 h-12 animate-spin text-mojitax-blue mx-auto mb-4" />
               <h2 className="text-lg font-semibold text-slate-800 mb-2">
                 Verifying Code
               </h2>
@@ -338,7 +338,7 @@ function AuthContent() {
                 {email && retryAfter === 0 && (
                   <button
                     onClick={resendCode}
-                    className="w-full py-2 px-4 bg-mojitax-green text-white rounded-lg hover:bg-mojitax-green-dark transition-colors"
+                    className="w-full py-2 px-4 bg-mojitax-blue text-white rounded-lg hover:bg-mojitax-blue-dark transition-colors"
                   >
                     Request New Code
                   </button>
@@ -373,7 +373,7 @@ export default function AuthPage() {
     <Suspense
       fallback={
         <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
-          <Loader2 className="w-8 h-8 animate-spin text-mojitax-green" />
+          <Loader2 className="w-8 h-8 animate-spin text-mojitax-blue" />
         </div>
       }
     >
