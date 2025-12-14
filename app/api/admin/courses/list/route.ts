@@ -19,9 +19,10 @@ export async function GET() {
   }
 
   try {
-    // Fetch courses from LearnWorlds
+    // Fetch courses from LearnWorlds using the test endpoint logic
     const apiUrl = process.env.LEARNWORLDS_API_URL;
     const accessToken = process.env.LEARNWORLDS_ACCESS_TOKEN;
+    const clientId = process.env.LEARNWORLDS_CLIENT_ID;
 
     if (!apiUrl || !accessToken) {
       return NextResponse.json({
@@ -35,13 +36,13 @@ export async function GET() {
     const response = await fetch(`${apiUrl}/v2/courses`, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
-        'Lw-Client': process.env.LEARNWORLDS_CLIENT_ID || '',
+        'Lw-Client': clientId || '',
         Accept: 'application/json',
       },
     });
 
     if (!response.ok) {
-      console.error('LearnWorlds API error:', response.status);
+      console.error('LearnWorlds API error:', response.status, await response.text());
       return NextResponse.json({
         success: true,
         courses: [],
@@ -51,17 +52,12 @@ export async function GET() {
 
     const data = await response.json();
 
-    // Extract courses (only type: course, not bundles or subscriptions)
-    const courses = (data.data || [])
-      .filter((item: { id: string; title: string; type?: string }) =>
-        // Include all products for preview purposes
-        true
-      )
-      .map((item: { id: string; title: string; type?: string }) => ({
-        id: item.id,
-        title: item.title,
-        type: item.type || 'course',
-      }));
+    // Extract courses - include all for preview purposes
+    const courses = (data.data || []).map((item: { id: string; title: string; type?: string }) => ({
+      id: item.id,
+      title: item.title,
+      type: item.type || 'course',
+    }));
 
     return NextResponse.json({
       success: true,
