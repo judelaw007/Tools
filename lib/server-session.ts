@@ -8,6 +8,31 @@
 import { cookies } from 'next/headers';
 import { getCoursesForTool } from '@/lib/course-allocations';
 
+const STUDENT_VIEW_COOKIE = 'mojitax-student-view';
+
+export interface StudentViewState {
+  mode: 'admin' | 'no-account' | 'no-courses' | 'with-course';
+  selectedCourseId?: string;
+  selectedCourseName?: string;
+}
+
+/**
+ * Get current student view state (for admins previewing as students)
+ */
+export async function getStudentViewState(): Promise<StudentViewState | null> {
+  const cookieStore = await cookies();
+  const viewCookie = cookieStore.get(STUDENT_VIEW_COOKIE)?.value;
+
+  if (!viewCookie) return null;
+
+  try {
+    const decoded = Buffer.from(viewCookie, 'base64').toString('utf-8');
+    return JSON.parse(decoded);
+  } catch {
+    return null;
+  }
+}
+
 export interface ServerSessionData {
   email: string;
   role: 'user' | 'admin' | 'super_admin';
@@ -117,6 +142,8 @@ export async function hasToolAccess(toolId: string): Promise<boolean> {
  * Efficient for checking access to many tools at once
  *
  * Access is based on accessible courses (via direct purchase, bundle, or subscription)
+ *
+ * If admin is in "student view" mode, simulates the view for that student type.
  */
 export async function getToolAccessMap(
   toolIds: string[]
@@ -124,14 +151,48 @@ export async function getToolAccessMap(
   const session = await getServerSession();
   const accessMap = new Map<string, boolean>();
 
+  // Check if admin is in student view mode
+  const studentView = await getStudentViewState();
+  const isAdmin = session?.role === 'admin' || session?.role === 'super_admin';
+
+  // If admin is in student view mode, simulate that view
+  if (isAdmin && studentView && studentView.mode !== 'admin') {
+    // Simulate based on student view mode
+    switch (studentView.mode) {
+      case 'no-account':
+        // No account = no access to anything
+        toolIds.forEach((id) => accessMap.set(id, false));
+        return accessMap;
+
+      case 'no-courses':
+        // Has account but no courses = no tool access
+        toolIds.forEach((id) => accessMap.set(id, false));
+        return accessMap;
+
+      case 'with-course':
+        // Has specific course - check which tools are allocated to it
+        const simulatedCourseIds = new Set(
+          studentView.selectedCourseId ? [studentView.selectedCourseId] : []
+        );
+        for (const toolId of toolIds) {
+          const allocatedCourseIds = getCoursesForTool(toolId);
+          const hasAccess = allocatedCourseIds.some((courseId) =>
+            simulatedCourseIds.has(courseId)
+          );
+          accessMap.set(toolId, hasAccess);
+        }
+        return accessMap;
+    }
+  }
+
   // No session = no access to anything
   if (!session) {
     toolIds.forEach((id) => accessMap.set(id, false));
     return accessMap;
   }
 
-  // Admins have access to everything
-  if (session.role === 'admin' || session.role === 'super_admin') {
+  // Admins have access to everything (when not in student view)
+  if (isAdmin) {
     toolIds.forEach((id) => accessMap.set(id, true));
     return accessMap;
   }
