@@ -42,15 +42,20 @@ export default async function DashboardPage() {
 
   const hasCourses = coursesWithTools.length > 0;
 
+  // Get username for greeting - prefer LearnWorlds username, fallback to email
+  const username = session?.learnworldsUser?.username ||
+                   session?.email?.split('@')[0] ||
+                   'there';
+
   return (
     <DashboardLayout>
-      {/* Page Header */}
+      {/* Page Header with personalized greeting */}
       <div className="mb-8">
         <h1 className="text-2xl md:text-3xl font-bold text-mojitax-navy mb-2">
-          Welcome to Your Dashboard
+          Hello, {username}!
         </h1>
         <p className="text-slate-600">
-          Access your course tools and continue learning
+          Welcome to your MojiTax Tools dashboard. Access your course tools and continue learning.
         </p>
       </div>
 
