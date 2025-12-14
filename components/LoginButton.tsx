@@ -23,7 +23,7 @@ export function LoginButton({
       variant={variant}
       size={size}
       className={className}
-      onClick={() => router.push('/auth/login')}
+      onClick={() => router.push('/auth')}
     >
       {children}
     </Button>

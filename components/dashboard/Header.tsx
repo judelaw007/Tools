@@ -31,7 +31,7 @@ export function Header({ showSearch = false }: HeaderProps) {
   };
 
   const handleLogin = () => {
-    router.push('/auth/login');
+    router.push('/auth');
   };
   
   return (
