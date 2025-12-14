@@ -135,7 +135,7 @@ export function Sidebar({ variant = 'user', isCollapsed = false, onToggleCollaps
       )}
 
       {/* Admin Badge */}
-      {variant === 'admin' && !isCollapsed && (
+      {variant === 'admin' && !isInStudentView && !isCollapsed && (
         <div className="px-4 py-3 border-b border-slate-200">
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-mojitax-navy/5 text-mojitax-navy text-xs font-semibold rounded-full">
             <Settings className="w-3 h-3" />
@@ -144,13 +144,13 @@ export function Sidebar({ variant = 'user', isCollapsed = false, onToggleCollaps
         </div>
       )}
 
-      {/* Student View Active Banner */}
-      {variant === 'admin' && isInStudentView && !isCollapsed && (
+      {/* Student View Active Banner - shows on any sidebar when in student view */}
+      {isInStudentView && !isCollapsed && (
         <div className="px-3 py-2 bg-amber-50 border-b border-amber-200">
           <div className="flex items-center gap-2 text-amber-800 text-xs font-medium">
             <Eye className="w-3.5 h-3.5" />
             <span className="flex-1 truncate">
-              {mode === 'no-account' && 'No Account'}
+              Viewing as: {mode === 'no-account' && 'No Account'}
               {mode === 'no-courses' && 'No Courses'}
               {mode === 'with-course' && selectedCourseName}
             </span>
@@ -190,47 +190,46 @@ export function Sidebar({ variant = 'user', isCollapsed = false, onToggleCollaps
 
       {/* Footer Links */}
       <div className="border-t border-slate-200 px-3 py-4 space-y-1">
-        {/* Student View Button (Admin only) */}
-        {variant === 'admin' && (
-          <div className="relative">
-            {isInStudentView ? (
-              // Exit Student View button
-              <button
-                onClick={handleExitStudentView}
-                disabled={isLoading}
-                className={cn(
-                  'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg bg-amber-100 text-amber-800 hover:bg-amber-200 transition-colors',
-                  isCollapsed && 'justify-center'
-                )}
-                title={isCollapsed ? 'Exit Student View' : undefined}
-              >
-                {isLoading ? (
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                ) : (
-                  <EyeOff className="w-5 h-5" />
-                )}
-                {!isCollapsed && <span>Exit Student View</span>}
-              </button>
-            ) : (
-              // Student View button
-              <button
-                onClick={() => setIsStudentViewOpen(!isStudentViewOpen)}
-                className={cn(
-                  'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-mojitax-navy transition-colors',
-                  isStudentViewOpen && 'bg-slate-100',
-                  isCollapsed && 'justify-center'
-                )}
-                title={isCollapsed ? 'Student View' : undefined}
-              >
-                <Eye className="w-5 h-5" />
-                {!isCollapsed && (
-                  <>
-                    <span className="flex-1 text-left">Student View</span>
-                    <ChevronDown className={cn('w-4 h-4 transition-transform', isStudentViewOpen && 'rotate-180')} />
-                  </>
-                )}
-              </button>
+        {/* Exit Student View button - shows on any sidebar when in student view */}
+        {isInStudentView && (
+          <button
+            onClick={handleExitStudentView}
+            disabled={isLoading}
+            className={cn(
+              'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg bg-amber-100 text-amber-800 hover:bg-amber-200 transition-colors',
+              isCollapsed && 'justify-center'
             )}
+            title={isCollapsed ? 'Exit Student View' : undefined}
+          >
+            {isLoading ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <EyeOff className="w-5 h-5" />
+            )}
+            {!isCollapsed && <span>Exit Student View</span>}
+          </button>
+        )}
+
+        {/* Student View Button (Admin sidebar only, when not in student view) */}
+        {variant === 'admin' && !isInStudentView && (
+          <div className="relative">
+            <button
+              onClick={() => setIsStudentViewOpen(!isStudentViewOpen)}
+              className={cn(
+                'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-mojitax-navy transition-colors',
+                isStudentViewOpen && 'bg-slate-100',
+                isCollapsed && 'justify-center'
+              )}
+              title={isCollapsed ? 'Student View' : undefined}
+            >
+              <Eye className="w-5 h-5" />
+              {!isCollapsed && (
+                <>
+                  <span className="flex-1 text-left">Student View</span>
+                  <ChevronDown className={cn('w-4 h-4 transition-transform', isStudentViewOpen && 'rotate-180')} />
+                </>
+              )}
+            </button>
 
             {/* Student View Dropdown */}
             {isStudentViewOpen && !isCollapsed && !isInStudentView && (
