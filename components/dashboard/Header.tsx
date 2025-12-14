@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/auth';
 import { Button } from '@/components/ui/Button';
-import { StudentViewSelector } from '@/components/admin/StudentViewSelector';
 import {
   Bell,
   User,
@@ -59,11 +58,6 @@ export function Header({ showSearch = false }: HeaderProps) {
         </Link>
         
         <div className="h-6 w-px bg-slate-200" />
-
-        {/* Student View Selector (Admin only) */}
-        {isAdmin && <StudentViewSelector />}
-
-        {isAdmin && <div className="h-6 w-px bg-slate-200" />}
 
         {/* Notifications */}
         <button className="relative p-2 rounded-lg hover:bg-slate-100 transition-colors">
