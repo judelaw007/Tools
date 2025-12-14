@@ -375,12 +375,18 @@ class LearnWorldsClient {
   async getUserCourseAccess(userId: string): Promise<string[]> {
     try {
       // This endpoint returns all courses the user has access to
-      const response = await this.request<LearnWorldsApiResponse<Array<{ id: string; title?: string }>>>(
+      // Response structure: { data: [{ course: { id, title }, created, expires }] }
+      const response = await this.request<LearnWorldsApiResponse<Array<{
+        course: { id: string; title?: string };
+        created?: number;
+        expires?: number | null;
+      }>>>(
         `/v2/users/${userId}/courses`
       );
 
       const courses = response.data || [];
-      return courses.map((c) => c.id);
+      // Extract course ID from nested structure: data[].course.id
+      return courses.map((c) => c.course?.id).filter((id): id is string => !!id);
     } catch (error) {
       console.error('Error fetching user course access:', error);
       // Fallback: extract course IDs from enrollments if endpoint fails
