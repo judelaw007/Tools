@@ -14,7 +14,7 @@ export function PublicHeader() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const handleLogin = () => {
-    router.push('/auth/login');
+    router.push('/auth');
   };
 
   const handleLogout = async () => {
