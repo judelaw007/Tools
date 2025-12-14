@@ -3,26 +3,22 @@ import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
-import { getPlatformStats, getRecentTools, getAllCourses } from '@/lib/db';
+import { getPlatformStats, getRecentTools } from '@/lib/db';
 import {
   Wrench,
-  BookOpen,
   Users,
   TrendingUp,
   ArrowRight,
   Settings,
   FolderOpen,
-  Plus,
 } from 'lucide-react';
 
 export default async function AdminDashboardPage() {
   // Fetch real data from database
   const stats = await getPlatformStats();
   const recentTools = await getRecentTools(5);
-  const courses = await getAllCourses();
 
   const hasTools = stats.totalTools > 0;
-  const hasCourses = courses.length > 0;
 
   return (
     <DashboardLayout variant="admin">
@@ -66,26 +62,6 @@ export default async function AdminDashboardPage() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-slate-500 mb-1">Courses</p>
-                <p className="text-2xl font-bold text-mojitax-navy">{stats.totalCourses}</p>
-              </div>
-              <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center">
-                <BookOpen className="w-6 h-6 text-green-600" />
-              </div>
-            </div>
-            <Link
-              href="/admin/courses"
-              className="mt-3 inline-flex items-center gap-1 text-xs text-mojitax-green-dark hover:text-mojitax-green"
-            >
-              Manage courses
-              <ArrowRight className="w-3 h-3" />
-            </Link>
-          </CardContent>
-        </Card>
 
         <Card>
           <CardContent className="p-4">
@@ -175,96 +151,45 @@ export default async function AdminDashboardPage() {
           </CardContent>
         </Card>
       ) : (
-        /* Tools & Courses Grid */
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Recent Tools */}
-          <Card className="lg:col-span-2">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Recent Tools</CardTitle>
-              <Link href="/admin/tools">
-                <Button variant="ghost" size="sm">
-                  View All
-                  <ArrowRight className="w-4 h-4" />
-                </Button>
-              </Link>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {recentTools.map((tool) => (
-                  <div
-                    key={tool.id}
-                    className="flex items-center gap-4 p-3 rounded-lg bg-slate-50"
-                  >
-                    <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center">
-                      <Wrench className="w-5 h-5 text-slate-600" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-medium text-mojitax-navy">{tool.name}</p>
-                      <p className="text-xs text-slate-500">
-                        Updated {tool.updatedAt.toLocaleDateString()}
-                      </p>
-                    </div>
-                    <Badge
-                      variant={tool.status === 'active' ? 'active' : tool.status === 'draft' ? 'draft' : 'inactive'}
-                      dot
-                      size="sm"
-                    >
-                      {tool.status === 'active' ? 'Live' : tool.status.charAt(0).toUpperCase() + tool.status.slice(1)}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Courses Overview */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BookOpen className="w-5 h-5 text-slate-400" />
-                Courses
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {!hasCourses ? (
-                <div className="text-center py-4">
-                  <p className="text-slate-500 text-sm mb-4">No courses configured yet</p>
-                  <Link href="/admin/courses">
-                    <Button variant="outline" size="sm">
-                      <Plus className="w-4 h-4" />
-                      Add Course
-                    </Button>
-                  </Link>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {courses.slice(0, 4).map((course) => (
-                    <div key={course.id} className="flex items-start gap-3">
-                      <div className="w-8 h-8 rounded-full bg-mojitax-green/10 flex items-center justify-center flex-shrink-0">
-                        <BookOpen className="w-4 h-4 text-mojitax-green" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-mojitax-navy truncate">
-                          {course.name}
-                        </p>
-                        <p className="text-xs text-slate-500">
-                          {course.isActive ? 'Active' : 'Inactive'}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-              <Link
-                href="/admin/courses"
-                className="mt-4 inline-flex items-center gap-1 text-sm text-mojitax-green-dark hover:text-mojitax-green"
-              >
-                Manage all courses
+        /* Recent Tools */
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>Recent Tools</CardTitle>
+            <Link href="/admin/tools">
+              <Button variant="ghost" size="sm">
+                View All
                 <ArrowRight className="w-4 h-4" />
-              </Link>
-            </CardContent>
-          </Card>
-        </div>
+              </Button>
+            </Link>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {recentTools.map((tool) => (
+                <div
+                  key={tool.id}
+                  className="flex items-center gap-4 p-3 rounded-lg bg-slate-50"
+                >
+                  <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center">
+                    <Wrench className="w-5 h-5 text-slate-600" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium text-mojitax-navy">{tool.name}</p>
+                    <p className="text-xs text-slate-500">
+                      Updated {tool.updatedAt.toLocaleDateString()}
+                    </p>
+                  </div>
+                  <Badge
+                    variant={tool.status === 'active' ? 'active' : tool.status === 'draft' ? 'draft' : 'inactive'}
+                    dot
+                    size="sm"
+                  >
+                    {tool.status === 'active' ? 'Live' : tool.status.charAt(0).toUpperCase() + tool.status.slice(1)}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       )}
 
     </DashboardLayout>
