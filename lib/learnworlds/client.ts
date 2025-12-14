@@ -77,7 +77,21 @@ class LearnWorldsClient {
       const response = await this.request<LearnWorldsApiResponse<LearnWorldsUser[]>>(
         `/v2/users?email=${encodeURIComponent(email)}`
       );
-      return response.data?.[0] || null;
+
+      const user = response.data?.[0];
+
+      // IMPORTANT: Verify the returned user's email actually matches
+      // LearnWorlds API may return other users if no exact match found
+      if (user && user.email?.toLowerCase() === email.toLowerCase()) {
+        return user;
+      }
+
+      // Log mismatch for debugging
+      if (user && user.email?.toLowerCase() !== email.toLowerCase()) {
+        console.warn(`LearnWorlds email mismatch: searched for "${email}" but got "${user.email}"`);
+      }
+
+      return null;
     } catch (error) {
       console.error('Error fetching user by email:', error);
       return null;
