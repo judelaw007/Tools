@@ -249,3 +249,38 @@ BEGIN
   );
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- ===========================================
+-- USER_SAVED_WORK TABLE
+-- ===========================================
+-- Stores user's saved calculations, assessments, and other tool work
+-- Linked to user via email (from LearnWorlds authentication)
+
+CREATE TABLE IF NOT EXISTS user_saved_work (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_email VARCHAR(255) NOT NULL,
+  tool_id TEXT NOT NULL REFERENCES tools(id) ON DELETE CASCADE,
+  name VARCHAR(255) NOT NULL,
+  data JSONB NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Indexes for efficient queries
+CREATE INDEX IF NOT EXISTS idx_saved_work_user_tool ON user_saved_work(user_email, tool_id);
+CREATE INDEX IF NOT EXISTS idx_saved_work_updated ON user_saved_work(updated_at DESC);
+
+-- Enable RLS
+ALTER TABLE user_saved_work ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies - Service role handles email filtering
+CREATE POLICY "Service role can manage saved work"
+  ON user_saved_work FOR ALL
+  USING (true)
+  WITH CHECK (true);
+
+-- Trigger for updated_at
+DROP TRIGGER IF EXISTS saved_work_updated_at ON user_saved_work;
+CREATE TRIGGER saved_work_updated_at
+  BEFORE UPDATE ON user_saved_work
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
