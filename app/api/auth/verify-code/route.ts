@@ -16,7 +16,7 @@ import { verifyCode } from '@/lib/auth/verification-codes';
  */
 export async function POST(request: NextRequest) {
   try {
-    const { email, code, returnTo = '/dashboard' } = await request.json();
+    const { email, code, returnTo = '/dashboard', rememberMe = true } = await request.json();
 
     // Validate inputs
     if (!email || typeof email !== 'string') {
@@ -106,14 +106,25 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Set session cookies (7 days expiry)
-    const cookieOptions = {
+    // Set session cookies
+    // rememberMe: true = 30 days, false = session cookie (browser close)
+    const cookieOptions: {
+      httpOnly: boolean;
+      secure: boolean;
+      sameSite: 'lax';
+      path: string;
+      maxAge?: number;
+    } = {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax' as const,
-      maxAge: 60 * 60 * 24 * 7, // 7 days
+      sameSite: 'lax',
       path: '/',
     };
+
+    // Only set maxAge if rememberMe is true (30 days)
+    if (rememberMe) {
+      cookieOptions.maxAge = 60 * 60 * 24 * 30; // 30 days
+    }
 
     // Set auth role cookie (readable by middleware)
     response.cookies.set('mojitax-auth', 'user', cookieOptions);
