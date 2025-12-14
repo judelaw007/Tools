@@ -65,8 +65,8 @@ export function StudentViewProvider({ children }: { children: React.ReactNode })
       await syncToServer(newState);
       setState(newState);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(newState));
-      // Reload page to apply new view mode
-      window.location.reload();
+      // Redirect to dashboard to see student view
+      window.location.href = '/dashboard';
     } catch (error) {
       console.error('Failed to set view mode:', error);
     } finally {
@@ -82,8 +82,8 @@ export function StudentViewProvider({ children }: { children: React.ReactNode })
       await syncToServer(newState);
       setState(newState);
       localStorage.removeItem(STORAGE_KEY);
-      // Reload page to apply normal admin view
-      window.location.reload();
+      // Redirect back to admin panel
+      window.location.href = '/admin';
     } catch (error) {
       console.error('Failed to exit student view:', error);
     } finally {
