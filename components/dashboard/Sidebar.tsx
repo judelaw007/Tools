@@ -1,9 +1,12 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Logo } from '@/components/ui/Logo';
+import { useStudentView } from '@/lib/student-view';
+import { useAuth } from '@/lib/auth';
 import {
   LayoutDashboard,
   Wrench,
@@ -12,6 +15,13 @@ import {
   LogOut,
   ChevronLeft,
   ExternalLink,
+  Eye,
+  EyeOff,
+  User,
+  UserX,
+  ChevronDown,
+  Loader2,
+  X,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -29,27 +39,74 @@ interface NavItem {
 
 export function Sidebar({ variant = 'user', isCollapsed = false, onToggleCollapse }: SidebarProps) {
   const pathname = usePathname();
-  
+  const { logout } = useAuth();
+  const {
+    mode,
+    selectedCourseName,
+    setViewMode,
+    exitStudentView,
+    isInStudentView,
+    isLoading,
+    availableCourses,
+    loadCourses,
+  } = useStudentView();
+
+  const [isStudentViewOpen, setIsStudentViewOpen] = useState(false);
+  const [showCourseSelect, setShowCourseSelect] = useState(false);
+
+  // Load courses when dropdown opens
+  useEffect(() => {
+    if (isStudentViewOpen && availableCourses.length === 0) {
+      loadCourses();
+    }
+  }, [isStudentViewOpen, availableCourses.length, loadCourses]);
+
+  const handleModeSelect = (newMode: 'no-account' | 'no-courses' | 'with-course') => {
+    if (newMode === 'with-course') {
+      setShowCourseSelect(true);
+    } else {
+      setViewMode(newMode);
+      setIsStudentViewOpen(false);
+    }
+  };
+
+  const handleCourseSelect = (courseId: string, courseName: string) => {
+    setViewMode('with-course', courseId, courseName);
+    setShowCourseSelect(false);
+    setIsStudentViewOpen(false);
+  };
+
+  const handleExitStudentView = () => {
+    exitStudentView();
+    setIsStudentViewOpen(false);
+    setShowCourseSelect(false);
+  };
+
+  const handleSignOut = async () => {
+    await logout();
+    window.location.href = '/';
+  };
+
   const userNavItems: NavItem[] = [
     { href: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5" /> },
     { href: '/tools', label: 'Browse Tools', icon: <Wrench className="w-5 h-5" /> },
   ];
-  
+
   const adminNavItems: NavItem[] = [
     { href: '/admin', label: 'Overview', icon: <LayoutDashboard className="w-5 h-5" /> },
     { href: '/admin/tools', label: 'Tools', icon: <Wrench className="w-5 h-5" /> },
     { href: '/admin/courses', label: 'Courses', icon: <BookOpen className="w-5 h-5" /> },
   ];
-  
+
   const navItems = variant === 'admin' ? adminNavItems : userNavItems;
-  
+
   const isActive = (href: string) => {
     if (href === '/admin' || href === '/dashboard') {
       return pathname === href;
     }
     return pathname.startsWith(href);
   };
-  
+
   return (
     <aside
       className={cn(
@@ -66,7 +123,7 @@ export function Sidebar({ variant = 'user', isCollapsed = false, onToggleCollaps
           <Logo showText={!isCollapsed} size="md" />
         </Link>
       </div>
-      
+
       {/* Collapse Toggle */}
       {onToggleCollapse && (
         <button
@@ -76,7 +133,7 @@ export function Sidebar({ variant = 'user', isCollapsed = false, onToggleCollaps
           <ChevronLeft className={cn('w-4 h-4 text-slate-600 transition-transform', isCollapsed && 'rotate-180')} />
         </button>
       )}
-      
+
       {/* Admin Badge */}
       {variant === 'admin' && !isCollapsed && (
         <div className="px-4 py-3 border-b border-slate-200">
@@ -86,7 +143,21 @@ export function Sidebar({ variant = 'user', isCollapsed = false, onToggleCollaps
           </span>
         </div>
       )}
-      
+
+      {/* Student View Active Banner */}
+      {variant === 'admin' && isInStudentView && !isCollapsed && (
+        <div className="px-3 py-2 bg-amber-50 border-b border-amber-200">
+          <div className="flex items-center gap-2 text-amber-800 text-xs font-medium">
+            <Eye className="w-3.5 h-3.5" />
+            <span className="flex-1 truncate">
+              {mode === 'no-account' && 'No Account'}
+              {mode === 'no-courses' && 'No Courses'}
+              {mode === 'with-course' && selectedCourseName}
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Navigation */}
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
         {navItems.map((item) => (
@@ -116,24 +187,139 @@ export function Sidebar({ variant = 'user', isCollapsed = false, onToggleCollaps
           </Link>
         ))}
       </nav>
-      
+
       {/* Footer Links */}
       <div className="border-t border-slate-200 px-3 py-4 space-y-1">
+        {/* Student View Button (Admin only) */}
         {variant === 'admin' && (
-          <Link
-            href="/dashboard"
-            className={cn(
-              'flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-mojitax-navy transition-colors',
-              isCollapsed && 'justify-center'
+          <div className="relative">
+            {isInStudentView ? (
+              // Exit Student View button
+              <button
+                onClick={handleExitStudentView}
+                disabled={isLoading}
+                className={cn(
+                  'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg bg-amber-100 text-amber-800 hover:bg-amber-200 transition-colors',
+                  isCollapsed && 'justify-center'
+                )}
+                title={isCollapsed ? 'Exit Student View' : undefined}
+              >
+                {isLoading ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <EyeOff className="w-5 h-5" />
+                )}
+                {!isCollapsed && <span>Exit Student View</span>}
+              </button>
+            ) : (
+              // Student View button
+              <button
+                onClick={() => setIsStudentViewOpen(!isStudentViewOpen)}
+                className={cn(
+                  'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-mojitax-navy transition-colors',
+                  isStudentViewOpen && 'bg-slate-100',
+                  isCollapsed && 'justify-center'
+                )}
+                title={isCollapsed ? 'Student View' : undefined}
+              >
+                <Eye className="w-5 h-5" />
+                {!isCollapsed && (
+                  <>
+                    <span className="flex-1 text-left">Student View</span>
+                    <ChevronDown className={cn('w-4 h-4 transition-transform', isStudentViewOpen && 'rotate-180')} />
+                  </>
+                )}
+              </button>
             )}
-            title={isCollapsed ? 'Exit Admin' : undefined}
-          >
-            <ExternalLink className="w-5 h-5" />
-            {!isCollapsed && <span>Exit Admin</span>}
-          </Link>
+
+            {/* Student View Dropdown */}
+            {isStudentViewOpen && !isCollapsed && !isInStudentView && (
+              <div className="absolute bottom-full left-0 right-0 mb-2 bg-white rounded-xl shadow-lg border border-slate-200 py-1 z-50">
+                {!showCourseSelect ? (
+                  <>
+                    <div className="px-4 py-2 border-b border-slate-100">
+                      <p className="text-sm font-medium text-mojitax-navy">Preview as Student</p>
+                    </div>
+
+                    <button
+                      onClick={() => handleModeSelect('no-account')}
+                      disabled={isLoading}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-slate-50 transition-colors"
+                    >
+                      <UserX className="w-4 h-4 text-slate-500" />
+                      <div className="flex-1">
+                        <p className="text-sm text-slate-700">No Account</p>
+                      </div>
+                    </button>
+
+                    <button
+                      onClick={() => handleModeSelect('no-courses')}
+                      disabled={isLoading}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-slate-50 transition-colors"
+                    >
+                      <User className="w-4 h-4 text-slate-500" />
+                      <div className="flex-1">
+                        <p className="text-sm text-slate-700">Account, No Courses</p>
+                      </div>
+                    </button>
+
+                    <button
+                      onClick={() => handleModeSelect('with-course')}
+                      disabled={isLoading}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-slate-50 transition-colors border-t border-slate-100"
+                    >
+                      <BookOpen className="w-4 h-4 text-slate-500" />
+                      <div className="flex-1">
+                        <p className="text-sm text-slate-700">With Specific Course</p>
+                      </div>
+                      <ChevronDown className="w-4 h-4 text-slate-400 -rotate-90" />
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <div className="px-4 py-2 border-b border-slate-100 flex items-center gap-2">
+                      <button
+                        onClick={() => setShowCourseSelect(false)}
+                        className="p-1 hover:bg-slate-100 rounded"
+                      >
+                        <ChevronDown className="w-4 h-4 text-slate-500 rotate-90" />
+                      </button>
+                      <p className="text-sm font-medium text-mojitax-navy">Select Course</p>
+                    </div>
+
+                    {isLoading ? (
+                      <div className="flex items-center justify-center py-6">
+                        <Loader2 className="w-5 h-5 animate-spin text-slate-400" />
+                      </div>
+                    ) : availableCourses.length === 0 ? (
+                      <div className="px-4 py-4 text-center text-sm text-slate-500">
+                        No courses available
+                      </div>
+                    ) : (
+                      <div className="max-h-48 overflow-y-auto">
+                        {availableCourses
+                          .filter((c) => c.type === 'course')
+                          .map((course) => (
+                            <button
+                              key={course.id}
+                              onClick={() => handleCourseSelect(course.id, course.title)}
+                              className="w-full flex items-center gap-3 px-4 py-2 text-left hover:bg-slate-50 transition-colors"
+                            >
+                              <BookOpen className="w-4 h-4 text-slate-400" />
+                              <span className="text-sm text-slate-700 truncate">{course.title}</span>
+                            </button>
+                          ))}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
+          </div>
         )}
-        
+
         <button
+          onClick={handleSignOut}
           className={cn(
             'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-red-50 hover:text-red-600 transition-colors',
             isCollapsed && 'justify-center'
@@ -144,6 +330,17 @@ export function Sidebar({ variant = 'user', isCollapsed = false, onToggleCollaps
           {!isCollapsed && <span>Sign Out</span>}
         </button>
       </div>
+
+      {/* Click outside to close dropdown */}
+      {isStudentViewOpen && (
+        <div
+          className="fixed inset-0 z-30"
+          onClick={() => {
+            setIsStudentViewOpen(false);
+            setShowCourseSelect(false);
+          }}
+        />
+      )}
     </aside>
   );
 }
