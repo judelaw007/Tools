@@ -497,22 +497,6 @@ export default function AdminCoursesPage() {
         </CardContent>
       </Card>
 
-      {/* Manual Course Management */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Local Course Registry</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-8 text-slate-500">
-            <BookOpen className="w-12 h-12 mx-auto mb-3 text-slate-300" />
-            <p className="mb-2">No courses registered locally yet</p>
-            <p className="text-sm">
-              Connect to LearnWorlds above to import courses, or add them manually.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Help Card */}
       <div className="mt-6 p-4 bg-blue-50 rounded-lg">
         <h4 className="font-medium text-blue-800 mb-2">How Course-Based Tool Access Works</h4>
