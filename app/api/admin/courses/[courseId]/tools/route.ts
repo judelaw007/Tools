@@ -17,7 +17,7 @@ export async function GET(
   const { courseId } = await params;
 
   try {
-    const allocatedToolIds = getToolsForCourse(courseId);
+    const allocatedToolIds = await getToolsForCourse(courseId);
     const allTools = await getAllTools();
 
     const allocatedTools = allTools.filter(tool =>
@@ -60,7 +60,7 @@ export async function POST(
     }
 
     // Store the allocation using shared storage
-    setToolsForCourse(courseId, toolIds);
+    await setToolsForCourse(courseId, toolIds);
 
     return NextResponse.json({
       success: true,
@@ -87,7 +87,7 @@ export async function DELETE(
   const { courseId } = await params;
 
   try {
-    clearCourseAllocations(courseId);
+    await clearCourseAllocations(courseId);
 
     return NextResponse.json({
       success: true,

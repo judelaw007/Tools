@@ -39,7 +39,7 @@ interface NavItem {
 
 export function Sidebar({ variant = 'user', isCollapsed = false, onToggleCollapse }: SidebarProps) {
   const pathname = usePathname();
-  const { logout } = useAuth();
+  const { logout, isAdmin } = useAuth();
   const {
     mode,
     selectedCourseName,
@@ -50,6 +50,9 @@ export function Sidebar({ variant = 'user', isCollapsed = false, onToggleCollaps
     availableCourses,
     loadCourses,
   } = useStudentView();
+
+  // Only show student view features for admins
+  const showStudentViewFeatures = isAdmin && isInStudentView;
 
   const [isStudentViewOpen, setIsStudentViewOpen] = useState(false);
   const [showCourseSelect, setShowCourseSelect] = useState(false);
@@ -135,7 +138,7 @@ export function Sidebar({ variant = 'user', isCollapsed = false, onToggleCollaps
       )}
 
       {/* Admin Badge */}
-      {variant === 'admin' && !isInStudentView && !isCollapsed && (
+      {variant === 'admin' && !showStudentViewFeatures && !isCollapsed && (
         <div className="px-4 py-3 border-b border-slate-200">
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-mojitax-navy/5 text-mojitax-navy text-xs font-semibold rounded-full">
             <Settings className="w-3 h-3" />
@@ -144,8 +147,8 @@ export function Sidebar({ variant = 'user', isCollapsed = false, onToggleCollaps
         </div>
       )}
 
-      {/* Student View Active Banner - shows on any sidebar when in student view */}
-      {isInStudentView && !isCollapsed && (
+      {/* Student View Active Banner - shows on any sidebar when admin is in student view */}
+      {showStudentViewFeatures && !isCollapsed && (
         <div className="px-3 py-2 bg-amber-50 border-b border-amber-200">
           <div className="flex items-center gap-2 text-amber-800 text-xs font-medium">
             <Eye className="w-3.5 h-3.5" />
@@ -190,8 +193,8 @@ export function Sidebar({ variant = 'user', isCollapsed = false, onToggleCollaps
 
       {/* Footer Links */}
       <div className="border-t border-slate-200 px-3 py-4 space-y-1">
-        {/* Exit Student View button - shows on any sidebar when in student view */}
-        {isInStudentView && (
+        {/* Exit Student View button - shows on any sidebar when admin is in student view */}
+        {showStudentViewFeatures && (
           <button
             onClick={handleExitStudentView}
             disabled={isLoading}
@@ -211,7 +214,7 @@ export function Sidebar({ variant = 'user', isCollapsed = false, onToggleCollaps
         )}
 
         {/* Student View Button (Admin sidebar only, when not in student view) */}
-        {variant === 'admin' && !isInStudentView && (
+        {variant === 'admin' && isAdmin && !showStudentViewFeatures && (
           <div className="relative">
             <button
               onClick={() => setIsStudentViewOpen(!isStudentViewOpen)}
@@ -232,7 +235,7 @@ export function Sidebar({ variant = 'user', isCollapsed = false, onToggleCollaps
             </button>
 
             {/* Student View Dropdown */}
-            {isStudentViewOpen && !isCollapsed && !isInStudentView && (
+            {isStudentViewOpen && !isCollapsed && isAdmin && !showStudentViewFeatures && (
               <div className="absolute bottom-full left-0 right-0 mb-2 bg-white rounded-xl shadow-lg border border-slate-200 py-1 z-50">
                 {!showCourseSelect ? (
                   <>
