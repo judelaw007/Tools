@@ -21,33 +21,44 @@ export function StudentViewProvider({ children }: { children: React.ReactNode })
   const [isLoading, setIsLoading] = useState(false);
   const [availableCourses, setAvailableCourses] = useState<Course[]>([]);
 
-  // Load saved state on mount
+  // Sync state to server via API (only for admins)
+  const syncToServer = async (newState: StudentViewState): Promise<boolean> => {
+    try {
+      const response = await fetch('/api/admin/student-view', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newState),
+      });
+
+      // If unauthorized (401), user is not admin - clear localStorage
+      if (response.status === 401) {
+        localStorage.removeItem(STORAGE_KEY);
+        return false;
+      }
+
+      return response.ok;
+    } catch (error) {
+      console.error('Failed to sync student view state:', error);
+      return false;
+    }
+  };
+
+  // Load saved state on mount - only restore locally, don't sync to server
+  // (syncing happens when admin explicitly sets a mode)
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
+        // Only restore state if it's a valid student view mode
+        // Don't sync to server here - that would cause 401 for non-admins
         setState(parsed);
-        // Also sync to server
-        syncToServer(parsed);
       } catch {
-        // Invalid stored state
+        // Invalid stored state - clear it
+        localStorage.removeItem(STORAGE_KEY);
       }
     }
   }, []);
-
-  // Sync state to server via API
-  const syncToServer = async (newState: StudentViewState) => {
-    try {
-      await fetch('/api/admin/student-view', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newState),
-      });
-    } catch (error) {
-      console.error('Failed to sync student view state:', error);
-    }
-  };
 
   const setViewMode = useCallback(async (
     mode: StudentViewMode,

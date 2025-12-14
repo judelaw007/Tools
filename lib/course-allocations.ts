@@ -296,3 +296,52 @@ export async function getCoursesWithTools(): Promise<CourseWithTools[]> {
     return [];
   }
 }
+
+/**
+ * Course info for display on tool pages
+ */
+export interface CourseInfo {
+  id: string;
+  name: string;
+  slug: string;
+  learnworldsUrl?: string;
+}
+
+/**
+ * Get courses that have a specific tool allocated (with names for display)
+ * Used for public tool pages to show which courses offer the tool
+ */
+export async function getCoursesForToolWithNames(toolId: string): Promise<CourseInfo[]> {
+  const supabase = createServiceClient();
+
+  try {
+    const { data, error } = await supabase
+      .from('course_tool_allocations')
+      .select('course_id, course_name')
+      .eq('tool_id', toolId);
+
+    if (error) {
+      console.error('Error fetching courses for tool:', error);
+      return [];
+    }
+
+    // Return unique courses with their names
+    const courseMap = new Map<string, CourseInfo>();
+
+    data?.forEach((row: { course_id: string; course_name: string | null }) => {
+      if (!courseMap.has(row.course_id)) {
+        courseMap.set(row.course_id, {
+          id: row.course_id,
+          name: row.course_name || row.course_id,
+          slug: row.course_id, // Use ID as slug for LearnWorlds URL
+          learnworldsUrl: `https://www.mojitax.co.uk/course/${row.course_id}`,
+        });
+      }
+    });
+
+    return Array.from(courseMap.values());
+  } catch (error) {
+    console.error('getCoursesForToolWithNames error:', error);
+    return [];
+  }
+}

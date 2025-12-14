@@ -60,7 +60,15 @@ export async function POST(
     }
 
     // Store the allocation using shared storage (with course name for display)
-    await setToolsForCourse(courseId, toolIds, courseName);
+    const saved = await setToolsForCourse(courseId, toolIds, courseName);
+
+    if (!saved) {
+      console.error('setToolsForCourse returned false - check if course_tool_allocations table exists in Supabase');
+      return NextResponse.json(
+        { success: false, error: 'Failed to save allocations. Check if course_tool_allocations table exists in Supabase.' },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       success: true,
@@ -69,6 +77,7 @@ export async function POST(
       message: `Allocated ${toolIds.length} tools to course`,
     });
   } catch (error) {
+    console.error('POST /api/admin/courses/[courseId]/tools error:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to allocate tools' },
       { status: 500 }

@@ -8,7 +8,8 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { ToolPageClient } from '@/components/tools/ToolPageClient';
 import { ToolAccessCard } from '@/components/tools/ToolAccessCard';
-import { getToolBySlug, getCoursesForTool } from '@/lib/db';
+import { getToolBySlug } from '@/lib/db';
+import { getCoursesForToolWithNames } from '@/lib/course-allocations';
 import { CATEGORY_METADATA } from '@/lib/tools/registry';
 import { getServerSession, hasToolAccess } from '@/lib/server-session';
 import {
@@ -70,8 +71,8 @@ export default async function ToolPage({ params }: ToolPageProps) {
   const isAuthenticated = !!session;
   const canAccessTool = await hasToolAccess(tool.id);
 
-  // Fetch courses that include this tool (from LearnWorlds allocations)
-  const courses = await getCoursesForTool(tool.id);
+  // Fetch courses that include this tool (from course-tool allocations)
+  const courses = await getCoursesForToolWithNames(tool.id);
 
   // If authenticated AND has access, render the tool
   if (isAuthenticated && canAccessTool) {
