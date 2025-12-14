@@ -7,6 +7,7 @@
  * CREATE TABLE course_tool_allocations (
  *   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
  *   course_id TEXT NOT NULL,
+ *   course_name TEXT,
  *   tool_id TEXT NOT NULL,
  *   created_at TIMESTAMPTZ DEFAULT NOW(),
  *   UNIQUE(course_id, tool_id)
@@ -69,7 +70,7 @@ export async function getCoursesForTool(toolId: string): Promise<string[]> {
 /**
  * Set tool allocations for a course (replaces existing)
  */
-export async function setToolsForCourse(courseId: string, toolIds: string[]): Promise<boolean> {
+export async function setToolsForCourse(courseId: string, toolIds: string[], courseName?: string): Promise<boolean> {
   const supabase = createServiceClient();
 
   try {
@@ -92,6 +93,7 @@ export async function setToolsForCourse(courseId: string, toolIds: string[]): Pr
     // Insert new allocations
     const allocations = toolIds.map(toolId => ({
       course_id: courseId,
+      course_name: courseName || null,
       tool_id: toolId,
     }));
 
@@ -235,4 +237,62 @@ export async function checkUserToolAccess(
     hasAccess: matchingCourses.length > 0,
     viaCourses: matchingCourses,
   };
+}
+
+/**
+ * Course with tools info for dashboard display
+ */
+export interface CourseWithTools {
+  courseId: string;
+  courseName: string;
+  toolCount: number;
+  toolIds: string[];
+}
+
+/**
+ * Get all courses that have tools allocated, with their tool counts
+ * Used for the user dashboard to show courses with tools
+ */
+export async function getCoursesWithTools(): Promise<CourseWithTools[]> {
+  const supabase = createServiceClient();
+
+  try {
+    const { data, error } = await supabase
+      .from('course_tool_allocations')
+      .select('course_id, course_name, tool_id');
+
+    if (error) {
+      console.error('Error fetching courses with tools:', error);
+      return [];
+    }
+
+    // Group by course
+    const courseMap = new Map<string, { name: string; toolIds: string[] }>();
+
+    data?.forEach((row: { course_id: string; course_name: string | null; tool_id: string }) => {
+      if (!courseMap.has(row.course_id)) {
+        courseMap.set(row.course_id, {
+          name: row.course_name || row.course_id,
+          toolIds: [],
+        });
+      }
+      courseMap.get(row.course_id)!.toolIds.push(row.tool_id);
+    });
+
+    // Convert to array
+    const result: CourseWithTools[] = [];
+    courseMap.forEach((value, courseId) => {
+      result.push({
+        courseId,
+        courseName: value.name,
+        toolCount: value.toolIds.length,
+        toolIds: value.toolIds,
+      });
+    });
+
+    return result;
+  } catch (error) {
+    console.error('getCoursesWithTools error:', error);
+    return [];
+  }
 }

@@ -3,38 +3,44 @@ import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
-import { ToolCard } from '@/components/tools/ToolCard';
-import { getActiveTools, getActiveCourses } from '@/lib/db';
-import { CATEGORY_METADATA } from '@/lib/tools/registry';
-import { filterToolsByAccess, getServerSession } from '@/lib/server-session';
+import { getCoursesWithTools } from '@/lib/course-allocations';
+import { getServerSession } from '@/lib/server-session';
 import {
-  Calculator,
   BookOpen,
   Wrench,
   ArrowRight,
   ExternalLink,
   Sparkles,
-  Star,
   Lock,
   Unlock,
+  GraduationCap,
+  ChevronRight,
 } from 'lucide-react';
 
 export default async function DashboardPage() {
-  // Fetch tools and courses from database
-  const allToolsRaw = await getActiveTools();
-  const courses = await getActiveCourses();
-
   // Get current user session
   const session = await getServerSession();
 
-  // Add access flags to tools based on user's enrollments
-  const allTools = await filterToolsByAccess(allToolsRaw);
+  // Get all courses that have tools allocated
+  const coursesWithTools = await getCoursesWithTools();
 
-  // Count accessible tools
-  const accessibleToolsCount = allTools.filter((t) => t.hasAccess).length;
+  // Get user's accessible course IDs
+  const userCourseIds = new Set(session?.accessibleCourseIds || []);
 
-  const hasTools = allTools.length > 0;
-  const hasCourses = courses.length > 0;
+  // Determine which courses the user has access to
+  const coursesWithAccess = coursesWithTools.map(course => ({
+    ...course,
+    hasAccess: userCourseIds.has(course.courseId),
+  }));
+
+  // Count stats
+  const accessibleCoursesCount = coursesWithAccess.filter(c => c.hasAccess).length;
+  const totalToolsCount = coursesWithTools.reduce((sum, c) => sum + c.toolCount, 0);
+  const accessibleToolsCount = coursesWithAccess
+    .filter(c => c.hasAccess)
+    .reduce((sum, c) => sum + c.toolCount, 0);
+
+  const hasCourses = coursesWithTools.length > 0;
 
   return (
     <DashboardLayout>
@@ -44,7 +50,7 @@ export default async function DashboardPage() {
           Welcome to Your Dashboard
         </h1>
         <p className="text-slate-600">
-          Access your demo tools and continue learning
+          Access your course tools and continue learning
         </p>
       </div>
 
@@ -56,11 +62,28 @@ export default async function DashboardPage() {
               <Unlock className="w-6 h-6 text-green-600" />
             </div>
             <div>
-              <p className="text-sm text-slate-500">Your Tools</p>
+              <p className="text-sm text-slate-500">Your Courses</p>
+              <p className="text-2xl font-bold text-mojitax-navy">
+                {accessibleCoursesCount}
+                <span className="text-sm font-normal text-slate-400 ml-1">
+                  / {coursesWithTools.length}
+                </span>
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4 flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center">
+              <Wrench className="w-6 h-6 text-blue-600" />
+            </div>
+            <div>
+              <p className="text-sm text-slate-500">Tools Available</p>
               <p className="text-2xl font-bold text-mojitax-navy">
                 {accessibleToolsCount}
                 <span className="text-sm font-normal text-slate-400 ml-1">
-                  / {allTools.length}
+                  / {totalToolsCount}
                 </span>
               </p>
             </div>
@@ -73,23 +96,9 @@ export default async function DashboardPage() {
               <Lock className="w-6 h-6 text-slate-500" />
             </div>
             <div>
-              <p className="text-sm text-slate-500">Locked Tools</p>
+              <p className="text-sm text-slate-500">Locked Courses</p>
               <p className="text-2xl font-bold text-mojitax-navy">
-                {allTools.length - accessibleToolsCount}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4 flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center">
-              <Calculator className="w-6 h-6 text-purple-600" />
-            </div>
-            <div>
-              <p className="text-sm text-slate-500">Categories</p>
-              <p className="text-2xl font-bold text-mojitax-navy">
-                {hasTools ? new Set(allTools.map(t => t.category)).size : 0}
+                {coursesWithTools.length - accessibleCoursesCount}
               </p>
             </div>
           </CardContent>
@@ -101,7 +110,7 @@ export default async function DashboardPage() {
               <BookOpen className="w-6 h-6 text-amber-600" />
             </div>
             <div>
-              <p className="text-sm text-slate-500">Your Courses</p>
+              <p className="text-sm text-slate-500">Your Enrollments</p>
               <p className="text-2xl font-bold text-mojitax-navy">
                 {session?.enrollments?.length || 0}
               </p>
@@ -110,22 +119,96 @@ export default async function DashboardPage() {
         </Card>
       </div>
 
-      {/* Tools Section */}
-      {hasTools ? (
+      {/* Courses with Tools */}
+      {hasCourses ? (
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold text-mojitax-navy">
-              Your Tools
+              Courses with Tools
             </h2>
-            <Link href="/tools" className="text-sm text-mojitax-green-dark hover:text-mojitax-green flex items-center gap-1">
-              View All
-              <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
+            <a
+              href="https://www.mojitax.co.uk/courses"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-mojitax-green-dark hover:text-mojitax-green flex items-center gap-1"
+            >
+              Browse All Courses
+              <ExternalLink className="w-3.5 h-3.5" />
+            </a>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {allTools.slice(0, 6).map((tool) => (
-              <ToolCard key={tool.id} tool={tool} hasAccess={tool.hasAccess} />
+            {coursesWithAccess.map((course) => (
+              <Card
+                key={course.courseId}
+                className={`overflow-hidden transition-all ${
+                  course.hasAccess
+                    ? 'hover:shadow-lg hover:border-mojitax-green/30'
+                    : 'opacity-75'
+                }`}
+              >
+                <CardContent className="p-0">
+                  {/* Course Header */}
+                  <div className={`p-4 ${course.hasAccess ? 'bg-gradient-to-r from-mojitax-green/10 to-transparent' : 'bg-slate-50'}`}>
+                    <div className="flex items-start justify-between mb-2">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                        course.hasAccess ? 'bg-mojitax-green/20' : 'bg-slate-200'
+                      }`}>
+                        <GraduationCap className={`w-5 h-5 ${
+                          course.hasAccess ? 'text-mojitax-green' : 'text-slate-400'
+                        }`} />
+                      </div>
+                      <Badge
+                        variant={course.hasAccess ? 'active' : 'default'}
+                        size="sm"
+                      >
+                        {course.hasAccess ? (
+                          <>
+                            <Unlock className="w-3 h-3 mr-1" />
+                            Access Granted
+                          </>
+                        ) : (
+                          <>
+                            <Lock className="w-3 h-3 mr-1" />
+                            Locked
+                          </>
+                        )}
+                      </Badge>
+                    </div>
+                    <h3 className="font-semibold text-mojitax-navy mb-1 line-clamp-2">
+                      {course.courseName}
+                    </h3>
+                    <p className="text-sm text-slate-500">
+                      {course.toolCount} tool{course.toolCount !== 1 ? 's' : ''} available
+                    </p>
+                  </div>
+
+                  {/* Course Actions */}
+                  <div className="p-4 border-t border-slate-100">
+                    {course.hasAccess ? (
+                      <Link href={`/dashboard/course/${course.courseId}`}>
+                        <Button variant="primary" size="sm" className="w-full">
+                          <Wrench className="w-4 h-4" />
+                          View Tools
+                          <ChevronRight className="w-4 h-4" />
+                        </Button>
+                      </Link>
+                    ) : (
+                      <a
+                        href={`https://www.mojitax.co.uk/course/${course.courseId}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <Button variant="outline" size="sm" className="w-full">
+                          <GraduationCap className="w-4 h-4" />
+                          Enroll to Access
+                          <ExternalLink className="w-4 h-4" />
+                        </Button>
+                      </a>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
             ))}
           </div>
         </div>
@@ -137,93 +220,102 @@ export default async function DashboardPage() {
               <Sparkles className="w-8 h-8 text-slate-400" />
             </div>
             <h3 className="text-xl font-semibold text-mojitax-navy mb-2">
-              No Tools Available Yet
+              No Courses with Tools Yet
             </h3>
             <p className="text-slate-500 mb-6 max-w-md mx-auto">
-              Demo tools are being developed. Once tools are created and published, they will appear here for you to use.
+              Demo tools are being developed. Once tools are allocated to courses, they will appear here for you to access.
             </p>
-            <Link href="https://mojitax.co.uk/courses" target="_blank">
+            <a href="https://www.mojitax.co.uk/courses" target="_blank" rel="noopener noreferrer">
               <Button variant="primary">
                 <BookOpen className="w-4 h-4" />
                 Browse MojiTax Courses
               </Button>
-            </Link>
+            </a>
           </CardContent>
         </Card>
       )}
 
-      {/* Tools by Category */}
-      {hasTools && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <Card className="lg:col-span-2">
-            <CardHeader>
-              <CardTitle>Tools by Category</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {Object.entries(
-                  allTools.reduce((acc, tool) => {
-                    if (!acc[tool.category]) acc[tool.category] = [];
-                    acc[tool.category].push(tool);
-                    return acc;
-                  }, {} as Record<string, typeof allTools>)
-                ).map(([category, tools]) => (
-                  <div
-                    key={category}
-                    className="flex items-center gap-4 p-3 rounded-lg hover:bg-slate-50 transition-colors"
-                  >
-                    <div className="w-2 h-2 rounded-full bg-mojitax-green" />
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-mojitax-navy">
-                        {CATEGORY_METADATA[category]?.name || category.replace('_', ' ')}
-                      </p>
-                      <p className="text-xs text-slate-500">{tools.length} tools available</p>
-                    </div>
-                    <Link href="/tools" className="text-xs text-mojitax-green-dark hover:underline">
-                      View
-                    </Link>
+      {/* Info Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* How it works */}
+        <Card>
+          <CardHeader>
+            <CardTitle>How Tool Access Works</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 rounded-full bg-mojitax-green/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <span className="text-xs font-bold text-mojitax-green">1</span>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-mojitax-navy">Enroll in a Course</p>
+                  <p className="text-xs text-slate-500">Purchase a course, bundle, or subscription at mojitax.co.uk</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 rounded-full bg-mojitax-green/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <span className="text-xs font-bold text-mojitax-green">2</span>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-mojitax-navy">Verify Your Email</p>
+                  <p className="text-xs text-slate-500">Use the same email you used for your MojiTax account</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 rounded-full bg-mojitax-green/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <span className="text-xs font-bold text-mojitax-green">3</span>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-mojitax-navy">Access Course Tools</p>
+                  <p className="text-xs text-slate-500">All tools allocated to your courses will be available</p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* MojiTax Courses Card */}
+        <Card className="bg-gradient-to-br from-mojitax-navy to-mojitax-navy-light text-white">
+          <CardContent className="p-6">
+            <h3 className="text-lg font-semibold mb-2">MojiTax Courses</h3>
+            <p className="text-sm text-white/80 mb-4">
+              Explore professional tax courses at MojiTax and unlock access to demo tools.
+            </p>
+
+            {session?.enrollments && session.enrollments.length > 0 ? (
+              <div className="space-y-3 mb-6">
+                <p className="text-xs text-white/60 font-medium uppercase tracking-wide">Your Enrollments</p>
+                {session.enrollments.slice(0, 3).map((enrollment) => (
+                  <div key={enrollment.product_id} className="p-3 bg-white/10 rounded-lg">
+                    <p className="text-sm font-medium">{enrollment.product_name}</p>
+                    <p className="text-xs text-white/60 capitalize">{enrollment.product_type}</p>
                   </div>
                 ))}
+                {session.enrollments.length > 3 && (
+                  <p className="text-xs text-white/60">
+                    +{session.enrollments.length - 3} more enrollments
+                  </p>
+                )}
               </div>
-            </CardContent>
-          </Card>
-
-          {/* Courses Card */}
-          <Card className="bg-gradient-to-br from-mojitax-navy to-mojitax-navy-light text-white">
-            <CardContent className="p-6">
-              <h3 className="text-lg font-semibold mb-2">MojiTax Courses</h3>
-              <p className="text-sm text-white/80 mb-4">
-                Access professional tax courses at MojiTax.
+            ) : (
+              <p className="text-sm text-white/60 mb-6">
+                Enroll in a course to unlock access to demo tools.
               </p>
+            )}
 
-              {hasCourses ? (
-                <div className="space-y-3 mb-6">
-                  {courses.slice(0, 3).map((course) => (
-                    <div key={course.id} className="p-3 bg-white/10 rounded-lg">
-                      <p className="text-sm font-medium">{course.name}</p>
-                      <p className="text-xs text-white/60">{course.description?.slice(0, 50)}...</p>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-white/60 mb-6">
-                  Courses will be linked here once configured.
-                </p>
-              )}
-
-              <Link href="https://mojitax.co.uk/courses" target="_blank">
-                <Button
-                  variant="outline"
-                  className="w-full border-white/30 text-white hover:bg-white/10"
-                >
-                  Browse Courses
-                  <ExternalLink className="w-4 h-4" />
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+            <a href="https://www.mojitax.co.uk/courses" target="_blank" rel="noopener noreferrer">
+              <Button
+                variant="outline"
+                className="w-full border-white/30 text-white hover:bg-white/10"
+              >
+                Browse Courses
+                <ExternalLink className="w-4 h-4" />
+              </Button>
+            </a>
+          </CardContent>
+        </Card>
+      </div>
     </DashboardLayout>
   );
 }
