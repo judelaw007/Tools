@@ -551,6 +551,7 @@ export async function getCourseStats() {
     return {
       totalCourses: 0,
       totalAllocations: 0,
+      allocatedTools: 0,
     };
   }
 
@@ -558,22 +559,24 @@ export async function getCourseStats() {
     const supabase = createServiceClient();
     const { data, error } = await supabase
       .from('course_tool_allocations')
-      .select('course_id')
-      .eq('is_active', true);
+      .select('course_id, tool_id');
 
     if (error) throw error;
 
     const uniqueCourses = new Set(data?.map(row => row.course_id) || []);
+    const uniqueTools = new Set(data?.map(row => row.tool_id) || []);
 
     return {
       totalCourses: uniqueCourses.size,
       totalAllocations: data?.length || 0,
+      allocatedTools: uniqueTools.size,
     };
   } catch (error) {
     console.error('Error fetching course stats from Supabase:', error);
     return {
       totalCourses: 0,
       totalAllocations: 0,
+      allocatedTools: 0,
     };
   }
 }

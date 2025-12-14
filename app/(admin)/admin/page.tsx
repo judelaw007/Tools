@@ -12,6 +12,7 @@ import {
   Settings,
   FolderOpen,
   BookOpen,
+  Link2,
 } from 'lucide-react';
 
 export default async function AdminDashboardPage() {
@@ -98,6 +99,23 @@ export default async function AdminDashboardPage() {
             </div>
             <p className="mt-3 text-xs text-slate-500">
               Tool submissions today
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-slate-500 mb-1">Allocated Tools</p>
+                <p className="text-2xl font-bold text-mojitax-navy">{stats.allocatedTools}</p>
+              </div>
+              <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center">
+                <Link2 className="w-6 h-6 text-green-600" />
+              </div>
+            </div>
+            <p className="mt-3 text-xs text-slate-500">
+              Linked to {stats.totalCourses} course{stats.totalCourses !== 1 ? 's' : ''}
             </p>
           </CardContent>
         </Card>
