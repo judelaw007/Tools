@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import {
   BookOpen,
-  Plus,
   RefreshCw,
   ExternalLink,
   AlertCircle,
@@ -500,12 +499,8 @@ export default function AdminCoursesPage() {
 
       {/* Manual Course Management */}
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader>
           <CardTitle>Local Course Registry</CardTitle>
-          <Button variant="primary" size="sm">
-            <Plus className="w-4 h-4" />
-            Add Course Manually
-          </Button>
         </CardHeader>
         <CardContent>
           <div className="text-center py-8 text-slate-500">
