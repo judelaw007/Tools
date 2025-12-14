@@ -296,9 +296,7 @@ export function Sidebar({ variant = 'user', isCollapsed = false, onToggleCollaps
                       </div>
                     ) : (
                       <div className="max-h-48 overflow-y-auto">
-                        {availableCourses
-                          .filter((c) => c.type === 'course')
-                          .map((course) => (
+                        {availableCourses.map((course) => (
                             <button
                               key={course.id}
                               onClick={() => handleCourseSelect(course.id, course.title)}
