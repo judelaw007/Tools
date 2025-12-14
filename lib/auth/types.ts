@@ -1,7 +1,8 @@
 // Auth cookie name - shared across all auth-related code
 export const AUTH_COOKIE_NAME = 'mojitax-dev-auth';
+export const SESSION_COOKIE_NAME = 'mojitax-session';
 
-export type UserRole = 'user' | 'admin';
+export type UserRole = 'user' | 'admin' | 'super_admin';
 
 export interface User {
   id: string;
