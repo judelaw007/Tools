@@ -264,7 +264,6 @@ function AuthContent() {
                     onChange={(e) => handleCodeChange(index, e.target.value)}
                     onKeyDown={(e) => handleKeyDown(index, e)}
                     className="w-11 h-14 text-center text-2xl font-bold border-2 border-slate-200 rounded-lg focus:border-mojitax-blue focus:ring-2 focus:ring-mojitax-blue/20 outline-none transition-all"
-                    disabled={step === 'verifying'}
                   />
                 ))}
               </div>
