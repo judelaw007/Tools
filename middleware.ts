@@ -7,7 +7,7 @@ import type { NextRequest } from 'next/server';
  * NO-DOOR PLATFORM MODEL:
  * - Users authenticate via "Access Tools" button in LearnWorlds courses
  * - URL: tools.mojitax.co.uk/auth?email={{user.email}}
- * - Email is verified against LearnWorlds API
+ * - Email is verified via 6-digit code sent to their email
  * - No visible login page - unauthenticated users redirect to mojitax.co.uk
  * - Admin has hidden access via /auth/admin
  *
@@ -17,9 +17,7 @@ import type { NextRequest } from 'next/server';
  * - This ensures access is revoked within 24 hours of losing course access
  *
  * Cookie Strategy:
- * - mojitax-auth: Contains user role ('user' | 'admin')
- * - mojitax-session: Contains full session data (LearnWorlds user info, enrollments)
- * - mojitax-dev-auth: Development mode auth (backward compatibility)
+ * - mojitax-session: Contains full session data (user info, role, enrollments)
  */
 
 // Enrollment refresh interval: 24 hours in milliseconds
@@ -28,9 +26,7 @@ const ENROLLMENT_REFRESH_INTERVAL = 24 * 60 * 60 * 1000;
 // Main site URL for redirect
 const MAIN_SITE_URL = 'https://www.mojitax.co.uk';
 
-const AUTH_COOKIE_NAME = 'mojitax-auth';
 const SESSION_COOKIE_NAME = 'mojitax-session';
-const DEV_AUTH_COOKIE_NAME = 'mojitax-dev-auth';
 
 // Routes that DON'T require authentication
 const publicRoutes = [
@@ -89,46 +85,6 @@ function needsEnrollmentRefresh(session: ReturnType<typeof parseSession>): boole
 }
 
 /**
- * Check if user has any role (is authenticated)
- */
-function isAuthenticated(
-  authCookie: string | undefined,
-  devAuthCookie: string | undefined,
-  session: ReturnType<typeof parseSession>
-): boolean {
-  // Check LearnWorlds session
-  if (session?.email) return true;
-
-  // Check production auth cookie
-  if (authCookie === 'user' || authCookie === 'admin') return true;
-
-  // Check dev auth cookie (backward compatibility)
-  if (devAuthCookie === 'user' || devAuthCookie === 'admin') return true;
-
-  return false;
-}
-
-/**
- * Check if user is admin
- */
-function isAdmin(
-  authCookie: string | undefined,
-  devAuthCookie: string | undefined,
-  session: ReturnType<typeof parseSession>
-): boolean {
-  // Check session role
-  if (session?.role === 'admin' || session?.role === 'super_admin') return true;
-
-  // Check production auth cookie
-  if (authCookie === 'admin') return true;
-
-  // Check dev auth cookie
-  if (devAuthCookie === 'admin') return true;
-
-  return false;
-}
-
-/**
  * Check if route is public (doesn't require auth)
  */
 function isPublicRoute(pathname: string): boolean {
@@ -145,17 +101,15 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Get all auth cookies
-  const authCookie = request.cookies.get(AUTH_COOKIE_NAME)?.value;
+  // Get session cookie
   const sessionCookie = request.cookies.get(SESSION_COOKIE_NAME)?.value;
-  const devAuthCookie = request.cookies.get(DEV_AUTH_COOKIE_NAME)?.value;
 
   // Parse session data
   const session = parseSession(sessionCookie);
 
-  // Check authentication status
-  const authenticated = isAuthenticated(authCookie, devAuthCookie, session);
-  const admin = isAdmin(authCookie, devAuthCookie, session);
+  // Check authentication status - must have valid session with email
+  const authenticated = !!session?.email;
+  const admin = session?.role === 'admin' || session?.role === 'super_admin';
 
   // ========================================
   // NO-DOOR PLATFORM - Redirect to main site if not authenticated

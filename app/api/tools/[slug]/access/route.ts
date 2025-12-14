@@ -2,9 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { checkToolAccess } from '@/lib/learnworlds/access-control';
 
-const AUTH_COOKIE_NAME = 'mojitax-auth';
 const SESSION_COOKIE_NAME = 'mojitax-session';
-const DEV_AUTH_COOKIE_NAME = 'mojitax-dev-auth';
 
 interface SessionData {
   email: string;
@@ -26,10 +24,8 @@ export async function GET(
     const { slug } = await params;
     const cookieStore = await cookies();
 
-    // Get auth cookies
+    // Get session cookie
     const sessionCookie = cookieStore.get(SESSION_COOKIE_NAME);
-    const authCookie = cookieStore.get(AUTH_COOKIE_NAME);
-    const devAuthCookie = cookieStore.get(DEV_AUTH_COOKIE_NAME);
 
     // Build user profile from session
     let user: {
@@ -39,7 +35,6 @@ export async function GET(
       learnworldsId?: string;
     } | null = null;
 
-    // Try LearnWorlds session first
     if (sessionCookie?.value) {
       try {
         const session: SessionData = JSON.parse(
@@ -52,23 +47,7 @@ export async function GET(
           learnworldsId: session.learnworldsId,
         };
       } catch {
-        // Invalid session, continue to check other cookies
-      }
-    }
-
-    // Fall back to dev auth
-    if (!user) {
-      const role = (authCookie?.value || devAuthCookie?.value) as
-        | 'user'
-        | 'admin'
-        | undefined;
-      if (role) {
-        user = {
-          id: role === 'admin' ? 'admin@mojitax.co.uk' : 'user@mojitax.co.uk',
-          email:
-            role === 'admin' ? 'admin@mojitax.co.uk' : 'user@mojitax.co.uk',
-          role,
-        };
+        // Invalid session
       }
     }
 

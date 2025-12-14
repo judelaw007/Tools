@@ -1,12 +1,11 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { User, AuthState, DEV_USERS, UserRole } from './types';
+import { User, AuthState } from './types';
 
-const AUTH_COOKIE_NAME = 'mojitax-dev-auth';
+const SESSION_COOKIE_NAME = 'mojitax-session';
 
 interface AuthContextType extends AuthState {
-  login: (role: UserRole) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -20,23 +19,43 @@ function getCookie(name: string): string | null {
   return null;
 }
 
+/**
+ * Parse the mojitax-session cookie to get user info
+ */
+function parseSessionCookie(): User | null {
+  const sessionCookie = getCookie(SESSION_COOKIE_NAME);
+  if (!sessionCookie) return null;
+
+  try {
+    const decoded = atob(sessionCookie);
+    const session = JSON.parse(decoded);
+
+    if (session.email) {
+      return {
+        id: session.learnworldsId || session.email,
+        name: session.learnworldsUser?.username || session.email.split('@')[0],
+        email: session.email,
+        role: session.role || 'user',
+      };
+    }
+  } catch (e) {
+    console.error('Failed to parse session cookie:', e);
+  }
+
+  return null;
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   // Check for existing session on mount
   useEffect(() => {
-    const savedRole = getCookie(AUTH_COOKIE_NAME);
-    if (savedRole && (savedRole === 'user' || savedRole === 'admin')) {
-      setUser(DEV_USERS[savedRole]);
+    const sessionUser = parseSessionCookie();
+    if (sessionUser) {
+      setUser(sessionUser);
     }
     setIsLoading(false);
-  }, []);
-
-  const login = useCallback(async (role: UserRole) => {
-    // Login is handled by API route, just update local state
-    const devUser = DEV_USERS[role];
-    setUser(devUser);
   }, []);
 
   const logout = useCallback(async () => {
@@ -53,8 +72,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     user,
     isLoading,
     isAuthenticated: !!user,
-    isAdmin: user?.role === 'admin',
-    login,
+    isAdmin: user?.role === 'admin' || user?.role === 'super_admin',
     logout,
   };
 
