@@ -1,10 +1,10 @@
 /**
  * Email Service
  *
- * Sends emails using Resend (recommended) or falls back to console logging in development.
+ * Sends emails using SendGrid or falls back to console logging in development.
  *
  * Required environment variable:
- * - RESEND_API_KEY: Your Resend API key (get one at resend.com)
+ * - SENDGRID_API_KEY: Your SendGrid API key
  *
  * Optional:
  * - EMAIL_FROM: Sender email address (default: noreply@mojitax.co.uk)
@@ -24,53 +24,74 @@ interface SendEmailResult {
 }
 
 /**
- * Send an email using Resend API
+ * Send an email using SendGrid API
  */
-async function sendWithResend(params: SendEmailParams): Promise<SendEmailResult> {
-  const apiKey = process.env.RESEND_API_KEY;
+async function sendWithSendGrid(params: SendEmailParams): Promise<SendEmailResult> {
+  const apiKey = process.env.SENDGRID_API_KEY;
 
   if (!apiKey) {
-    console.error('RESEND_API_KEY not configured');
+    console.error('SENDGRID_API_KEY not configured');
     return { success: false, error: 'Email service not configured' };
   }
 
-  const fromEmail = process.env.EMAIL_FROM || 'MojiTax <noreply@mojitax.co.uk>';
+  const fromEmail = process.env.EMAIL_FROM || 'noreply@mojitax.co.uk';
+  const fromName = process.env.EMAIL_FROM_NAME || 'MojiTax';
 
   try {
-    const response = await fetch('https://api.resend.com/emails', {
+    const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: fromEmail,
-        to: params.to,
+        personalizations: [
+          {
+            to: [{ email: params.to }],
+          },
+        ],
+        from: {
+          email: fromEmail,
+          name: fromName,
+        },
         subject: params.subject,
-        html: params.html,
-        text: params.text,
+        content: [
+          ...(params.text ? [{ type: 'text/plain', value: params.text }] : []),
+          { type: 'text/html', value: params.html },
+        ],
       }),
     });
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      console.error('Resend API error:', data);
+    // SendGrid returns 202 Accepted on success with no body
+    if (response.status === 202) {
+      const messageId = response.headers.get('x-message-id') || `sg-${Date.now()}`;
       return {
-        success: false,
-        error: data.message || 'Failed to send email'
+        success: true,
+        messageId,
       };
     }
 
+    // Handle errors
+    let errorMessage = 'Failed to send email';
+    try {
+      const data = await response.json();
+      console.error('SendGrid API error:', data);
+      if (data.errors && data.errors.length > 0) {
+        errorMessage = data.errors[0].message || errorMessage;
+      }
+    } catch {
+      console.error('SendGrid API error: Status', response.status);
+    }
+
     return {
-      success: true,
-      messageId: data.id
+      success: false,
+      error: errorMessage,
     };
   } catch (error) {
     console.error('Email send error:', error);
     return {
       success: false,
-      error: 'Failed to send email'
+      error: 'Failed to send email',
     };
   }
 }
@@ -87,7 +108,7 @@ function sendWithConsole(params: SendEmailParams): SendEmailResult {
 
   return {
     success: true,
-    messageId: 'dev-' + Date.now()
+    messageId: 'dev-' + Date.now(),
   };
 }
 
@@ -95,12 +116,12 @@ function sendWithConsole(params: SendEmailParams): SendEmailResult {
  * Send an email
  */
 export async function sendEmail(params: SendEmailParams): Promise<SendEmailResult> {
-  // In development without Resend key, log to console
-  if (!process.env.RESEND_API_KEY && process.env.NODE_ENV === 'development') {
+  // In development without SendGrid key, log to console
+  if (!process.env.SENDGRID_API_KEY && process.env.NODE_ENV === 'development') {
     return sendWithConsole(params);
   }
 
-  return sendWithResend(params);
+  return sendWithSendGrid(params);
 }
 
 /**
@@ -155,7 +176,7 @@ export async function sendVerificationCodeEmail(
     to: email,
     subject,
     html,
-    text
+    text,
   });
 }
 
@@ -163,5 +184,5 @@ export async function sendVerificationCodeEmail(
  * Check if email service is configured
  */
 export function isEmailConfigured(): boolean {
-  return !!process.env.RESEND_API_KEY || process.env.NODE_ENV === 'development';
+  return !!process.env.SENDGRID_API_KEY || process.env.NODE_ENV === 'development';
 }
