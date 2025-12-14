@@ -47,11 +47,23 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify user exists in LearnWorlds
-    const lwUser = await learnworlds.getUserByEmail(normalizedEmail);
+    console.log('Looking up user in LearnWorlds:', normalizedEmail);
+    let lwUser;
+    try {
+      lwUser = await learnworlds.getUserByEmail(normalizedEmail);
+    } catch (lwError) {
+      console.error('LearnWorlds API error:', lwError);
+      return NextResponse.json(
+        {
+          error: 'Service temporarily unavailable',
+          message: 'Unable to verify your account. Please try again later.',
+        },
+        { status: 503 }
+      );
+    }
 
     if (!lwUser) {
-      // Don't reveal if user exists or not (security)
-      // But we can show a helpful message
+      console.log('User not found in LearnWorlds:', normalizedEmail);
       return NextResponse.json(
         {
           error: 'Account not found',
@@ -60,6 +72,8 @@ export async function POST(request: NextRequest) {
         { status: 404 }
       );
     }
+
+    console.log('User found in LearnWorlds:', lwUser.id);
 
     // Create verification code
     const codeResult = createVerificationCode(normalizedEmail);
@@ -78,10 +92,11 @@ export async function POST(request: NextRequest) {
     const emailResult = await sendVerificationCodeEmail(normalizedEmail, codeResult.code);
 
     if (!emailResult.success) {
+      console.error('Email send failed:', emailResult.error);
       return NextResponse.json(
         {
           error: 'Failed to send verification email',
-          message: 'Please try again in a few moments.',
+          message: emailResult.error || 'Please try again in a few moments.',
         },
         { status: 500 }
       );
@@ -103,6 +118,7 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Send code error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
 
     // Check if it's a LearnWorlds API error
     if (error instanceof Error && error.message.includes('LearnWorlds')) {
@@ -116,7 +132,10 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(
-      { error: 'Failed to send verification code' },
+      {
+        error: 'Failed to send verification code',
+        message: process.env.NODE_ENV === 'development' ? errorMessage : 'An unexpected error occurred. Please try again.',
+      },
       { status: 500 }
     );
   }
