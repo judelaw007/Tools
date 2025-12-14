@@ -371,16 +371,28 @@ class LearnWorldsClient {
    * - Subscription that grants access to the course
    *
    * LearnWorlds /v2/users/{id}/courses returns all accessible courses
+   * Note: Response structure is { data: [{ course: { id, title, ... }, created, expires }] }
    */
   async getUserCourseAccess(userId: string): Promise<string[]> {
     try {
       // This endpoint returns all courses the user has access to
-      const response = await this.request<LearnWorldsApiResponse<Array<{ id: string; title?: string }>>>(
+      // Structure: { data: [{ course: { id, title }, created, expires }] }
+      const response = await this.request<LearnWorldsApiResponse<Array<{
+        course: { id: string; title?: string };
+        created?: number;
+        expires?: number | null;
+      }>>>(
         `/v2/users/${userId}/courses`
       );
 
-      const courses = response.data || [];
-      return courses.map((c) => c.id);
+      const courseEntries = response.data || [];
+      // Extract course.id from each entry (NOT entry.id)
+      const courseIds = courseEntries
+        .map((entry) => entry.course?.id)
+        .filter((id): id is string => !!id);
+
+      console.log(`getUserCourseAccess: Found ${courseIds.length} courses for user ${userId}:`, courseIds);
+      return courseIds;
     } catch (error) {
       console.error('Error fetching user course access:', error);
       // Fallback: extract course IDs from enrollments if endpoint fails
