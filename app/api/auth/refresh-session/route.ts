@@ -85,9 +85,9 @@ export async function GET(request: NextRequest) {
     // Create response with redirect
     const response = NextResponse.redirect(new URL(returnTo, request.url));
 
-    // Cookie options
+    // Cookie options - httpOnly: false for client-side auth context
     const cookieOptions = {
-      httpOnly: true,
+      httpOnly: false,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax' as const,
       maxAge: 60 * 60 * 24 * 7, // 7 days
@@ -115,7 +115,7 @@ export async function GET(request: NextRequest) {
       'mojitax-session',
       encodeSession(updatedSession),
       {
-        httpOnly: true,
+        httpOnly: false, // Must match for client-side auth
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax' as const,
         maxAge: 60 * 60 * 24 * 7,
