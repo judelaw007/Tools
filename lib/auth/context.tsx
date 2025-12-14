@@ -1,13 +1,11 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { User, AuthState, DEV_USERS, UserRole } from './types';
+import { User, AuthState } from './types';
 
 const SESSION_COOKIE_NAME = 'mojitax-session';
-const DEV_AUTH_COOKIE_NAME = 'mojitax-dev-auth';
 
 interface AuthContextType extends AuthState {
-  login: (role: UserRole) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -53,26 +51,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Check for existing session on mount
   useEffect(() => {
-    // First check real session cookie
     const sessionUser = parseSessionCookie();
     if (sessionUser) {
       setUser(sessionUser);
-      setIsLoading(false);
-      return;
-    }
-
-    // Fallback to dev auth cookie
-    const savedRole = getCookie(DEV_AUTH_COOKIE_NAME);
-    if (savedRole && (savedRole === 'user' || savedRole === 'admin')) {
-      setUser(DEV_USERS[savedRole]);
     }
     setIsLoading(false);
-  }, []);
-
-  const login = useCallback(async (role: UserRole) => {
-    // Login is handled by API route, just update local state
-    const devUser = DEV_USERS[role];
-    setUser(devUser);
   }, []);
 
   const logout = useCallback(async () => {
@@ -90,7 +73,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isLoading,
     isAuthenticated: !!user,
     isAdmin: user?.role === 'admin' || user?.role === 'super_admin',
-    login,
     logout,
   };
 
