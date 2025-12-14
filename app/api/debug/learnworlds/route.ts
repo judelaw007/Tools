@@ -48,35 +48,53 @@ export async function GET(request: NextRequest) {
     // Test 2: Get the user via our helper function
     const userViaHelper = await learnworlds.getUserByEmail(email);
 
-    // Test 3: If user found, get their enrollments
-    let enrollments = null;
-    let courseAccess = null;
+    // Test 3: If user found, get their enrollments and courses (RAW)
+    let rawEnrollments = null;
+    let rawCourseAccess = null;
+    let processedCourseAccess = null;
+
     if (userViaHelper) {
-      enrollments = await learnworlds.getUserEnrollments(userViaHelper.id);
-      courseAccess = await learnworlds.getUserCourseAccess(userViaHelper.id);
+      // Get RAW enrollments response
+      const enrollmentsUrl = `${apiUrl}/v2/users/${userViaHelper.id}/products`;
+      const enrollmentsResponse = await fetch(enrollmentsUrl, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+          'Lw-Client': clientId,
+        },
+      });
+      rawEnrollments = await enrollmentsResponse.json();
+
+      // Get RAW course access response
+      const coursesUrl = `${apiUrl}/v2/users/${userViaHelper.id}/courses`;
+      const coursesResponse = await fetch(coursesUrl, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+          'Lw-Client': clientId,
+        },
+      });
+      rawCourseAccess = await coursesResponse.json();
+
+      // Also get processed version
+      processedCourseAccess = await learnworlds.getUserCourseAccess(userViaHelper.id);
     }
 
     return NextResponse.json({
       searchedEmail: email,
-      rawApiResponse: {
-        url: emailQueryUrl,
-        status: emailQueryResponse.status,
-        data: emailQueryData,
-        userCount: emailQueryData?.data?.length || 0,
-        firstUserEmail: emailQueryData?.data?.[0]?.email || null,
-        emailMatches: emailQueryData?.data?.[0]?.email?.toLowerCase() === email.toLowerCase(),
-      },
-      helperFunctionResult: userViaHelper ? {
+      userFound: userViaHelper ? {
         id: userViaHelper.id,
         email: userViaHelper.email,
         username: userViaHelper.username,
       } : null,
-      enrollments: enrollments?.map(e => ({
-        product_id: e.product_id,
-        product_title: e.product_title,
-        product_type: e.product_type,
-      })) || null,
-      courseAccess,
+      // Show RAW API responses to debug field names
+      rawEnrollmentsResponse: rawEnrollments,
+      rawCourseAccessResponse: rawCourseAccess,
+      // Show what our code extracts (to compare)
+      processedCourseIds: processedCourseAccess,
+      // Hint for fixing
+      sampleCourseFields: rawCourseAccess?.data?.[0] ? Object.keys(rawCourseAccess.data[0]) : [],
+      sampleEnrollmentFields: rawEnrollments?.data?.[0] ? Object.keys(rawEnrollments.data[0]) : [],
     });
   } catch (error) {
     console.error('Debug LearnWorlds error:', error);
