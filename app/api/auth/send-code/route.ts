@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
     console.log('User found in LearnWorlds:', lwUser.id);
 
     // Create verification code
-    const codeResult = createVerificationCode(normalizedEmail);
+    const codeResult = await createVerificationCode(normalizedEmail);
 
     if (!codeResult.success || !codeResult.code) {
       return NextResponse.json(
