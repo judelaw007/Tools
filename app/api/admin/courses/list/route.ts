@@ -6,13 +6,13 @@
  */
 
 import { NextResponse } from 'next/server';
-import { isCurrentUserAdmin } from '@/lib/server-session';
+import { isAdmin } from '@/lib/supabase/admin-auth';
 import { learnworlds } from '@/lib/learnworlds';
 
 export async function GET() {
   // Only admins can access this
-  const isAdmin = await isCurrentUserAdmin();
-  if (!isAdmin) {
+  const adminCheck = await isAdmin();
+  if (!adminCheck) {
     return NextResponse.json(
       { success: false, error: 'Unauthorized' },
       { status: 401 }
