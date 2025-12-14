@@ -9,17 +9,24 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // MojiTax Brand Colors
+        // MojiTax Brand Colors (from official palette)
         mojitax: {
-          navy: '#1a365d',
-          'navy-dark': '#0f2540',
-          'navy-light': '#2d4a7c',
-          green: '#22c55e',
-          'green-dark': '#16a34a',
-          'green-light': '#4ade80',
-          pink: '#fce7f3',
-          'pink-dark': '#fbcfe8',
-          'pink-light': '#fdf2f8',
+          // Primary blues
+          navy: '#044493',
+          'navy-dark': '#033570',
+          'navy-light': '#0555b5',
+          // Accent blues
+          blue: '#43A5F5',
+          'blue-dark': '#4295E4',
+          'blue-light': '#5182B4',
+          // Backgrounds
+          'bg-light': '#E0E8F0',
+          // Dark
+          dark: '#292929',
+          // Legacy green (kept for compatibility)
+          green: '#43A5F5',
+          'green-dark': '#4295E4',
+          'green-light': '#5182B4',
         },
         // Status Colors
         status: {
@@ -34,15 +41,15 @@ const config: Config = {
         mono: ['var(--font-geist-mono)', 'monospace'],
       },
       boxShadow: {
-        'glow': '0 0 20px rgba(34, 197, 94, 0.15)',
-        'glow-lg': '0 0 40px rgba(34, 197, 94, 0.2)',
-        'navy': '0 4px 20px rgba(26, 54, 93, 0.15)',
+        'glow': '0 0 20px rgba(67, 165, 245, 0.15)',
+        'glow-lg': '0 0 40px rgba(67, 165, 245, 0.2)',
+        'navy': '0 4px 20px rgba(4, 68, 147, 0.15)',
       },
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
-        'gradient-brand': 'linear-gradient(135deg, #1a365d 0%, #2d4a7c 50%, #1a365d 100%)',
-        'gradient-success': 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
-        'mesh-pattern': `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%231a365d' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+        'gradient-brand': 'linear-gradient(135deg, #044493 0%, #43A5F5 100%)',
+        'gradient-success': 'linear-gradient(135deg, #43A5F5 0%, #4295E4 100%)',
+        'mesh-pattern': `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23044493' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
       },
       animation: {
         'fade-in': 'fadeIn 0.5s ease-out',
