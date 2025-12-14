@@ -108,6 +108,7 @@ export async function POST(request: NextRequest) {
 
     // Set session cookies
     // rememberMe: true = 30 days, false = session cookie (browser close)
+    // httpOnly: false so client-side auth context can read the session
     const cookieOptions: {
       httpOnly: boolean;
       secure: boolean;
@@ -115,7 +116,7 @@ export async function POST(request: NextRequest) {
       path: string;
       maxAge?: number;
     } = {
-      httpOnly: true,
+      httpOnly: false, // Must be false for client-side parseSessionCookie()
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       path: '/',
