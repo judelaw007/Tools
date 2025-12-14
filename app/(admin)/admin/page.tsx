@@ -11,6 +11,7 @@ import {
   ArrowRight,
   Settings,
   FolderOpen,
+  BookOpen,
 } from 'lucide-react';
 
 export default async function AdminDashboardPage() {
