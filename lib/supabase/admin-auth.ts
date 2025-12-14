@@ -5,7 +5,7 @@
  * Admins must be registered in the admin_users table.
  */
 
-import { createClient } from './server';
+import { createClient, createServiceClient } from './server';
 import type { DbAdminUser } from './types';
 
 export interface AdminSession {
@@ -30,8 +30,9 @@ export async function getAdminSession(): Promise<AdminSession | null> {
     return null;
   }
 
-  // Check if user is an admin
-  const { data: adminUser, error: adminError } = await supabase
+  // Check if user is an admin (use service client to bypass RLS)
+  const serviceClient = createServiceClient();
+  const { data: adminUser, error: adminError } = await serviceClient
     .from('admin_users')
     .select('*')
     .eq('id', user.id)
@@ -90,8 +91,9 @@ export async function signInAdmin(email: string, password: string): Promise<{
     };
   }
 
-  // Check if user is an admin
-  const { data: adminUser, error: adminError } = await supabase
+  // Check if user is an admin (use service client to bypass RLS)
+  const serviceClient = createServiceClient();
+  const { data: adminUser, error: adminError } = await serviceClient
     .from('admin_users')
     .select('*')
     .eq('id', data.user.id)
@@ -101,6 +103,7 @@ export async function signInAdmin(email: string, password: string): Promise<{
   if (adminError || !adminUser) {
     // Sign out if not an admin
     await supabase.auth.signOut();
+    console.error('Admin check failed:', adminError?.message, 'User ID:', data.user.id);
     return {
       success: false,
       error: 'You do not have admin access',
