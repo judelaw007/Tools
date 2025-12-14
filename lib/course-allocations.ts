@@ -315,9 +315,10 @@ export async function getCoursesForToolWithNames(toolId: string): Promise<Course
   const supabase = createServiceClient();
 
   try {
+    // Query for tool_id match
     const { data, error } = await supabase
       .from('course_tool_allocations')
-      .select('course_id, course_name')
+      .select('course_id, course_name, tool_id')
       .eq('tool_id', toolId);
 
     if (error) {
@@ -325,10 +326,36 @@ export async function getCoursesForToolWithNames(toolId: string): Promise<Course
       return [];
     }
 
+    // If no results found, log debug info to help diagnose
+    if (!data || data.length === 0) {
+      console.log(`[getCoursesForToolWithNames] No allocations found for tool_id: ${toolId}`);
+
+      // Debug: Get all allocations to see what tool IDs are stored
+      const { data: allAllocations } = await supabase
+        .from('course_tool_allocations')
+        .select('tool_id')
+        .limit(10);
+
+      if (allAllocations && allAllocations.length > 0) {
+        const storedIds = [...new Set(allAllocations.map((a: { tool_id: string }) => a.tool_id))];
+        console.log(`[getCoursesForToolWithNames] Sample stored tool_ids in allocations:`, storedIds);
+
+        // Check if there's a partial match (e.g., ID vs slug mismatch)
+        const possibleMatch = storedIds.find((id: string) =>
+          id.includes(toolId) || toolId.includes(id)
+        );
+        if (possibleMatch) {
+          console.log(`[getCoursesForToolWithNames] Possible match found: ${possibleMatch} (searching for: ${toolId})`);
+        }
+      }
+
+      return [];
+    }
+
     // Return unique courses with their names
     const courseMap = new Map<string, CourseInfo>();
 
-    data?.forEach((row: { course_id: string; course_name: string | null }) => {
+    data.forEach((row: { course_id: string; course_name: string | null }) => {
       if (!courseMap.has(row.course_id)) {
         courseMap.set(row.course_id, {
           id: row.course_id,
