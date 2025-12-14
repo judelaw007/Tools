@@ -100,8 +100,8 @@ export default async function ToolPage({ params }: ToolPageProps) {
           </div>
         </div>
 
-        {/* Tool Component */}
-        <ToolPageClient tool={tool} />
+        {/* Tool Component - pass userEmail from server session */}
+        <ToolPageClient tool={tool} userEmail={session?.email} />
       </DashboardLayout>
     );
   }

@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useAuth } from '@/lib/auth/context';
 import { GloBECalculator } from '@/components/tools/calculator/GloBECalculator';
 import { SafeHarbourQualifier } from '@/components/tools/calculator/SafeHarbourQualifier';
 import { FilingDeadlineCalculator } from '@/components/tools/calculator/FilingDeadlineCalculator';
@@ -20,19 +19,26 @@ import { Loader2, Calculator } from 'lucide-react';
 
 interface ToolPageClientProps {
   tool: Tool;
+  userEmail?: string; // Passed from server - trust parent's auth decision
 }
 
 // Generic saved item type for localStorage persistence
 type SavedItem = SavedCalculation | SavedAssessment | SavedDeadlineCalculation | SavedPracticeSession | SavedDFEAssessment | SavedAuditChecklist;
 
-export function ToolPageClient({ tool }: ToolPageClientProps) {
-  const { isAuthenticated, user } = useAuth();
+/**
+ * Client component for rendering tool content.
+ *
+ * IMPORTANT: This component trusts that the parent (ToolPage) has already
+ * verified authentication and tool access. Do NOT add auth checks here
+ * as it causes hydration mismatches between server and client rendering.
+ */
+export function ToolPageClient({ tool, userEmail }: ToolPageClientProps) {
   const [savedItems, setSavedItems] = useState<SavedItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // Load saved items from localStorage
   useEffect(() => {
-    if (isAuthenticated && tool?.id) {
+    if (tool?.id) {
       const saved = localStorage.getItem(`tool-${tool.id}-saves`);
       if (saved) {
         try {
@@ -49,7 +55,7 @@ export function ToolPageClient({ tool }: ToolPageClientProps) {
       }
     }
     setIsLoading(false);
-  }, [isAuthenticated, tool?.id]);
+  }, [tool?.id]);
 
   // Handle save - works for both calculators and assessments
   const handleSave = async (
@@ -95,10 +101,8 @@ export function ToolPageClient({ tool }: ToolPageClientProps) {
     );
   }
 
-  // If not authenticated, return null (the parent will show the preview)
-  if (!isAuthenticated) {
-    return null;
-  }
+  // NOTE: No auth check here! Parent (ToolPage) already verified access.
+  // Adding auth checks here causes hydration mismatches.
 
   // Render the appropriate tool component based on tool type/id
   if (tool.toolType === 'calculator') {
@@ -106,7 +110,7 @@ export function ToolPageClient({ tool }: ToolPageClientProps) {
     if (tool.id === 'gir-globe-calculator' || tool.slug === 'globe-calculator') {
       return (
         <GloBECalculator
-          userId={user?.email}
+          userId={userEmail}
           onSave={handleSave as (data: Omit<SavedCalculation, 'id' | 'updatedAt'>) => Promise<string>}
           onDelete={handleDelete}
           savedItems={savedItems as SavedCalculation[]}
@@ -118,7 +122,7 @@ export function ToolPageClient({ tool }: ToolPageClientProps) {
     if (tool.id === 'gir-safe-harbour-qualifier' || tool.slug === 'safe-harbour-qualifier') {
       return (
         <SafeHarbourQualifier
-          userId={user?.email}
+          userId={userEmail}
           onSave={handleSave as (data: Omit<SavedAssessment, 'id' | 'updatedAt'>) => Promise<string>}
           onDelete={handleDelete}
           savedItems={savedItems as SavedAssessment[]}
@@ -130,7 +134,7 @@ export function ToolPageClient({ tool }: ToolPageClientProps) {
     if (tool.id === 'gir-filing-deadline-calculator' || tool.slug === 'filing-deadline-calculator') {
       return (
         <FilingDeadlineCalculator
-          userId={user?.email}
+          userId={userEmail}
           onSave={handleSave as (data: Omit<SavedDeadlineCalculation, 'id' | 'updatedAt'>) => Promise<string>}
           onDelete={handleDelete}
           savedItems={savedItems as SavedDeadlineCalculation[]}
@@ -142,7 +146,7 @@ export function ToolPageClient({ tool }: ToolPageClientProps) {
     if (tool.id === 'gir-practice-form' || tool.slug === 'gir-practice-form') {
       return (
         <GIRPracticeForm
-          userId={user?.email}
+          userId={userEmail}
           onSave={handleSave as (data: Omit<SavedPracticeSession, 'id' | 'updatedAt'>) => Promise<string>}
           onDelete={handleDelete}
           savedItems={savedItems as SavedPracticeSession[]}
@@ -154,7 +158,7 @@ export function ToolPageClient({ tool }: ToolPageClientProps) {
     if (tool.id === 'gir-dfe-assessment' || tool.slug === 'dfe-assessment-tool') {
       return (
         <DFEAssessmentTool
-          userId={user?.email}
+          userId={userEmail}
           onSave={handleSave as (data: Omit<SavedDFEAssessment, 'id' | 'updatedAt'>) => Promise<string>}
           onDelete={handleDelete}
           savedItems={savedItems as SavedDFEAssessment[]}
@@ -166,7 +170,7 @@ export function ToolPageClient({ tool }: ToolPageClientProps) {
     if (tool.id === 'gir-audit-file-checklist' || tool.slug === 'audit-file-checklist') {
       return (
         <AuditFileChecklist
-          userId={user?.email}
+          userId={userEmail}
           onSave={handleSave as (data: Omit<SavedAuditChecklist, 'id' | 'updatedAt'>) => Promise<string>}
           onDelete={handleDelete}
           savedItems={savedItems as SavedAuditChecklist[]}
