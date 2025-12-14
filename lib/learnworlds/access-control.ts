@@ -54,7 +54,7 @@ export async function checkToolAccess(
   }
 
   // Get course IDs this tool is allocated to
-  const allocatedCourseIds = getCoursesForTool(tool.id);
+  const allocatedCourseIds = await getCoursesForTool(tool.id);
 
   // If tool has no course allocations, it might be free/public
   if (allocatedCourseIds.length === 0) {

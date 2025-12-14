@@ -127,7 +127,7 @@ export async function hasToolAccess(toolId: string): Promise<boolean> {
   const userCourseIds = session.accessibleCourseIds || [];
 
   // Get courses that have this tool allocated
-  const allocatedCourseIds = getCoursesForTool(toolId);
+  const allocatedCourseIds = await getCoursesForTool(toolId);
 
   // User has access if they can access any course with this tool
   return allocatedCourseIds.some((courseId) =>
@@ -175,7 +175,7 @@ export async function getToolAccessMap(
           studentView.selectedCourseId ? [studentView.selectedCourseId] : []
         );
         for (const toolId of toolIds) {
-          const allocatedCourseIds = getCoursesForTool(toolId);
+          const allocatedCourseIds = await getCoursesForTool(toolId);
           const hasAccess = allocatedCourseIds.some((courseId) =>
             simulatedCourseIds.has(courseId)
           );
@@ -202,7 +202,7 @@ export async function getToolAccessMap(
 
   // Check each tool
   for (const toolId of toolIds) {
-    const allocatedCourseIds = getCoursesForTool(toolId);
+    const allocatedCourseIds = await getCoursesForTool(toolId);
     const hasAccess = allocatedCourseIds.some((courseId) =>
       userCourseIds.has(courseId)
     );
