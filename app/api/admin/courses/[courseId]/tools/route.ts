@@ -50,7 +50,7 @@ export async function POST(
 
   try {
     const body = await request.json();
-    const { toolIds } = body;
+    const { toolIds, courseName } = body;
 
     if (!Array.isArray(toolIds)) {
       return NextResponse.json(
@@ -59,8 +59,8 @@ export async function POST(
       );
     }
 
-    // Store the allocation using shared storage
-    await setToolsForCourse(courseId, toolIds);
+    // Store the allocation using shared storage (with course name for display)
+    await setToolsForCourse(courseId, toolIds, courseName);
 
     return NextResponse.json({
       success: true,

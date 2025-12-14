@@ -211,7 +211,10 @@ export default function AdminCoursesPage() {
       const response = await fetch(`/api/admin/courses/${selectedCourse.id}/tools`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ toolIds: selectedToolIds }),
+        body: JSON.stringify({
+          toolIds: selectedToolIds,
+          courseName: selectedCourse.title, // Store course name for dashboard display
+        }),
       });
 
       const data = await response.json();
