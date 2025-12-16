@@ -284,3 +284,74 @@ DROP TRIGGER IF EXISTS saved_work_updated_at ON user_saved_work;
 CREATE TRIGGER saved_work_updated_at
   BEFORE UPDATE ON user_saved_work
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+-- ===========================================
+-- USER_SKILLS TABLE
+-- ===========================================
+-- Stores user skills automatically detected from platform activity
+-- Skills are evidence-based: course completion, tool usage, saved work
+
+CREATE TABLE IF NOT EXISTS user_skills (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_email VARCHAR(255) NOT NULL,
+  skill_name VARCHAR(255) NOT NULL,
+  skill_category VARCHAR(100) NOT NULL, -- e.g., 'pillar_two', 'transfer_pricing', 'vat'
+  skill_level VARCHAR(50) NOT NULL DEFAULT 'familiar' CHECK (skill_level IN ('familiar', 'proficient', 'expert')),
+  evidence_type VARCHAR(50) NOT NULL CHECK (evidence_type IN ('course_completed', 'tool_used', 'work_saved')),
+  evidence_source_id VARCHAR(255) NOT NULL, -- course_id, tool_id, etc.
+  evidence_source_name VARCHAR(255), -- Human-readable name of the source
+  evidence_count INT NOT NULL DEFAULT 1, -- Number of times evidence was recorded (for tool usage)
+  is_visible BOOLEAN NOT NULL DEFAULT true, -- User can hide skills they don't want shown
+  acquired_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(user_email, skill_name, evidence_type, evidence_source_id)
+);
+
+-- Indexes for efficient queries
+CREATE INDEX IF NOT EXISTS idx_user_skills_email ON user_skills(user_email);
+CREATE INDEX IF NOT EXISTS idx_user_skills_category ON user_skills(skill_category);
+CREATE INDEX IF NOT EXISTS idx_user_skills_level ON user_skills(skill_level);
+
+-- Enable RLS
+ALTER TABLE user_skills ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies - Service role handles email filtering
+CREATE POLICY "Service role can manage user skills"
+  ON user_skills FOR ALL
+  USING (true)
+  WITH CHECK (true);
+
+-- Trigger for updated_at
+DROP TRIGGER IF EXISTS user_skills_updated_at ON user_skills;
+CREATE TRIGGER user_skills_updated_at
+  BEFORE UPDATE ON user_skills
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+-- ===========================================
+-- SKILL LEVEL THRESHOLDS
+-- ===========================================
+-- Defines how many uses of a tool = what skill level
+-- This is used by the API to determine skill levels
+
+-- Skill levels based on tool usage:
+-- familiar: 1-4 uses
+-- proficient: 5-14 uses
+-- expert: 15+ uses
+
+-- Skill levels based on course completion:
+-- Course completed = proficient (direct knowledge)
+-- Course + tool usage in that area = expert
+
+-- Helper function to determine skill level from usage count
+CREATE OR REPLACE FUNCTION get_skill_level_from_count(usage_count INT)
+RETURNS VARCHAR(50) AS $$
+BEGIN
+  IF usage_count >= 15 THEN
+    RETURN 'expert';
+  ELSIF usage_count >= 5 THEN
+    RETURN 'proficient';
+  ELSE
+    RETURN 'familiar';
+  END IF;
+END;
+$$ LANGUAGE plpgsql;

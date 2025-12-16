@@ -14,6 +14,8 @@ import {
   createSavedWork,
   SavedWorkItem,
 } from '@/lib/saved-work';
+import { getToolById } from '@/lib/db';
+import { awardSavedWorkSkill } from '@/lib/skills';
 
 /**
  * GET /api/user/saved-work?toolId={toolId}
@@ -124,6 +126,20 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
+
+    // Award skill for saving work (non-blocking)
+    getToolById(toolId).then((tool) => {
+      if (tool) {
+        awardSavedWorkSkill(
+          session.email!,
+          toolId,
+          tool.name,
+          tool.category
+        ).catch((err) => {
+          console.error('Error awarding saved work skill:', err);
+        });
+      }
+    });
 
     return NextResponse.json({
       success: true,

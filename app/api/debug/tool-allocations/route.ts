@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get unique tool IDs in allocations
-    const allocatedToolIds = [...new Set((allocations || []).map((a: { tool_id: string }) => a.tool_id))];
+    const allocatedToolIds = Array.from(new Set((allocations || []).map((a: { tool_id: string }) => a.tool_id)));
 
     // Check if any tool IDs in allocations match tools table
     const matchingTools = toolIds.filter(t => allocatedToolIds.includes(t.id));
@@ -138,7 +138,7 @@ export async function GET(request: NextRequest) {
         error: allocError?.message,
         samples: allocations?.slice(0, 5),
         uniqueToolIds: allocatedToolIds,
-        uniqueCourseIds: [...new Set((allocations || []).map((a: { course_id: string }) => a.course_id))],
+        uniqueCourseIds: Array.from(new Set((allocations || []).map((a: { course_id: string }) => a.course_id))),
       },
       matchingAllocations,
       analysis: {
