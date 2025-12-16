@@ -163,6 +163,10 @@ export default function AdminSkillsPage() {
         await fetchCategories();
         setIsCreateModalOpen(false);
         resetForm();
+        // Auto-expand the newly created category
+        if (data.category?.id) {
+          setExpandedId(data.category.id);
+        }
       } else {
         setError(data.error || 'Failed to create category');
       }
@@ -413,6 +417,9 @@ export default function AdminSkillsPage() {
                         </Badge>
                         {!category.isActive && (
                           <Badge variant="warning" size="sm">Inactive</Badge>
+                        )}
+                        {expandedId !== category.id && (
+                          <span className="text-xs text-slate-400 ml-2">Click to configure courses & tools</span>
                         )}
                       </div>
                     </div>
