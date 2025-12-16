@@ -29,6 +29,18 @@ export interface SkillCategoryCourse {
   categoryId: string;
   courseId: string;
   courseName: string | null;
+  knowledgeDescription: string | null;
+}
+
+// User's completion record for a specific course
+export interface UserCourseCompletion {
+  id: string;
+  userEmail: string;
+  courseId: string;
+  courseName: string | null;
+  categoryId: string | null;
+  progressScore: number; // 0-100 from LearnWorlds
+  completedAt: Date;
 }
 
 export interface SkillCategoryTool {
@@ -63,7 +75,7 @@ export interface FullSkillCategory extends SkillCategory {
   tools: SkillCategoryTool[];
 }
 
-// User's skill matrix entry
+// User's skill matrix entry (legacy)
 export interface UserSkillMatrixEntry {
   category: SkillCategory;
   knowledge: {
@@ -80,6 +92,34 @@ export interface UserSkillMatrixEntry {
       lastProjectAt: Date | null;
     }>;
   };
+}
+
+// Portfolio-style skill matrix entry (new design)
+// Only shows categories where user has progress
+export interface PortfolioSkillEntry {
+  category: {
+    id: string;
+    name: string;
+    slug: string;
+  };
+  // Courses completed in this category (only completed ones)
+  completedCourses: Array<{
+    courseId: string;
+    courseName: string;
+    knowledgeDescription: string | null;
+    progressScore: number; // 0-100 from LearnWorlds
+    completedAt: Date;
+  }>;
+  // Total courses available in this category (for "X more to complete" hint)
+  totalCoursesInCategory: number;
+  // Tools used in this category (only ones with projects)
+  toolsUsed: Array<{
+    toolId: string;
+    toolName: string;
+    applicationDescription: string | null;
+    projectCount: number;
+    lastUsedAt: Date;
+  }>;
 }
 
 // ===========================================
@@ -102,6 +142,17 @@ interface SkillCategoryCourseRow {
   category_id: string;
   course_id: string;
   course_name: string | null;
+  knowledge_description: string | null;
+}
+
+interface UserCourseCompletionRow {
+  id: string;
+  user_email: string;
+  course_id: string;
+  course_name: string | null;
+  category_id: string | null;
+  progress_score: number;
+  completed_at: string;
 }
 
 interface SkillCategoryToolRow {
@@ -149,6 +200,19 @@ function rowToCourse(row: SkillCategoryCourseRow): SkillCategoryCourse {
     categoryId: row.category_id,
     courseId: row.course_id,
     courseName: row.course_name,
+    knowledgeDescription: row.knowledge_description,
+  };
+}
+
+function rowToCourseCompletion(row: UserCourseCompletionRow): UserCourseCompletion {
+  return {
+    id: row.id,
+    userEmail: row.user_email,
+    courseId: row.course_id,
+    courseName: row.course_name,
+    categoryId: row.category_id,
+    progressScore: row.progress_score,
+    completedAt: new Date(row.completed_at),
   };
 }
 
@@ -829,4 +893,263 @@ export async function getAllFullSkillCategories(): Promise<FullSkillCategory[]> 
       tools: (r.skill_category_tools || []).map(rowToTool).sort((a, b) => a.displayOrder - b.displayOrder),
     };
   });
+}
+
+// ===========================================
+// ADMIN FUNCTIONS - Course Knowledge Description
+// ===========================================
+
+/**
+ * Update the knowledge description for a course in a category
+ */
+export async function updateCourseKnowledgeDescription(
+  categoryId: string,
+  courseId: string,
+  knowledgeDescription: string
+): Promise<SkillCategoryCourse | null> {
+  const supabase = createServiceClient();
+
+  const { data, error } = await supabase
+    .from('skill_category_courses')
+    .update({ knowledge_description: knowledgeDescription })
+    .eq('category_id', categoryId)
+    .eq('course_id', courseId)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error updating course knowledge description:', error);
+    return null;
+  }
+
+  return rowToCourse(data as SkillCategoryCourseRow);
+}
+
+// ===========================================
+// USER FUNCTIONS - Course Completions
+// ===========================================
+
+/**
+ * Record a course completion with progress score
+ */
+export async function recordCourseCompletion(
+  userEmail: string,
+  courseId: string,
+  courseName: string,
+  categoryId: string | null,
+  progressScore: number
+): Promise<UserCourseCompletion | null> {
+  const supabase = createServiceClient();
+
+  const { data, error } = await supabase
+    .from('user_course_completions')
+    .upsert({
+      user_email: userEmail,
+      course_id: courseId,
+      course_name: courseName,
+      category_id: categoryId,
+      progress_score: Math.min(100, Math.max(0, progressScore)), // Clamp 0-100
+      completed_at: new Date().toISOString(),
+    }, {
+      onConflict: 'user_email,course_id',
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error recording course completion:', error);
+    return null;
+  }
+
+  return rowToCourseCompletion(data as UserCourseCompletionRow);
+}
+
+/**
+ * Get user's course completions
+ */
+export async function getUserCourseCompletions(userEmail: string): Promise<UserCourseCompletion[]> {
+  const supabase = createServiceClient();
+
+  const { data, error } = await supabase
+    .from('user_course_completions')
+    .select('*')
+    .eq('user_email', userEmail)
+    .order('completed_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching user course completions:', error);
+    return [];
+  }
+
+  return (data || []).map((row) => rowToCourseCompletion(row as UserCourseCompletionRow));
+}
+
+// ===========================================
+// USER FUNCTIONS - Portfolio Matrix (New Design)
+// ===========================================
+
+/**
+ * Get user's portfolio-style skill matrix
+ * Only returns categories where user has completed at least one course
+ * Only shows completed courses and tools with projects
+ */
+export async function getUserPortfolioMatrix(userEmail: string): Promise<PortfolioSkillEntry[]> {
+  const supabase = createServiceClient();
+
+  // Get all active categories with their courses and tools
+  const { data: categories, error: catError } = await supabase
+    .from('skill_categories')
+    .select(`
+      id, name, slug, display_order,
+      skill_category_courses (course_id, course_name, knowledge_description),
+      skill_category_tools (tool_id, tool_name, application_description)
+    `)
+    .eq('is_active', true)
+    .order('display_order');
+
+  if (catError) {
+    console.error('Error fetching skill categories:', catError);
+    return [];
+  }
+
+  // Get user's course completions
+  const { data: completions } = await supabase
+    .from('user_course_completions')
+    .select('*')
+    .eq('user_email', userEmail);
+
+  // Get user's tool projects
+  const { data: projects } = await supabase
+    .from('user_tool_projects')
+    .select('*')
+    .eq('user_email', userEmail);
+
+  // Build maps for quick lookup
+  const completionMap = new Map<string, UserCourseCompletionRow>();
+  for (const c of (completions || [])) {
+    completionMap.set((c as UserCourseCompletionRow).course_id, c as UserCourseCompletionRow);
+  }
+
+  const projectMap = new Map<string, UserToolProjectRow>();
+  for (const p of (projects || [])) {
+    projectMap.set((p as UserToolProjectRow).tool_id, p as UserToolProjectRow);
+  }
+
+  const portfolio: PortfolioSkillEntry[] = [];
+
+  for (const cat of (categories || [])) {
+    const categoryData = cat as {
+      id: string;
+      name: string;
+      slug: string;
+      display_order: number;
+      skill_category_courses: Array<{
+        course_id: string;
+        course_name: string | null;
+        knowledge_description: string | null;
+      }>;
+      skill_category_tools: Array<{
+        tool_id: string;
+        tool_name: string | null;
+        application_description: string | null;
+      }>;
+    };
+
+    const linkedCourses = categoryData.skill_category_courses || [];
+    const linkedTools = categoryData.skill_category_tools || [];
+
+    // Find completed courses in this category
+    const completedCourses: PortfolioSkillEntry['completedCourses'] = [];
+    for (const course of linkedCourses) {
+      const completion = completionMap.get(course.course_id);
+      if (completion) {
+        completedCourses.push({
+          courseId: course.course_id,
+          courseName: course.course_name || completion.course_name || course.course_id,
+          knowledgeDescription: course.knowledge_description,
+          progressScore: completion.progress_score,
+          completedAt: new Date(completion.completed_at),
+        });
+      }
+    }
+
+    // Find tools used in this category (with at least 1 project)
+    const toolsUsed: PortfolioSkillEntry['toolsUsed'] = [];
+    for (const tool of linkedTools) {
+      const project = projectMap.get(tool.tool_id);
+      if (project && project.project_count > 0) {
+        toolsUsed.push({
+          toolId: tool.tool_id,
+          toolName: tool.tool_name || tool.tool_id,
+          applicationDescription: tool.application_description,
+          projectCount: project.project_count,
+          lastUsedAt: project.last_project_at ? new Date(project.last_project_at) : new Date(),
+        });
+      }
+    }
+
+    // Only include category if user has at least one completed course
+    if (completedCourses.length > 0) {
+      portfolio.push({
+        category: {
+          id: categoryData.id,
+          name: categoryData.name,
+          slug: categoryData.slug,
+        },
+        completedCourses: completedCourses.sort((a, b) =>
+          b.completedAt.getTime() - a.completedAt.getTime()
+        ),
+        totalCoursesInCategory: linkedCourses.length,
+        toolsUsed: toolsUsed.sort((a, b) => b.projectCount - a.projectCount),
+      });
+    }
+  }
+
+  return portfolio;
+}
+
+/**
+ * Sync user's course completions from LearnWorlds data
+ * This creates/updates records in user_course_completions with progress scores
+ */
+export async function syncUserCoursesWithProgress(
+  userEmail: string,
+  enrollments: Array<{
+    courseId: string;
+    courseName: string;
+    progress: number;
+    completed: boolean;
+    completedAt?: string;
+  }>
+): Promise<number> {
+  const supabase = createServiceClient();
+
+  // Get all course-to-category mappings
+  const { data: mappings } = await supabase
+    .from('skill_category_courses')
+    .select('course_id, category_id');
+
+  const categoryMap = new Map<string, string>();
+  for (const m of (mappings || [])) {
+    categoryMap.set(m.course_id, m.category_id);
+  }
+
+  let synced = 0;
+
+  for (const enrollment of enrollments) {
+    // Only record completed courses (100% progress or completed flag)
+    if (enrollment.completed || enrollment.progress >= 100) {
+      const categoryId = categoryMap.get(enrollment.courseId) || null;
+      const result = await recordCourseCompletion(
+        userEmail,
+        enrollment.courseId,
+        enrollment.courseName,
+        categoryId,
+        enrollment.progress
+      );
+      if (result) synced++;
+    }
+  }
+
+  return synced;
 }
