@@ -355,3 +355,54 @@ BEGIN
   END IF;
 END;
 $$ LANGUAGE plpgsql;
+
+-- ===========================================
+-- SKILL_DEFINITIONS TABLE (Admin-defined)
+-- ===========================================
+-- Admins define what skills are awarded for courses/tools
+-- This replaces auto-generated skill names with admin-controlled definitions
+
+CREATE TABLE IF NOT EXISTS skill_definitions (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  skill_name VARCHAR(255) NOT NULL,
+  skill_description TEXT,
+  skill_category VARCHAR(100) NOT NULL CHECK (skill_category IN ('pillar_two', 'transfer_pricing', 'vat', 'fatca_crs', 'withholding_tax', 'pe_assessment', 'cross_category')),
+  evidence_type VARCHAR(50) NOT NULL CHECK (evidence_type IN ('course_completed', 'tool_used', 'work_saved')),
+  source_type VARCHAR(50) NOT NULL CHECK (source_type IN ('course', 'tool')),
+  source_id VARCHAR(255) NOT NULL, -- course_id or tool_id
+  source_name VARCHAR(255), -- Human-readable name for reference
+  awarded_level VARCHAR(50) NOT NULL DEFAULT 'proficient' CHECK (awarded_level IN ('familiar', 'proficient', 'expert')),
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(evidence_type, source_type, source_id)
+);
+
+-- Indexes
+CREATE INDEX IF NOT EXISTS idx_skill_defs_source ON skill_definitions(source_type, source_id);
+CREATE INDEX IF NOT EXISTS idx_skill_defs_category ON skill_definitions(skill_category);
+CREATE INDEX IF NOT EXISTS idx_skill_defs_active ON skill_definitions(is_active);
+
+-- Enable RLS
+ALTER TABLE skill_definitions ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies
+CREATE POLICY "Anyone can view active skill definitions"
+  ON skill_definitions FOR SELECT
+  USING (is_active = true);
+
+CREATE POLICY "Admins can manage skill definitions"
+  ON skill_definitions FOR ALL
+  TO authenticated
+  USING (
+    EXISTS (SELECT 1 FROM admin_users WHERE id = auth.uid() AND is_active = true)
+  )
+  WITH CHECK (
+    EXISTS (SELECT 1 FROM admin_users WHERE id = auth.uid() AND is_active = true)
+  );
+
+-- Trigger for updated_at
+DROP TRIGGER IF EXISTS skill_definitions_updated_at ON skill_definitions;
+CREATE TRIGGER skill_definitions_updated_at
+  BEFORE UPDATE ON skill_definitions
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
