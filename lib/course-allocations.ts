@@ -337,7 +337,7 @@ export async function getCoursesForToolWithNames(toolId: string): Promise<Course
         .limit(10);
 
       if (allAllocations && allAllocations.length > 0) {
-        const storedIds = [...new Set(allAllocations.map((a: { tool_id: string }) => a.tool_id))];
+        const storedIds = Array.from(new Set(allAllocations.map((a: { tool_id: string }) => a.tool_id)));
         console.log(`[getCoursesForToolWithNames] Sample stored tool_ids in allocations:`, storedIds);
 
         // Check if there's a partial match (e.g., ID vs slug mismatch)

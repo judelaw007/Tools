@@ -3,6 +3,7 @@ import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
+import { SkillsMatrix } from '@/components/dashboard/SkillsMatrix';
 import { getCoursesWithTools } from '@/lib/course-allocations';
 import { getServerSession } from '@/lib/server-session';
 import {
@@ -239,6 +240,11 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Skills Matrix Section */}
+      <div className="mb-8">
+        <SkillsMatrix />
+      </div>
 
       {/* Info Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
