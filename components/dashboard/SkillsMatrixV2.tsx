@@ -1,10 +1,12 @@
 'use client';
 
 /**
- * Skills Matrix V2 Component
+ * Skills Matrix Portfolio Component
  *
- * Displays user skills based on admin-defined categories.
- * Shows Knowledge (from course completion) and Application (from tool usage).
+ * Displays user skills as a portfolio - only showing achievements.
+ * - Only shows categories where user has completed at least one course
+ * - Each course shows its own description and score
+ * - Only shows tools the user has actually used
  */
 
 import { useState, useEffect, useCallback } from 'react';
@@ -16,35 +18,34 @@ import {
   Wrench,
   RefreshCw,
   CheckCircle2,
-  Circle,
   ChevronDown,
   ChevronUp,
+  Award,
+  Calendar,
   Sparkles,
 } from 'lucide-react';
 
-interface SkillMatrixEntry {
+interface PortfolioEntry {
   category: {
     id: string;
     name: string;
     slug: string;
+  };
+  completedCourses: Array<{
+    courseId: string;
+    courseName: string;
     knowledgeDescription: string | null;
-    displayOrder: number;
-    isActive: boolean;
-  };
-  knowledge: {
-    completed: boolean;
-    completedAt: string | null;
-    courseId: string | null;
-  };
-  application: {
-    tools: Array<{
-      toolId: string;
-      toolName: string | null;
-      description: string | null;
-      projectCount: number;
-      lastProjectAt: string | null;
-    }>;
-  };
+    progressScore: number;
+    completedAt: string;
+  }>;
+  totalCoursesInCategory: number;
+  toolsUsed: Array<{
+    toolId: string;
+    toolName: string;
+    applicationDescription: string | null;
+    projectCount: number;
+    lastUsedAt: string;
+  }>;
 }
 
 interface SkillsMatrixV2Props {
@@ -52,66 +53,67 @@ interface SkillsMatrixV2Props {
 }
 
 export function SkillsMatrixV2({ className = '' }: SkillsMatrixV2Props) {
-  const [matrix, setMatrix] = useState<SkillMatrixEntry[]>([]);
+  const [portfolio, setPortfolio] = useState<PortfolioEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
 
-  const fetchMatrix = useCallback(async () => {
+  const fetchPortfolio = useCallback(async () => {
     try {
       setIsLoading(true);
-      setError(null);
 
       const response = await fetch('/api/user/skill-matrix');
 
       if (!response.ok) {
         if (response.status === 401) {
-          setMatrix([]);
+          setPortfolio([]);
           return;
         }
-        throw new Error('Failed to fetch skill matrix');
+        throw new Error('Failed to fetch portfolio');
       }
 
       const data = await response.json();
-      setMatrix(data.matrix || []);
+      setPortfolio(data.portfolio || []);
 
       // Expand all categories by default
-      const allIds = new Set<string>((data.matrix || []).map((e: SkillMatrixEntry) => e.category.id));
+      const allIds = new Set<string>((data.portfolio || []).map((e: PortfolioEntry) => e.category.id));
       setExpandedCategories(allIds);
     } catch (err) {
-      console.error('Error fetching skill matrix:', err);
-      setMatrix([]);
+      console.error('Error fetching portfolio:', err);
+      setPortfolio([]);
     } finally {
       setIsLoading(false);
     }
   }, []);
 
-  const syncMatrix = useCallback(async () => {
+  const syncPortfolio = useCallback(async () => {
     try {
       setIsSyncing(true);
-      setError(null);
 
       const response = await fetch('/api/user/skill-matrix', {
         method: 'POST',
       });
 
       if (!response.ok) {
-        throw new Error('Failed to sync skill matrix');
+        throw new Error('Failed to sync portfolio');
       }
 
       const data = await response.json();
-      setMatrix(data.matrix || []);
+      setPortfolio(data.portfolio || []);
+
+      // Expand all categories
+      const allIds = new Set<string>((data.portfolio || []).map((e: PortfolioEntry) => e.category.id));
+      setExpandedCategories(allIds);
     } catch (err) {
-      console.error('Error syncing skill matrix:', err);
+      console.error('Error syncing portfolio:', err);
     } finally {
       setIsSyncing(false);
     }
   }, []);
 
   useEffect(() => {
-    syncMatrix(); // Sync on mount to update from course completions
-  }, [syncMatrix]);
+    syncPortfolio(); // Sync on mount to update from course completions
+  }, [syncPortfolio]);
 
   const toggleCategory = (categoryId: string) => {
     setExpandedCategories((prev) => {
@@ -125,14 +127,12 @@ export function SkillsMatrixV2({ className = '' }: SkillsMatrixV2Props) {
     });
   };
 
-  // Check if category has any progress
-  const hasProgress = (entry: SkillMatrixEntry) => {
-    return entry.knowledge.completed || entry.application.tools.some(t => t.projectCount > 0);
-  };
-
-  // Get tools with projects
-  const getToolsWithProjects = (entry: SkillMatrixEntry) => {
-    return entry.application.tools.filter(t => t.projectCount > 0);
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-GB', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
   };
 
   if (isLoading) {
@@ -140,33 +140,19 @@ export function SkillsMatrixV2({ className = '' }: SkillsMatrixV2Props) {
       <Card className={className}>
         <CardContent className="p-8 text-center">
           <RefreshCw className="w-8 h-8 text-slate-300 animate-spin mx-auto mb-3" />
-          <p className="text-slate-500">Loading your skills...</p>
+          <p className="text-slate-500">Loading your skills portfolio...</p>
         </CardContent>
       </Card>
     );
   }
 
-  if (error) {
-    return (
-      <Card className={className}>
-        <CardContent className="p-8 text-center">
-          <p className="text-red-500 mb-4">{error}</p>
-          <Button variant="outline" onClick={fetchMatrix}>
-            <RefreshCw className="w-4 h-4" />
-            Try Again
-          </Button>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (matrix.length === 0) {
+  if (portfolio.length === 0) {
     return (
       <Card className={className}>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <TrendingUp className="w-5 h-5 text-mojitax-green" />
-            Skills Matrix
+            Skills Portfolio
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -175,12 +161,20 @@ export function SkillsMatrixV2({ className = '' }: SkillsMatrixV2Props) {
               <Sparkles className="w-8 h-8 text-slate-400" />
             </div>
             <h3 className="text-lg font-semibold text-mojitax-navy mb-2">
-              Skills Coming Soon
+              Start Building Your Portfolio
             </h3>
-            <p className="text-slate-500 max-w-md mx-auto">
-              Skill categories haven&apos;t been configured yet. Once set up by your administrator,
-              your skills will appear here as you complete courses and use tools.
+            <p className="text-slate-500 max-w-md mx-auto mb-4">
+              Complete courses and use tools to build your professional skills portfolio.
+              Your achievements will appear here automatically.
             </p>
+            <Button
+              variant="outline"
+              onClick={syncPortfolio}
+              disabled={isSyncing}
+            >
+              <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
+              {isSyncing ? 'Syncing...' : 'Sync Progress'}
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -192,17 +186,17 @@ export function SkillsMatrixV2({ className = '' }: SkillsMatrixV2Props) {
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
           <CardTitle className="flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-mojitax-green" />
-            Skills Matrix
+            <Award className="w-5 h-5 text-mojitax-green" />
+            Skills Portfolio
           </CardTitle>
           <p className="text-sm text-slate-500 mt-1">
-            Track your professional skills as you learn
+            Your professional achievements and competencies
           </p>
         </div>
         <Button
           variant="outline"
           size="sm"
-          onClick={syncMatrix}
+          onClick={syncPortfolio}
           disabled={isSyncing}
         >
           <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
@@ -211,30 +205,23 @@ export function SkillsMatrixV2({ className = '' }: SkillsMatrixV2Props) {
       </CardHeader>
 
       <CardContent className="space-y-4">
-        {matrix.map((entry) => {
+        {portfolio.map((entry) => {
           const isExpanded = expandedCategories.has(entry.category.id);
-          const toolsWithProjects = getToolsWithProjects(entry);
-          const hasAnyProgress = hasProgress(entry);
+          const remainingCourses = entry.totalCoursesInCategory - entry.completedCourses.length;
 
           return (
             <div
               key={entry.category.id}
-              className={`border rounded-xl overflow-hidden transition-all ${
-                hasAnyProgress ? 'border-mojitax-green/30 bg-mojitax-green/5' : 'border-slate-200'
-              }`}
+              className="border border-mojitax-green/30 bg-gradient-to-r from-mojitax-green/5 to-transparent rounded-xl overflow-hidden"
             >
               {/* Category Header */}
               <button
-                className="w-full p-4 flex items-center justify-between hover:bg-slate-50/50 transition-colors"
+                className="w-full p-4 flex items-center justify-between hover:bg-mojitax-green/5 transition-colors"
                 onClick={() => toggleCategory(entry.category.id)}
               >
                 <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                    hasAnyProgress ? 'bg-mojitax-green/20' : 'bg-slate-100'
-                  }`}>
-                    <TrendingUp className={`w-5 h-5 ${
-                      hasAnyProgress ? 'text-mojitax-green' : 'text-slate-400'
-                    }`} />
+                  <div className="w-10 h-10 rounded-lg bg-mojitax-green/20 flex items-center justify-center">
+                    <TrendingUp className="w-5 h-5 text-mojitax-green" />
                   </div>
                   <div className="text-left">
                     <h3 className="font-semibold text-mojitax-navy">
@@ -242,21 +229,15 @@ export function SkillsMatrixV2({ className = '' }: SkillsMatrixV2Props) {
                     </h3>
                     <div className="flex items-center gap-3 text-xs text-slate-500 mt-0.5">
                       <span className="flex items-center gap-1">
-                        {entry.knowledge.completed ? (
-                          <CheckCircle2 className="w-3 h-3 text-green-500" />
-                        ) : (
-                          <Circle className="w-3 h-3 text-slate-300" />
-                        )}
-                        Knowledge
+                        <BookOpen className="w-3 h-3 text-purple-500" />
+                        {entry.completedCourses.length} course{entry.completedCourses.length !== 1 ? 's' : ''} completed
                       </span>
-                      <span className="flex items-center gap-1">
-                        {toolsWithProjects.length > 0 ? (
-                          <CheckCircle2 className="w-3 h-3 text-blue-500" />
-                        ) : (
-                          <Circle className="w-3 h-3 text-slate-300" />
-                        )}
-                        Application ({toolsWithProjects.length}/{entry.application.tools.length})
-                      </span>
+                      {entry.toolsUsed.length > 0 && (
+                        <span className="flex items-center gap-1">
+                          <Wrench className="w-3 h-3 text-blue-500" />
+                          {entry.toolsUsed.length} tool{entry.toolsUsed.length !== 1 ? 's' : ''} used
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -270,69 +251,75 @@ export function SkillsMatrixV2({ className = '' }: SkillsMatrixV2Props) {
               {/* Expanded Content */}
               {isExpanded && (
                 <div className="px-4 pb-4 space-y-4">
-                  {/* Knowledge Section */}
-                  <div className={`p-4 rounded-lg ${
-                    entry.knowledge.completed ? 'bg-purple-50' : 'bg-slate-50'
-                  }`}>
-                    <div className="flex items-center gap-2 mb-2">
-                      <BookOpen className={`w-4 h-4 ${
-                        entry.knowledge.completed ? 'text-purple-600' : 'text-slate-400'
-                      }`} />
-                      <h4 className={`text-sm font-semibold ${
-                        entry.knowledge.completed ? 'text-purple-800' : 'text-slate-600'
-                      }`}>
-                        Knowledge
-                      </h4>
-                      {entry.knowledge.completed && (
-                        <CheckCircle2 className="w-4 h-4 text-green-500 ml-auto" />
-                      )}
+                  {/* Knowledge Section - Completed Courses */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 px-1">
+                      <BookOpen className="w-4 h-4 text-purple-600" />
+                      <h4 className="text-sm font-semibold text-slate-700">Knowledge</h4>
                     </div>
-                    {entry.knowledge.completed ? (
-                      <p className="text-sm text-purple-700">
-                        {entry.category.knowledgeDescription || 'Course completed successfully.'}
-                      </p>
-                    ) : (
-                      <p className="text-sm text-slate-500 italic">
-                        Complete a linked course to earn this knowledge credential.
+                    {entry.completedCourses.map((course) => (
+                      <div
+                        key={course.courseId}
+                        className="p-4 rounded-lg bg-purple-50 border border-purple-100"
+                      >
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />
+                            <span className="font-medium text-purple-900">
+                              {course.courseName}
+                            </span>
+                          </div>
+                          <span className="text-sm font-semibold text-purple-700 bg-purple-100 px-2 py-0.5 rounded-full">
+                            Score: {course.progressScore}%
+                          </span>
+                        </div>
+                        {course.knowledgeDescription && (
+                          <p className="text-sm text-purple-800 ml-6 mb-2">
+                            {course.knowledgeDescription}
+                          </p>
+                        )}
+                        <div className="flex items-center gap-1 text-xs text-purple-500 ml-6">
+                          <Calendar className="w-3 h-3" />
+                          Completed {formatDate(course.completedAt)}
+                        </div>
+                      </div>
+                    ))}
+                    {remainingCourses > 0 && (
+                      <p className="text-xs text-slate-500 italic px-1">
+                        Complete {remainingCourses} more course{remainingCourses !== 1 ? 's' : ''} to expand this skill
                       </p>
                     )}
                   </div>
 
-                  {/* Application Section */}
-                  {entry.application.tools.length > 0 && (
-                    <div className="space-y-2">
+                  {/* Application Section - Tools Used */}
+                  {entry.toolsUsed.length > 0 && (
+                    <div className="space-y-3">
                       <div className="flex items-center gap-2 px-1">
                         <Wrench className="w-4 h-4 text-blue-600" />
-                        <h4 className="text-sm font-semibold text-slate-700">
-                          Application
-                        </h4>
+                        <h4 className="text-sm font-semibold text-slate-700">Application</h4>
                       </div>
-                      {entry.application.tools.map((tool) => (
+                      {entry.toolsUsed.map((tool) => (
                         <div
                           key={tool.toolId}
-                          className={`p-3 rounded-lg ${
-                            tool.projectCount > 0 ? 'bg-blue-50' : 'bg-slate-50'
-                          }`}
+                          className="p-4 rounded-lg bg-blue-50 border border-blue-100"
                         >
-                          <div className="flex items-center justify-between mb-1">
-                            <span className={`text-sm font-medium ${
-                              tool.projectCount > 0 ? 'text-blue-800' : 'text-slate-600'
-                            }`}>
-                              {tool.toolName || tool.toolId}
+                          <div className="flex items-start justify-between mb-2">
+                            <span className="font-medium text-blue-900">
+                              {tool.toolName}
                             </span>
-                            {tool.projectCount > 0 ? (
-                              <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
-                                {tool.projectCount} project{tool.projectCount !== 1 ? 's' : ''}
-                              </span>
-                            ) : (
-                              <span className="text-xs text-slate-400">Not started</span>
-                            )}
+                            <span className="text-sm font-semibold text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full">
+                              {tool.projectCount} project{tool.projectCount !== 1 ? 's' : ''}
+                            </span>
                           </div>
-                          {tool.projectCount > 0 && tool.description && (
-                            <p className="text-xs text-blue-700 mt-1">
-                              {tool.description}
+                          {tool.applicationDescription && (
+                            <p className="text-sm text-blue-800 mb-2">
+                              {tool.applicationDescription}
                             </p>
                           )}
+                          <div className="flex items-center gap-1 text-xs text-blue-500">
+                            <Calendar className="w-3 h-3" />
+                            Last used {formatDate(tool.lastUsedAt)}
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -345,15 +332,15 @@ export function SkillsMatrixV2({ className = '' }: SkillsMatrixV2Props) {
 
         {/* Legend */}
         <div className="pt-4 border-t border-slate-100">
-          <p className="text-xs text-slate-400 mb-2">How to earn skills:</p>
+          <p className="text-xs text-slate-400 mb-2">How to build your portfolio:</p>
           <div className="flex flex-wrap gap-4 text-xs text-slate-500">
             <div className="flex items-center gap-1.5">
               <BookOpen className="w-3.5 h-3.5 text-purple-500" />
-              Knowledge = Complete linked course
+              Complete courses for Knowledge credentials
             </div>
             <div className="flex items-center gap-1.5">
               <Wrench className="w-3.5 h-3.5 text-blue-500" />
-              Application = Save projects with tools
+              Save projects to demonstrate Application
             </div>
           </div>
         </div>
