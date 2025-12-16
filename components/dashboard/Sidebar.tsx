@@ -22,6 +22,7 @@ import {
   ChevronDown,
   Loader2,
   X,
+  TrendingUp,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -93,6 +94,7 @@ export function Sidebar({ variant = 'user', isCollapsed = false, onToggleCollaps
   const userNavItems: NavItem[] = [
     { href: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5" /> },
     { href: '/tools', label: 'Browse Tools', icon: <Wrench className="w-5 h-5" /> },
+    { href: '/dashboard/skills', label: 'Skills Matrix', icon: <TrendingUp className="w-5 h-5" /> },
   ];
 
   const adminNavItems: NavItem[] = [

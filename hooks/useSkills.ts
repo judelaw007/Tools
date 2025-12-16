@@ -174,6 +174,7 @@ export function useSkills(options: UseSkillsOptions = {}): UseSkillsReturn {
   const syncSkills = useCallback(async () => {
     try {
       setIsSyncing(true);
+      setIsLoading(true);
       setError(null);
 
       const response = await fetch('/api/user/skills', {
@@ -181,6 +182,12 @@ export function useSkills(options: UseSkillsOptions = {}): UseSkillsReturn {
       });
 
       if (!response.ok) {
+        // If table doesn't exist yet, show empty state instead of error
+        if (response.status === 500) {
+          setSkills([]);
+          setSummary(null);
+          return;
+        }
         throw new Error('Failed to sync skills');
       }
 
@@ -191,9 +198,12 @@ export function useSkills(options: UseSkillsOptions = {}): UseSkillsReturn {
       }
     } catch (err) {
       console.error('Error syncing skills:', err);
-      setError(err instanceof Error ? err.message : 'Failed to sync skills');
+      // Show empty state on error rather than blocking UI
+      setSkills([]);
+      setSummary(null);
     } finally {
       setIsSyncing(false);
+      setIsLoading(false);
     }
   }, []);
 
