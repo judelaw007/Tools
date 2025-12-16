@@ -355,3 +355,186 @@ BEGIN
   END IF;
 END;
 $$ LANGUAGE plpgsql;
+
+-- ===========================================
+-- SKILL_CATEGORIES TABLE (Admin-defined)
+-- ===========================================
+-- Main skill categories defined by admin (e.g., "Pillar 2 Skills")
+
+CREATE TABLE IF NOT EXISTS skill_categories (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name VARCHAR(255) NOT NULL, -- e.g., "Pillar 2 Skills"
+  slug VARCHAR(255) UNIQUE NOT NULL, -- e.g., "pillar-2-skills"
+  knowledge_description TEXT, -- Rich description for Knowledge section
+  display_order INT NOT NULL DEFAULT 0,
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Indexes
+CREATE INDEX IF NOT EXISTS idx_skill_categories_active ON skill_categories(is_active);
+CREATE INDEX IF NOT EXISTS idx_skill_categories_order ON skill_categories(display_order);
+
+-- Enable RLS
+ALTER TABLE skill_categories ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies
+CREATE POLICY "Anyone can view active skill categories"
+  ON skill_categories FOR SELECT
+  USING (is_active = true);
+
+CREATE POLICY "Service role can manage skill categories"
+  ON skill_categories FOR ALL
+  USING (true)
+  WITH CHECK (true);
+
+-- Trigger for updated_at
+DROP TRIGGER IF EXISTS skill_categories_updated_at ON skill_categories;
+CREATE TRIGGER skill_categories_updated_at
+  BEFORE UPDATE ON skill_categories
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+-- ===========================================
+-- SKILL_CATEGORY_COURSES TABLE
+-- ===========================================
+-- Links courses to skill categories (for Knowledge)
+
+CREATE TABLE IF NOT EXISTS skill_category_courses (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  category_id UUID NOT NULL REFERENCES skill_categories(id) ON DELETE CASCADE,
+  course_id VARCHAR(255) NOT NULL, -- LearnWorlds course ID
+  course_name VARCHAR(255), -- Cached course name
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(category_id, course_id)
+);
+
+-- Indexes
+CREATE INDEX IF NOT EXISTS idx_skill_cat_courses_category ON skill_category_courses(category_id);
+CREATE INDEX IF NOT EXISTS idx_skill_cat_courses_course ON skill_category_courses(course_id);
+
+-- Enable RLS
+ALTER TABLE skill_category_courses ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies
+CREATE POLICY "Anyone can view skill category courses"
+  ON skill_category_courses FOR SELECT
+  USING (true);
+
+CREATE POLICY "Service role can manage skill category courses"
+  ON skill_category_courses FOR ALL
+  USING (true)
+  WITH CHECK (true);
+
+-- ===========================================
+-- SKILL_CATEGORY_TOOLS TABLE
+-- ===========================================
+-- Links tools to skill categories (for Application)
+
+CREATE TABLE IF NOT EXISTS skill_category_tools (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  category_id UUID NOT NULL REFERENCES skill_categories(id) ON DELETE CASCADE,
+  tool_id TEXT NOT NULL REFERENCES tools(id) ON DELETE CASCADE,
+  tool_name VARCHAR(255), -- Cached tool name
+  application_description TEXT, -- Rich description for this tool's Application
+  display_order INT NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(category_id, tool_id)
+);
+
+-- Indexes
+CREATE INDEX IF NOT EXISTS idx_skill_cat_tools_category ON skill_category_tools(category_id);
+CREATE INDEX IF NOT EXISTS idx_skill_cat_tools_tool ON skill_category_tools(tool_id);
+
+-- Enable RLS
+ALTER TABLE skill_category_tools ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies
+CREATE POLICY "Anyone can view skill category tools"
+  ON skill_category_tools FOR SELECT
+  USING (true);
+
+CREATE POLICY "Service role can manage skill category tools"
+  ON skill_category_tools FOR ALL
+  USING (true)
+  WITH CHECK (true);
+
+-- Trigger for updated_at
+DROP TRIGGER IF EXISTS skill_cat_tools_updated_at ON skill_category_tools;
+CREATE TRIGGER skill_cat_tools_updated_at
+  BEFORE UPDATE ON skill_category_tools
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+-- ===========================================
+-- USER_SKILL_PROGRESS TABLE
+-- ===========================================
+-- Tracks user progress for each skill category
+
+CREATE TABLE IF NOT EXISTS user_skill_progress (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_email VARCHAR(255) NOT NULL,
+  category_id UUID NOT NULL REFERENCES skill_categories(id) ON DELETE CASCADE,
+  -- Knowledge tracking
+  knowledge_completed BOOLEAN NOT NULL DEFAULT false,
+  knowledge_completed_at TIMESTAMPTZ,
+  knowledge_course_id VARCHAR(255), -- Which course triggered completion
+  -- Timestamps
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(user_email, category_id)
+);
+
+-- Indexes
+CREATE INDEX IF NOT EXISTS idx_user_skill_progress_email ON user_skill_progress(user_email);
+CREATE INDEX IF NOT EXISTS idx_user_skill_progress_category ON user_skill_progress(category_id);
+
+-- Enable RLS
+ALTER TABLE user_skill_progress ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies
+CREATE POLICY "Service role can manage user skill progress"
+  ON user_skill_progress FOR ALL
+  USING (true)
+  WITH CHECK (true);
+
+-- Trigger for updated_at
+DROP TRIGGER IF EXISTS user_skill_progress_updated_at ON user_skill_progress;
+CREATE TRIGGER user_skill_progress_updated_at
+  BEFORE UPDATE ON user_skill_progress
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+-- ===========================================
+-- USER_TOOL_PROJECTS TABLE
+-- ===========================================
+-- Tracks user project completions per tool (for Application)
+
+CREATE TABLE IF NOT EXISTS user_tool_projects (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_email VARCHAR(255) NOT NULL,
+  tool_id TEXT NOT NULL REFERENCES tools(id) ON DELETE CASCADE,
+  project_count INT NOT NULL DEFAULT 0,
+  last_project_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(user_email, tool_id)
+);
+
+-- Indexes
+CREATE INDEX IF NOT EXISTS idx_user_tool_projects_email ON user_tool_projects(user_email);
+CREATE INDEX IF NOT EXISTS idx_user_tool_projects_tool ON user_tool_projects(tool_id);
+
+-- Enable RLS
+ALTER TABLE user_tool_projects ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies
+CREATE POLICY "Service role can manage user tool projects"
+  ON user_tool_projects FOR ALL
+  USING (true)
+  WITH CHECK (true);
+
+-- Trigger for updated_at
+DROP TRIGGER IF EXISTS user_tool_projects_updated_at ON user_tool_projects;
+CREATE TRIGGER user_tool_projects_updated_at
+  BEFORE UPDATE ON user_tool_projects
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at();

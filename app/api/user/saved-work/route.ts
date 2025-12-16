@@ -16,6 +16,7 @@ import {
 } from '@/lib/saved-work';
 import { getToolById } from '@/lib/db';
 import { awardSavedWorkSkill } from '@/lib/skills';
+import { incrementToolProjectCount } from '@/lib/skill-categories';
 
 /**
  * GET /api/user/saved-work?toolId={toolId}
@@ -127,18 +128,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Award skill for saving work (non-blocking)
-    getToolById(toolId).then((tool) => {
-      if (tool) {
-        awardSavedWorkSkill(
-          session.email!,
-          toolId,
-          tool.name,
-          tool.category
-        ).catch((err) => {
-          console.error('Error awarding saved work skill:', err);
-        });
-      }
+    // Award skill and increment project count (non-blocking)
+    Promise.all([
+      // Legacy skill system
+      getToolById(toolId).then((tool) => {
+        if (tool) {
+          return awardSavedWorkSkill(
+            session.email!,
+            toolId,
+            tool.name,
+            tool.category
+          );
+        }
+      }),
+      // New admin-defined skill system - increment project count
+      incrementToolProjectCount(session.email!, toolId),
+    ]).catch((err) => {
+      console.error('Error updating skills:', err);
     });
 
     return NextResponse.json({

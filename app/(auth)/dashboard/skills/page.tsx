@@ -1,16 +1,8 @@
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
-import { SkillsMatrix } from '@/components/dashboard/SkillsMatrix';
-import { getServerSession } from '@/lib/server-session';
+import { SkillsMatrixV2 } from '@/components/dashboard/SkillsMatrixV2';
 import { TrendingUp } from 'lucide-react';
 
-export default async function SkillsPage() {
-  const session = await getServerSession();
-
-  // Get username for greeting
-  const username = session?.learnworldsUser?.username ||
-                   session?.email?.split('@')[0] ||
-                   'there';
-
+export default function SkillsPage() {
   return (
     <DashboardLayout>
       {/* Page Header */}
@@ -25,12 +17,11 @@ export default async function SkillsPage() {
         </div>
         <p className="text-slate-600">
           Track your professional skills as you progress through courses and use tools.
-          Skills are automatically detected from your platform activity.
         </p>
       </div>
 
       {/* Skills Matrix Component */}
-      <SkillsMatrix />
+      <SkillsMatrixV2 />
     </DashboardLayout>
   );
 }

@@ -130,25 +130,41 @@ export function getCategoryLabel(category: SkillCategory): string {
 // ===========================================
 
 /**
- * Extract skill name from course title
- * e.g., "GloBE Rules Masterclass" -> "GloBE Rules"
+ * Extract skill name from course title for course completion
+ * Format: "[Course Name] - Course Certified"
  */
 export function extractSkillFromCourse(courseTitle: string): string {
-  // Remove common suffixes
-  return courseTitle
-    .replace(/\s*(masterclass|course|training|certification|fundamentals|advanced|basics)/gi, '')
+  // Clean up common suffixes from course title
+  const cleanTitle = courseTitle
+    .replace(/\s*(masterclass|course|training|certification|fundamentals|advanced|basics|module|program)/gi, '')
     .trim();
+
+  return `${cleanTitle} - Course Certified`;
 }
 
 /**
- * Extract skill name from tool name
- * e.g., "GloBE IIR Calculator" -> "GloBE IIR Calculation"
+ * Extract skill name from tool for tool usage
+ * Format: "[Tool Name] - Tool Proficiency"
  */
 export function extractSkillFromTool(toolName: string): string {
-  // Convert tool name to skill
-  return toolName
-    .replace(/\s*(calculator|tool|checker|validator|generator)/gi, '')
-    .trim() + ' Application';
+  // Clean up common suffixes from tool name
+  const cleanName = toolName
+    .replace(/\s*(calculator|tool|checker|validator|generator|assessment|form)/gi, '')
+    .trim();
+
+  return `${cleanName} - Tool Proficiency`;
+}
+
+/**
+ * Extract skill name from tool for saved work
+ * Format: "[Tool Name] - Applied Practice"
+ */
+export function extractSkillFromSavedWork(toolName: string): string {
+  const cleanName = toolName
+    .replace(/\s*(calculator|tool|checker|validator|generator|assessment|form)/gi, '')
+    .trim();
+
+  return `${cleanName} - Applied Practice`;
 }
 
 /**
@@ -420,7 +436,7 @@ export async function awardSavedWorkSkill(
   toolCategory: string
 ): Promise<UserSkill | null> {
   const skillCategory = mapToolCategoryToSkillCategory(toolCategory);
-  const skillName = `${extractSkillFromTool(toolName)} (Applied)`;
+  const skillName = extractSkillFromSavedWork(toolName);
 
   // First check if already has this skill
   const supabase = createServiceClient();
@@ -568,7 +584,7 @@ export async function syncSavedWorkSkills(userEmail: string): Promise<number> {
   let skillsUpdated = 0;
   for (const [toolId, work] of Object.entries(workByTool)) {
     const skillCategory = mapToolCategoryToSkillCategory(work.category);
-    const skillName = `${extractSkillFromTool(work.name)} (Applied)`;
+    const skillName = extractSkillFromSavedWork(work.name);
     const skillLevel = work.count >= 5 ? 'proficient' : 'familiar';
 
     const result = await upsertSkill(userEmail, {
