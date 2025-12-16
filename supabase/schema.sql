@@ -405,6 +405,7 @@ CREATE TABLE IF NOT EXISTS skill_category_courses (
   category_id UUID NOT NULL REFERENCES skill_categories(id) ON DELETE CASCADE,
   course_id VARCHAR(255) NOT NULL, -- LearnWorlds course ID
   course_name VARCHAR(255), -- Cached course name
+  knowledge_description TEXT, -- Description shown when user completes THIS course
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   UNIQUE(category_id, course_id)
 );
@@ -537,4 +538,43 @@ CREATE POLICY "Service role can manage user tool projects"
 DROP TRIGGER IF EXISTS user_tool_projects_updated_at ON user_tool_projects;
 CREATE TRIGGER user_tool_projects_updated_at
   BEFORE UPDATE ON user_tool_projects
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+-- ===========================================
+-- USER_COURSE_COMPLETIONS TABLE
+-- ===========================================
+-- Tracks individual course completions with progress scores
+-- This enables per-course knowledge tracking in the Skills Matrix
+
+CREATE TABLE IF NOT EXISTS user_course_completions (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_email VARCHAR(255) NOT NULL,
+  course_id VARCHAR(255) NOT NULL, -- LearnWorlds course ID
+  course_name VARCHAR(255), -- Cached course name
+  category_id UUID REFERENCES skill_categories(id) ON DELETE SET NULL, -- Which skill category this course belongs to
+  progress_score INT NOT NULL DEFAULT 0 CHECK (progress_score >= 0 AND progress_score <= 100), -- 0-100 from LearnWorlds
+  completed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(user_email, course_id)
+);
+
+-- Indexes
+CREATE INDEX IF NOT EXISTS idx_user_course_completions_email ON user_course_completions(user_email);
+CREATE INDEX IF NOT EXISTS idx_user_course_completions_course ON user_course_completions(course_id);
+CREATE INDEX IF NOT EXISTS idx_user_course_completions_category ON user_course_completions(category_id);
+
+-- Enable RLS
+ALTER TABLE user_course_completions ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies
+CREATE POLICY "Service role can manage user course completions"
+  ON user_course_completions FOR ALL
+  USING (true)
+  WITH CHECK (true);
+
+-- Trigger for updated_at
+DROP TRIGGER IF EXISTS user_course_completions_updated_at ON user_course_completions;
+CREATE TRIGGER user_course_completions_updated_at
+  BEFORE UPDATE ON user_course_completions
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();

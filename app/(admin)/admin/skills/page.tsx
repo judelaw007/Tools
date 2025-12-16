@@ -27,7 +27,7 @@ interface SkillCategory {
   id: string;
   name: string;
   slug: string;
-  knowledgeDescription: string | null;
+  knowledgeDescription: string | null; // Legacy - now per-course
   displayOrder: number;
   isActive: boolean;
   courses: Array<{
@@ -35,6 +35,7 @@ interface SkillCategory {
     categoryId: string;
     courseId: string;
     courseName: string | null;
+    knowledgeDescription: string | null; // NEW: Per-course description
   }>;
   tools: Array<{
     id: string;
@@ -310,6 +311,23 @@ export default function AdminSkillsPage() {
     }
   };
 
+  // Update course knowledge description
+  const handleUpdateCourseDescription = async (categoryId: string, courseId: string, description: string) => {
+    try {
+      const response = await fetch(`/api/admin/skills/${categoryId}/courses`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ courseId, knowledgeDescription: description }),
+      });
+
+      if (response.ok) {
+        await fetchCategories();
+      }
+    } catch (err) {
+      console.error('Failed to update course description:', err);
+    }
+  };
+
   const resetForm = () => {
     setFormData({
       name: '',
@@ -456,40 +474,44 @@ export default function AdminSkillsPage() {
 
               {expandedId === category.id && (
                 <CardContent className="border-t border-slate-100 pt-4">
-                  {/* Knowledge Description */}
-                  <div className="mb-6">
-                    <h4 className="text-sm font-semibold text-slate-700 mb-2 flex items-center gap-2">
-                      <BookOpen className="w-4 h-4" />
-                      Knowledge Description
-                    </h4>
-                    <div className="p-3 bg-purple-50 rounded-lg">
-                      {category.knowledgeDescription ? (
-                        <p className="text-sm text-purple-800">{category.knowledgeDescription}</p>
-                      ) : (
-                        <p className="text-sm text-purple-400 italic">No description set. Edit the category to add one.</p>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Linked Courses */}
+                  {/* Linked Courses - Each with its own Knowledge Description */}
                   <div className="mb-6">
                     <h4 className="text-sm font-semibold text-slate-700 mb-2 flex items-center gap-2">
                       <BookOpen className="w-4 h-4" />
                       Linked Courses (trigger Knowledge)
                     </h4>
-                    <div className="space-y-2">
+                    <p className="text-xs text-slate-500 mb-3">
+                      Each course has its own description shown when a user completes it.
+                    </p>
+                    <div className="space-y-3">
                       {category.courses.map((course) => (
-                        <div key={course.id} className="flex items-center justify-between p-2 bg-slate-50 rounded-lg">
-                          <span className="text-sm text-slate-700">{course.courseName || course.courseId}</span>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleRemoveCourse(category.id, course.courseId)}
-                          >
-                            <X className="w-3 h-3" />
-                          </Button>
+                        <div key={course.id} className="p-3 bg-purple-50 rounded-lg">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm font-medium text-purple-800">{course.courseName || course.courseId}</span>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleRemoveCourse(category.id, course.courseId)}
+                            >
+                              <X className="w-3 h-3" />
+                            </Button>
+                          </div>
+                          <textarea
+                            className="w-full p-2 text-sm border border-purple-200 rounded-lg resize-none bg-white"
+                            rows={2}
+                            placeholder="Knowledge description (e.g., 'Has demonstrated understanding of Pillar 2 fundamentals...')..."
+                            defaultValue={course.knowledgeDescription || ''}
+                            onBlur={(e) => {
+                              if (e.target.value !== course.knowledgeDescription) {
+                                handleUpdateCourseDescription(category.id, course.courseId, e.target.value);
+                              }
+                            }}
+                          />
                         </div>
                       ))}
+                      {category.courses.length === 0 && (
+                        <p className="text-sm text-slate-400 italic p-2">No courses linked yet. Add a course to define Knowledge skills.</p>
+                      )}
                       {/* Add course dropdown */}
                       <select
                         className="w-full p-2 text-sm border border-slate-200 rounded-lg"
@@ -705,12 +727,13 @@ export default function AdminSkillsPage() {
       {/* Help Card */}
       <Card className="mt-6">
         <CardContent className="p-4 bg-blue-50">
-          <h4 className="font-medium text-blue-800 mb-2">How Skills Matrix Works</h4>
+          <h4 className="font-medium text-blue-800 mb-2">How Skills Matrix Works (Portfolio Style)</h4>
           <div className="text-sm text-blue-700 space-y-2">
-            <p><strong>Knowledge:</strong> Awarded when a user completes any linked course. The Knowledge Description you write will be shown in their Skills Matrix.</p>
-            <p><strong>Application:</strong> Awarded when a user saves projects using linked tools. Each tool can have its own Application Description describing what using that tool demonstrates.</p>
+            <p><strong>Knowledge:</strong> Each course has its own description. When a user completes a course, it appears in their portfolio with the description you wrote and their course score (from LearnWorlds).</p>
+            <p><strong>Application:</strong> Each tool has its own description. When a user saves projects using a tool, it appears in their portfolio with the project count.</p>
+            <p><strong>Portfolio View:</strong> A skill category only appears in the user&apos;s Skills Matrix after they complete at least one linked course. This creates a clean portfolio showcasing their actual achievements.</p>
             <p className="text-xs text-blue-600 mt-3">
-              Example: Link &quot;CIOT - Pillar 2&quot; course to a &quot;Pillar 2 Skills&quot; category. When a user completes that course, they earn the Knowledge badge with your description.
+              Example: Link &quot;CIOT - Pillar 2&quot; to &quot;Pillar 2 Skills&quot;. When completed, the user sees: &quot;CIOT Pillar 2 (Course Score: 76%) - Has demonstrated understanding of...&quot;
             </p>
           </div>
         </CardContent>

@@ -1,8 +1,10 @@
 /**
  * Skill Category Courses API Routes
  *
- * GET  /api/admin/skills/[id]/courses - List courses for category
- * POST /api/admin/skills/[id]/courses - Add course to category
+ * GET    /api/admin/skills/[id]/courses - List courses for category
+ * POST   /api/admin/skills/[id]/courses - Add course to category
+ * PUT    /api/admin/skills/[id]/courses - Update course knowledge description
+ * DELETE /api/admin/skills/[id]/courses - Remove course from category
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -11,6 +13,7 @@ import {
   getCoursesForCategory,
   addCourseToCategory,
   removeCourseFromCategory,
+  updateCourseKnowledgeDescription,
 } from '@/lib/skill-categories';
 
 interface RouteParams {
@@ -98,6 +101,58 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     console.error('POST /api/admin/skills/[id]/courses error:', error);
     return NextResponse.json(
       { error: 'Failed to add course' },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * PUT /api/admin/skills/[id]/courses
+ * Update course knowledge description
+ *
+ * Body:
+ * - courseId: string (required)
+ * - knowledgeDescription: string (required)
+ */
+export async function PUT(request: NextRequest, { params }: RouteParams) {
+  try {
+    const session = await getServerSession();
+
+    if (!(session?.role === 'admin' || session?.role === 'super_admin')) {
+      return NextResponse.json(
+        { error: 'Admin access required' },
+        { status: 403 }
+      );
+    }
+
+    const { id } = await params;
+    const body = await request.json();
+    const { courseId, knowledgeDescription } = body;
+
+    if (!courseId) {
+      return NextResponse.json(
+        { error: 'courseId is required' },
+        { status: 400 }
+      );
+    }
+
+    const course = await updateCourseKnowledgeDescription(id, courseId, knowledgeDescription || '');
+
+    if (!course) {
+      return NextResponse.json(
+        { error: 'Failed to update course description' },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      course,
+    });
+  } catch (error) {
+    console.error('PUT /api/admin/skills/[id]/courses error:', error);
+    return NextResponse.json(
+      { error: 'Failed to update course' },
       { status: 500 }
     );
   }
