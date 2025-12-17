@@ -578,3 +578,42 @@ DROP TRIGGER IF EXISTS user_course_completions_updated_at ON user_course_complet
 CREATE TRIGGER user_course_completions_updated_at
   BEFORE UPDATE ON user_course_completions
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+-- ===========================================
+-- SKILL_VERIFICATIONS TABLE
+-- ===========================================
+-- Stores verification records for printed/PDF skill portfolios
+-- Each record contains a snapshot of skills at print time
+-- QR codes link to verification pages using the token
+
+CREATE TABLE IF NOT EXISTS skill_verifications (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  token VARCHAR(64) UNIQUE NOT NULL, -- URL-safe verification token
+  user_email VARCHAR(255) NOT NULL,
+  user_name VARCHAR(255), -- User's display name at time of creation
+  skills_snapshot JSONB NOT NULL, -- Full snapshot of skills at verification time
+  selected_skill_ids TEXT[], -- Array of category IDs that were selected for print
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  expires_at TIMESTAMPTZ, -- Optional expiry (null = never expires)
+  view_count INT NOT NULL DEFAULT 0 -- Track how many times verification was viewed
+);
+
+-- Indexes
+CREATE INDEX IF NOT EXISTS idx_skill_verifications_token ON skill_verifications(token);
+CREATE INDEX IF NOT EXISTS idx_skill_verifications_email ON skill_verifications(user_email);
+CREATE INDEX IF NOT EXISTS idx_skill_verifications_created ON skill_verifications(created_at DESC);
+
+-- Enable RLS
+ALTER TABLE skill_verifications ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies
+-- Anyone can view verifications (public verification page)
+CREATE POLICY "Anyone can view skill verifications"
+  ON skill_verifications FOR SELECT
+  USING (true);
+
+-- Service role can create verifications
+CREATE POLICY "Service role can manage skill verifications"
+  ON skill_verifications FOR ALL
+  USING (true)
+  WITH CHECK (true);

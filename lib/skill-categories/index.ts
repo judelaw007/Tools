@@ -1110,7 +1110,7 @@ export async function getUserPortfolioMatrix(userEmail: string): Promise<Portfol
 
 /**
  * Sync user's course completions from LearnWorlds data
- * This creates/updates records in user_course_completions with progress scores
+ * Uses BATCH upsert for production efficiency (1 query instead of N)
  */
 export async function syncUserCoursesWithProgress(
   userEmail: string,
@@ -1124,7 +1124,16 @@ export async function syncUserCoursesWithProgress(
 ): Promise<number> {
   const supabase = createServiceClient();
 
-  // Get all course-to-category mappings
+  // Filter to only completed courses
+  const completedEnrollments = enrollments.filter(
+    (e) => e.completed || e.progress >= 100
+  );
+
+  if (completedEnrollments.length === 0) {
+    return 0;
+  }
+
+  // Get all course-to-category mappings in one query
   const { data: mappings } = await supabase
     .from('skill_category_courses')
     .select('course_id, category_id');
@@ -1134,22 +1143,29 @@ export async function syncUserCoursesWithProgress(
     categoryMap.set(m.course_id, m.category_id);
   }
 
-  let synced = 0;
+  // Build batch data for upsert
+  const batchData = completedEnrollments.map((enrollment) => ({
+    user_email: userEmail,
+    course_id: enrollment.courseId,
+    course_name: enrollment.courseName,
+    category_id: categoryMap.get(enrollment.courseId) || null,
+    progress_score: Math.min(100, Math.max(0, enrollment.progress)),
+    completed_at: enrollment.completedAt || new Date().toISOString(),
+  }));
 
-  for (const enrollment of enrollments) {
-    // Only record completed courses (100% progress or completed flag)
-    if (enrollment.completed || enrollment.progress >= 100) {
-      const categoryId = categoryMap.get(enrollment.courseId) || null;
-      const result = await recordCourseCompletion(
-        userEmail,
-        enrollment.courseId,
-        enrollment.courseName,
-        categoryId,
-        enrollment.progress
-      );
-      if (result) synced++;
-    }
+  // Single batch upsert - much more efficient than N individual calls
+  const { data, error } = await supabase
+    .from('user_course_completions')
+    .upsert(batchData, {
+      onConflict: 'user_email,course_id',
+      ignoreDuplicates: false,
+    })
+    .select();
+
+  if (error) {
+    console.error('Error batch syncing course completions:', error);
+    return 0;
   }
 
-  return synced;
+  return data?.length || 0;
 }
