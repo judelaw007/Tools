@@ -16,20 +16,31 @@ import { Loader2, AlertCircle, CheckCircle, Mail, ArrowLeft } from 'lucide-react
  * 5. If valid, session is created and user is redirected to dashboard
  */
 
-type AuthStep = 'sending' | 'code_entry' | 'verifying' | 'success' | 'error';
+type AuthStep = 'email_entry' | 'sending' | 'code_entry' | 'verifying' | 'success' | 'error';
 
 function AuthContent() {
   const searchParams = useSearchParams();
-  const [step, setStep] = useState<AuthStep>('sending');
+  const urlEmail = searchParams.get('email');
+  const returnTo = searchParams.get('returnTo') || '/dashboard';
+
+  // Start with email entry if no email provided, otherwise start sending
+  const [step, setStep] = useState<AuthStep>(urlEmail ? 'sending' : 'email_entry');
   const [error, setError] = useState<string>('');
   const [maskedEmail, setMaskedEmail] = useState<string>('');
   const [code, setCode] = useState<string[]>(['', '', '', '', '', '']);
   const [expiresIn, setExpiresIn] = useState<number>(300);
   const [retryAfter, setRetryAfter] = useState<number>(0);
+  const [email, setEmail] = useState<string>(urlEmail || '');
+  const [rememberMe, setRememberMe] = useState<boolean>(true);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const emailInputRef = useRef<HTMLInputElement>(null);
 
-  const email = searchParams.get('email');
-  const returnTo = searchParams.get('returnTo') || '/dashboard';
+  // Focus email input when on email entry step
+  useEffect(() => {
+    if (step === 'email_entry') {
+      setTimeout(() => emailInputRef.current?.focus(), 100);
+    }
+  }, [step]);
 
   // Countdown timer for code expiry
   useEffect(() => {
@@ -59,12 +70,11 @@ function AuthContent() {
     }
   }, [retryAfter]);
 
-  // Send verification code on mount
+  // Send verification code on mount (only if email was in URL)
   useEffect(() => {
-    async function sendCode() {
-      if (!email) {
-        setStep('error');
-        setError('No email provided. Please access tools from your MojiTax course.');
+    async function sendCodeOnMount() {
+      if (!urlEmail) {
+        // No URL email - stay on email entry step
         return;
       }
 
@@ -72,7 +82,7 @@ function AuthContent() {
         const response = await fetch('/api/auth/send-code', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email }),
+          body: JSON.stringify({ email: urlEmail }),
         });
 
         const data = await response.json();
@@ -97,8 +107,46 @@ function AuthContent() {
       }
     }
 
-    sendCode();
-  }, [email]);
+    sendCodeOnMount();
+  }, [urlEmail]);
+
+  // Send code from email entry form
+  async function sendCode() {
+    if (!email.trim()) {
+      setError('Please enter your email address');
+      return;
+    }
+
+    setStep('sending');
+    setError('');
+
+    try {
+      const response = await fetch('/api/auth/send-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim() }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        setMaskedEmail(data.maskedEmail);
+        setExpiresIn(data.expiresIn || 300);
+        setStep('code_entry');
+        setTimeout(() => inputRefs.current[0]?.focus(), 100);
+      } else {
+        setStep('email_entry');
+        setError(data.message || data.error || 'Failed to send verification code');
+        if (data.retryAfter) {
+          setRetryAfter(data.retryAfter);
+        }
+      }
+    } catch (err) {
+      console.error('Send code error:', err);
+      setStep('email_entry');
+      setError('Something went wrong. Please try again.');
+    }
+  }
 
   // Handle code input
   const handleCodeChange = (index: number, value: string) => {
@@ -147,7 +195,7 @@ function AuthContent() {
       const response = await fetch('/api/auth/verify-code', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, code: codeStr, returnTo }),
+        body: JSON.stringify({ email: email.trim(), code: codeStr, returnTo, rememberMe }),
       });
 
       const data = await response.json();
@@ -184,7 +232,7 @@ function AuthContent() {
       const response = await fetch('/api/auth/send-code', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email: email.trim() }),
       });
 
       const data = await response.json();
@@ -221,6 +269,75 @@ function AuthContent() {
         <Logo size="lg" className="justify-center mb-8" />
 
         <div className="bg-white rounded-xl shadow-navy border border-mojitax-bg-light p-8">
+          {/* Email Entry */}
+          {step === 'email_entry' && (
+            <>
+              <div className="w-12 h-12 bg-mojitax-blue/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Mail className="w-6 h-6 text-mojitax-blue" />
+              </div>
+              <h2 className="text-lg font-semibold text-slate-800 mb-2">
+                Access MojiTax Tools
+              </h2>
+              <p className="text-slate-600 mb-6">
+                Enter your mojitax.co.uk email address. We&apos;ll send you a verification code.
+              </p>
+
+              <div className="space-y-4 text-left">
+                <div>
+                  <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-1.5">
+                    Email Address
+                  </label>
+                  <input
+                    ref={emailInputRef}
+                    type="email"
+                    id="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && sendCode()}
+                    placeholder="your.email@example.com"
+                    className="w-full px-4 py-3 border border-slate-200 rounded-lg focus:border-mojitax-blue focus:ring-2 focus:ring-mojitax-blue/20 outline-none transition-all"
+                  />
+                </div>
+
+                {/* Remember Me */}
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="w-4 h-4 rounded border-slate-300 text-mojitax-blue focus:ring-mojitax-blue/20"
+                  />
+                  <span className="text-sm text-slate-600">
+                    Remember me for 30 days
+                  </span>
+                </label>
+
+                {/* Error */}
+                {error && (
+                  <div className="flex items-start gap-2 text-red-600 text-sm bg-red-50 p-3 rounded-lg">
+                    <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                    <span>{error}</span>
+                  </div>
+                )}
+
+                <button
+                  onClick={sendCode}
+                  disabled={retryAfter > 0}
+                  className="w-full py-3 px-4 bg-mojitax-blue text-white rounded-lg hover:bg-mojitax-blue-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                >
+                  {retryAfter > 0 ? `Wait ${retryAfter}s` : 'Send Verification Code'}
+                </button>
+
+                <p className="text-xs text-slate-500 text-center">
+                  Don&apos;t have an account?{' '}
+                  <a href="https://www.mojitax.co.uk" target="_blank" rel="noopener noreferrer" className="text-mojitax-blue hover:underline">
+                    Sign up at mojitax.co.uk
+                  </a>
+                </p>
+              </div>
+            </>
+          )}
+
           {/* Sending Code */}
           {step === 'sending' && (
             <>
@@ -347,11 +464,20 @@ function AuthContent() {
                     You can request a new code in {retryAfter} seconds
                   </p>
                 )}
-                <a
-                  href="https://www.mojitax.co.uk"
-                  className="flex items-center justify-center gap-2 text-sm text-slate-500 hover:text-mojitax-navy transition-colors"
+                <button
+                  onClick={() => {
+                    setStep('email_entry');
+                    setError('');
+                  }}
+                  className="flex items-center justify-center gap-2 text-sm text-slate-500 hover:text-mojitax-navy transition-colors w-full"
                 >
                   <ArrowLeft className="w-4 h-4" />
+                  Try a different email
+                </button>
+                <a
+                  href="https://www.mojitax.co.uk"
+                  className="flex items-center justify-center gap-2 text-xs text-slate-400 hover:text-mojitax-navy transition-colors"
+                >
                   Return to mojitax.co.uk
                 </a>
               </div>
