@@ -7,9 +7,10 @@
  * - Only shows categories where user has completed at least one course
  * - Each course shows its own description and score
  * - Only shows tools the user has actually used
+ * - Includes print/PDF functionality with QR verification
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import {
@@ -23,7 +24,12 @@ import {
   Award,
   Calendar,
   Sparkles,
+  Printer,
+  X,
+  Check,
 } from 'lucide-react';
+import { PrintableSkillsMatrix } from './PrintableSkillsMatrix';
+import { SkillSnapshot } from '@/lib/skill-verifications';
 
 interface PortfolioEntry {
   category: {
@@ -57,6 +63,17 @@ export function SkillsMatrixV2({ className = '' }: SkillsMatrixV2Props) {
   const [isLoading, setIsLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+
+  // Print-related state
+  const [selectedForPrint, setSelectedForPrint] = useState<Set<string>>(new Set());
+  const [isPrintMode, setIsPrintMode] = useState(false);
+  const [isPreparing, setIsPreparing] = useState(false);
+  const [printData, setPrintData] = useState<{
+    userName: string;
+    snapshot: SkillSnapshot;
+    verificationUrl: string;
+  } | null>(null);
+  const printRef = useRef<HTMLDivElement>(null);
 
   const fetchPortfolio = useCallback(async () => {
     try {
@@ -127,6 +144,70 @@ export function SkillsMatrixV2({ className = '' }: SkillsMatrixV2Props) {
     });
   };
 
+  const toggleSelectForPrint = (categoryId: string) => {
+    setSelectedForPrint((prev) => {
+      const next = new Set(prev);
+      if (next.has(categoryId)) {
+        next.delete(categoryId);
+      } else {
+        next.add(categoryId);
+      }
+      return next;
+    });
+  };
+
+  const selectAllForPrint = () => {
+    setSelectedForPrint(new Set(portfolio.map((e) => e.category.id)));
+  };
+
+  const clearPrintSelection = () => {
+    setSelectedForPrint(new Set());
+  };
+
+  const handlePrint = async () => {
+    try {
+      setIsPreparing(true);
+
+      // Create verification record
+      const response = await fetch('/api/user/skill-verification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          selectedSkillIds: Array.from(selectedForPrint),
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create verification');
+      }
+
+      const data = await response.json();
+
+      setPrintData({
+        userName: data.userName,
+        snapshot: data.snapshot,
+        verificationUrl: data.verificationUrl,
+      });
+
+      setIsPrintMode(true);
+
+      // Wait for component to render, then trigger print
+      setTimeout(() => {
+        window.print();
+      }, 500);
+    } catch (err) {
+      console.error('Error preparing print:', err);
+      alert('Failed to prepare print. Please try again.');
+    } finally {
+      setIsPreparing(false);
+    }
+  };
+
+  const closePrintMode = () => {
+    setIsPrintMode(false);
+    setPrintData(null);
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-GB', {
       day: 'numeric',
@@ -134,6 +215,34 @@ export function SkillsMatrixV2({ className = '' }: SkillsMatrixV2Props) {
       year: 'numeric',
     });
   };
+
+  // Print mode - show only the printable version
+  if (isPrintMode && printData) {
+    return (
+      <div>
+        {/* Close button - hidden when printing */}
+        <div className="no-print fixed top-4 right-4 z-50">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={closePrintMode}
+            className="bg-white shadow-lg"
+          >
+            <X className="w-4 h-4 mr-2" />
+            Close Print View
+          </Button>
+        </div>
+
+        <PrintableSkillsMatrix
+          ref={printRef}
+          userName={printData.userName}
+          snapshot={printData.snapshot}
+          verificationUrl={printData.verificationUrl}
+          generatedAt={new Date().toISOString()}
+        />
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -146,6 +255,7 @@ export function SkillsMatrixV2({ className = '' }: SkillsMatrixV2Props) {
     );
   }
 
+  // Empty state - can still print an empty portfolio
   if (portfolio.length === 0) {
     return (
       <Card className={className}>
@@ -167,14 +277,24 @@ export function SkillsMatrixV2({ className = '' }: SkillsMatrixV2Props) {
               Complete courses and use tools to build your professional skills portfolio.
               Your achievements will appear here automatically.
             </p>
-            <Button
-              variant="outline"
-              onClick={syncPortfolio}
-              disabled={isSyncing}
-            >
-              <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
-              {isSyncing ? 'Syncing...' : 'Sync Progress'}
-            </Button>
+            <div className="flex justify-center gap-3">
+              <Button
+                variant="outline"
+                onClick={syncPortfolio}
+                disabled={isSyncing}
+              >
+                <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
+                {isSyncing ? 'Syncing...' : 'Sync Progress'}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handlePrint}
+                disabled={isPreparing}
+              >
+                <Printer className="w-4 h-4" />
+                {isPreparing ? 'Preparing...' : 'Print Empty Portfolio'}
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -193,60 +313,122 @@ export function SkillsMatrixV2({ className = '' }: SkillsMatrixV2Props) {
             Your professional achievements and competencies
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={syncPortfolio}
-          disabled={isSyncing}
-        >
-          <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
-          {isSyncing ? 'Syncing...' : 'Sync'}
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={syncPortfolio}
+            disabled={isSyncing}
+          >
+            <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
+            {isSyncing ? 'Syncing...' : 'Sync'}
+          </Button>
+          <Button
+            variant="success"
+            size="sm"
+            onClick={handlePrint}
+            disabled={isPreparing || (selectedForPrint.size === 0 && portfolio.length > 0)}
+          >
+            <Printer className="w-4 h-4" />
+            {isPreparing ? 'Preparing...' : 'Print / PDF'}
+          </Button>
+        </div>
       </CardHeader>
 
       <CardContent className="space-y-4">
+        {/* Selection Controls */}
+        <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200">
+          <div className="flex items-center gap-2 text-sm text-slate-600">
+            <Check className="w-4 h-4" />
+            <span>
+              {selectedForPrint.size === 0
+                ? 'Select skills to include in print'
+                : `${selectedForPrint.size} skill${selectedForPrint.size !== 1 ? 's' : ''} selected`}
+            </span>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={selectAllForPrint}
+              className="text-sm text-mojitax-green hover:underline"
+            >
+              Select All
+            </button>
+            <span className="text-slate-300">|</span>
+            <button
+              onClick={clearPrintSelection}
+              className="text-sm text-slate-500 hover:underline"
+            >
+              Clear
+            </button>
+          </div>
+        </div>
+
         {portfolio.map((entry) => {
           const isExpanded = expandedCategories.has(entry.category.id);
+          const isSelected = selectedForPrint.has(entry.category.id);
           const remainingCourses = entry.totalCoursesInCategory - entry.completedCourses.length;
 
           return (
             <div
               key={entry.category.id}
-              className="border border-mojitax-green/30 bg-gradient-to-r from-mojitax-green/5 to-transparent rounded-xl overflow-hidden"
+              className={`border rounded-xl overflow-hidden transition-all ${
+                isSelected
+                  ? 'border-mojitax-green bg-gradient-to-r from-mojitax-green/10 to-transparent'
+                  : 'border-mojitax-green/30 bg-gradient-to-r from-mojitax-green/5 to-transparent'
+              }`}
             >
               {/* Category Header */}
-              <button
-                className="w-full p-4 flex items-center justify-between hover:bg-mojitax-green/5 transition-colors"
-                onClick={() => toggleCategory(entry.category.id)}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-mojitax-green/20 flex items-center justify-center">
-                    <TrendingUp className="w-5 h-5 text-mojitax-green" />
+              <div className="flex items-center">
+                {/* Checkbox */}
+                <button
+                  className="p-4 flex items-center justify-center hover:bg-mojitax-green/10 transition-colors"
+                  onClick={() => toggleSelectForPrint(entry.category.id)}
+                >
+                  <div
+                    className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
+                      isSelected
+                        ? 'bg-mojitax-green border-mojitax-green'
+                        : 'border-slate-300 hover:border-mojitax-green'
+                    }`}
+                  >
+                    {isSelected && <Check className="w-3 h-3 text-white" />}
                   </div>
-                  <div className="text-left">
-                    <h3 className="font-semibold text-mojitax-navy">
-                      {entry.category.name}
-                    </h3>
-                    <div className="flex items-center gap-3 text-xs text-slate-500 mt-0.5">
-                      <span className="flex items-center gap-1">
-                        <BookOpen className="w-3 h-3 text-purple-500" />
-                        {entry.completedCourses.length} course{entry.completedCourses.length !== 1 ? 's' : ''} completed
-                      </span>
-                      {entry.toolsUsed.length > 0 && (
+                </button>
+
+                {/* Expand/Collapse */}
+                <button
+                  className="flex-1 p-4 pl-0 flex items-center justify-between hover:bg-mojitax-green/5 transition-colors"
+                  onClick={() => toggleCategory(entry.category.id)}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-mojitax-green/20 flex items-center justify-center">
+                      <TrendingUp className="w-5 h-5 text-mojitax-green" />
+                    </div>
+                    <div className="text-left">
+                      <h3 className="font-semibold text-mojitax-navy">
+                        {entry.category.name}
+                      </h3>
+                      <div className="flex items-center gap-3 text-xs text-slate-500 mt-0.5">
                         <span className="flex items-center gap-1">
-                          <Wrench className="w-3 h-3 text-blue-500" />
-                          {entry.toolsUsed.length} tool{entry.toolsUsed.length !== 1 ? 's' : ''} used
+                          <BookOpen className="w-3 h-3 text-purple-500" />
+                          {entry.completedCourses.length} course{entry.completedCourses.length !== 1 ? 's' : ''} completed
                         </span>
-                      )}
+                        {entry.toolsUsed.length > 0 && (
+                          <span className="flex items-center gap-1">
+                            <Wrench className="w-3 h-3 text-blue-500" />
+                            {entry.toolsUsed.length} tool{entry.toolsUsed.length !== 1 ? 's' : ''} used
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-                {isExpanded ? (
-                  <ChevronUp className="w-5 h-5 text-slate-400" />
-                ) : (
-                  <ChevronDown className="w-5 h-5 text-slate-400" />
-                )}
-              </button>
+                  {isExpanded ? (
+                    <ChevronUp className="w-5 h-5 text-slate-400" />
+                  ) : (
+                    <ChevronDown className="w-5 h-5 text-slate-400" />
+                  )}
+                </button>
+              </div>
 
               {/* Expanded Content */}
               {isExpanded && (
