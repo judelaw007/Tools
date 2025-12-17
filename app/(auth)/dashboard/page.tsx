@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -20,6 +21,11 @@ import {
 export default async function DashboardPage() {
   // Get current user session
   const session = await getServerSession();
+
+  // Redirect to login if not authenticated
+  if (!session) {
+    redirect('/auth?returnTo=/dashboard');
+  }
 
   // Get all courses that have tools allocated
   const coursesWithTools = await getCoursesWithTools();

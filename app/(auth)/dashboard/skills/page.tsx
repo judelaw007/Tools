@@ -1,8 +1,16 @@
+import { redirect } from 'next/navigation';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { SkillsMatrixV2 } from '@/components/dashboard/SkillsMatrixV2';
+import { getServerSession } from '@/lib/server-session';
 import { TrendingUp } from 'lucide-react';
 
-export default function SkillsPage() {
+export default async function SkillsPage() {
+  // Redirect to login if not authenticated
+  const session = await getServerSession();
+  if (!session) {
+    redirect('/auth?returnTo=/dashboard/skills');
+  }
+
   return (
     <DashboardLayout>
       {/* Page Header */}
