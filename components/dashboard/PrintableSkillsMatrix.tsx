@@ -223,10 +223,11 @@ export const PrintableSkillsMatrix = forwardRef<HTMLDivElement, PrintableSkillsM
             <div className="flex-1">
               <h4 className="text-sm font-semibold text-gray-700 mb-2">About this Portfolio</h4>
               <p className="text-xs text-gray-600 leading-relaxed">
-                This Skills Portfolio reflects courses completed and tools used on the MojiTax
-                learning platform. Competency is demonstrated through practical application
-                within the platform&apos;s demo tools. This document is generated for informational
-                purposes and can be verified by scanning the QR code or visiting:
+                This Skills Portfolio, generated on the MojiTax Platform, provides an evidence-based
+                benchmark of the individual&apos;s knowledge and practical application of relevant skills.
+                Competency is demonstrated through course completion, engagement with platform demo
+                tools, and the achievement of key learning milestones. You can verify the authenticity
+                by scanning the QR code or visiting:
               </p>
               <p className="text-xs text-[#00A651] mt-2 break-all">{verificationUrl}</p>
             </div>
@@ -235,7 +236,10 @@ export const PrintableSkillsMatrix = forwardRef<HTMLDivElement, PrintableSkillsM
           {/* MojiTax Footer */}
           <div className="mt-6 pt-4 border-t border-gray-200 text-center">
             <p className="text-xs text-gray-500">
-              MojiTax Demo Tools Platform &bull; www.mojitax.co.uk
+              MojiTax Limited is a registered company in the United Kingdom
+            </p>
+            <p className="text-xs text-gray-500 mt-1">
+              Company No. 13857853 &bull; www.mojitax.co.uk
             </p>
           </div>
         </footer>

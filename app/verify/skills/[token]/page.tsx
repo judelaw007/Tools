@@ -273,12 +273,12 @@ export default function VerifySkillsPage() {
 
         {/* Caveat */}
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800">
-          <p className="font-medium mb-1">About this verification</p>
+          <p className="font-medium mb-1">About this Portfolio</p>
           <p>
-            This Skills Portfolio reflects courses completed and tools used on the MojiTax
-            learning platform. Competency is demonstrated through practical application
-            within the platform&apos;s demo tools. This document was generated for informational
-            purposes and represents achievements as of the date shown above.
+            This Skills Portfolio, generated on the MojiTax Platform, provides an evidence-based
+            benchmark of the individual&apos;s knowledge and practical application of relevant skills.
+            Competency is demonstrated through course completion, engagement with platform demo
+            tools, and the achievement of key learning milestones.
           </p>
         </div>
       </main>
@@ -286,8 +286,9 @@ export default function VerifySkillsPage() {
       {/* Footer */}
       <footer className="border-t border-slate-200 bg-white mt-8">
         <div className="max-w-4xl mx-auto px-4 py-6 text-center text-sm text-slate-500">
-          <p>Verified by MojiTax Demo Tools Platform</p>
+          <p>MojiTax Limited is a registered company in the United Kingdom</p>
           <p className="mt-1">
+            Company No. 13857853 &bull;{' '}
             <a href="https://www.mojitax.co.uk" className="text-mojitax-green hover:underline">
               www.mojitax.co.uk
             </a>
