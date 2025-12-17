@@ -306,3 +306,56 @@
 :focus-visible {
   @apply outline-none ring-2 ring-mojitax-green ring-offset-2;
 }
+
+/* ===========================================
+   PRINT STYLES
+   =========================================== */
+@media print {
+  /* Hide everything by default */
+  body * {
+    visibility: hidden;
+  }
+
+  /* Show only the print container and its children */
+  .print-container,
+  .print-container * {
+    visibility: visible;
+  }
+
+  /* Position print container at top of page */
+  .print-container {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    max-width: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+  }
+
+  /* Hide elements with no-print class */
+  .no-print,
+  nav,
+  aside,
+  header:not(.print-container header),
+  footer:not(.print-container footer),
+  [data-sidebar],
+  [role="navigation"] {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
+  /* Ensure proper colors in print */
+  body {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    background: white !important;
+  }
+
+  /* Page settings */
+  @page {
+    size: A4;
+    margin: 15mm;
+  }
+}
