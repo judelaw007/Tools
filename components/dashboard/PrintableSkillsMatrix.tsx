@@ -12,8 +12,14 @@
  */
 
 import { forwardRef } from 'react';
-import { QRCodeSVG } from 'qrcode.react';
+import dynamic from 'next/dynamic';
 import { SkillSnapshot } from '@/lib/skill-verifications';
+
+// Dynamically import QRCodeSVG to avoid SSR issues
+const QRCodeSVG = dynamic(
+  () => import('qrcode.react').then((mod) => mod.QRCodeSVG),
+  { ssr: false, loading: () => <div className="w-[100px] h-[100px] bg-gray-100 animate-pulse" /> }
+);
 
 interface PrintableSkillsMatrixProps {
   userName: string;
