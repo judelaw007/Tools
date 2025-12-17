@@ -123,8 +123,10 @@ export function SkillsMatrixV2({ className = '' }: SkillsMatrixV2Props) {
       setExpandedCategories(allIds);
     } catch (err) {
       console.error('Error syncing portfolio:', err);
+      setPortfolio([]);
     } finally {
       setIsSyncing(false);
+      setIsLoading(false); // Also clear initial loading state
     }
   }, []);
 
