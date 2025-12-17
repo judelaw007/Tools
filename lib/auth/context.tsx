@@ -27,7 +27,15 @@ function parseSessionCookie(): User | null {
   if (!sessionCookie) return null;
 
   try {
-    const decoded = atob(sessionCookie);
+    // URL decode the cookie first in case it was encoded
+    let cookieValue = sessionCookie;
+    try {
+      cookieValue = decodeURIComponent(sessionCookie);
+    } catch {
+      // If decoding fails, use the original value
+    }
+
+    const decoded = atob(cookieValue);
     const session = JSON.parse(decoded);
 
     if (session.email) {
@@ -39,7 +47,11 @@ function parseSessionCookie(): User | null {
       };
     }
   } catch (e) {
-    console.error('Failed to parse session cookie:', e);
+    // Silently fail - user is not authenticated
+    // Clear the invalid cookie
+    if (typeof document !== 'undefined') {
+      document.cookie = `${SESSION_COOKIE_NAME}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+    }
   }
 
   return null;
