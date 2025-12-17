@@ -102,7 +102,7 @@ export default async function PublicToolsPage() {
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link href="https://mojitax.co.uk/courses">
+            <Link href="https://www.mojitax.co.uk/courses-catalogue">
               <Button size="lg" className="bg-mojitax-green hover:bg-mojitax-green-dark text-white">
                 <GraduationCap className="w-5 h-5" />
                 Browse Courses
@@ -149,7 +149,7 @@ export default async function PublicToolsPage() {
                   and scenarios in a safe learning environment.
                 </p>
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-                  <Link href="https://mojitax.co.uk/courses">
+                  <Link href="https://www.mojitax.co.uk/courses-catalogue">
                     <Button variant="primary">
                       <GraduationCap className="w-4 h-4" />
                       Browse Courses
@@ -230,7 +230,7 @@ export default async function PublicToolsPage() {
           <p className="text-slate-600 mb-8 max-w-2xl mx-auto">
             Access professional tax courses and practical demo tools to enhance your international tax knowledge.
           </p>
-          <Link href="https://mojitax.co.uk/courses">
+          <Link href="https://www.mojitax.co.uk/courses-catalogue">
             <Button size="lg" variant="primary">
               Browse Courses at MojiTax
               <ExternalLink className="w-4 h-4" />

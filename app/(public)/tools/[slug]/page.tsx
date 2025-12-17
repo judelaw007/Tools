@@ -183,7 +183,7 @@ export default async function ToolPage({ params }: ToolPageProps) {
               </p>
             )}
 
-            <a href="https://www.mojitax.co.uk/courses" target="_blank" rel="noopener noreferrer">
+            <a href="https://www.mojitax.co.uk/courses-catalogue" target="_blank" rel="noopener noreferrer">
               <Button variant="primary" size="lg">
                 <GraduationCap className="w-5 h-5" />
                 Browse All Courses
