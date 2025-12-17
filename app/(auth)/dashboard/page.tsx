@@ -138,7 +138,7 @@ export default async function DashboardPage() {
               Courses with Tools
             </h2>
             <a
-              href="https://www.mojitax.co.uk/courses"
+              href="https://www.mojitax.co.uk/courses-catalogue"
               target="_blank"
               rel="noopener noreferrer"
               className="text-sm text-mojitax-green-dark hover:text-mojitax-green flex items-center gap-1"
@@ -236,7 +236,7 @@ export default async function DashboardPage() {
             <p className="text-slate-500 mb-6 max-w-md mx-auto">
               Demo tools are being developed. Once tools are allocated to courses, they will appear here for you to access.
             </p>
-            <a href="https://www.mojitax.co.uk/courses" target="_blank" rel="noopener noreferrer">
+            <a href="https://www.mojitax.co.uk/courses-catalogue" target="_blank" rel="noopener noreferrer">
               <Button variant="primary">
                 <BookOpen className="w-4 h-4" />
                 Browse MojiTax Courses
@@ -315,7 +315,7 @@ export default async function DashboardPage() {
               </p>
             )}
 
-            <a href="https://www.mojitax.co.uk/courses" target="_blank" rel="noopener noreferrer">
+            <a href="https://www.mojitax.co.uk/courses-catalogue" target="_blank" rel="noopener noreferrer">
               <Button
                 variant="outline"
                 className="w-full border-white/30 text-white hover:bg-white/10"

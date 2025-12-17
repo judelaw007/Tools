@@ -49,7 +49,7 @@ export function Header({ showSearch = false }: HeaderProps) {
       <div className="flex items-center gap-3">
         {/* Back to Courses Link */}
         <Link
-          href="https://mojitax.co.uk/courses"
+          href="https://www.mojitax.co.uk/courses-catalogue"
           target="_blank"
           className="text-sm text-slate-600 hover:text-mojitax-navy flex items-center gap-1.5 transition-colors"
         >
