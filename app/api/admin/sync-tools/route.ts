@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { SEED_TOOLS } from '@/lib/db/seed-data';
+import { getServerSession } from '@/lib/server-session';
 
 /**
  * POST /api/admin/sync-tools
@@ -15,6 +16,15 @@ import { SEED_TOOLS } from '@/lib/db/seed-data';
  */
 export async function POST() {
   try {
+    // Verify admin access
+    const session = await getServerSession();
+    if (!(session?.role === 'admin' || session?.role === 'super_admin')) {
+      return NextResponse.json(
+        { error: 'Admin access required' },
+        { status: 403 }
+      );
+    }
+
     const supabase = createServiceClient();
 
     // Check current tools in database
@@ -137,6 +147,15 @@ export async function POST() {
  */
 export async function GET() {
   try {
+    // Verify admin access
+    const session = await getServerSession();
+    if (!(session?.role === 'admin' || session?.role === 'super_admin')) {
+      return NextResponse.json(
+        { error: 'Admin access required' },
+        { status: 403 }
+      );
+    }
+
     const supabase = createServiceClient();
 
     // Check current tools in database
