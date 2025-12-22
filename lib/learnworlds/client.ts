@@ -15,6 +15,7 @@ import {
   LearnWorldsProduct,
   LearnWorldsEnrollment,
   LearnWorldsApiResponse,
+  LearnWorldsCourseProgress,
 } from './types';
 
 class LearnWorldsClient {
@@ -404,6 +405,58 @@ class LearnWorldsClient {
     const user = await this.getUserByEmail(email);
     if (!user) return [];
     return this.getUserCourseAccess(user.id);
+  }
+
+  /**
+   * Get detailed course progress for a user
+   * Returns completion status, progress percentage, and completion date
+   *
+   * LearnWorlds API /v2/users/{id}/courses returns:
+   * - course.id, course.title
+   * - progress (0-100)
+   * - completed (boolean)
+   * - completed_date (timestamp)
+   * - created (enrollment timestamp)
+   */
+  async getUserCourseProgress(userId: string): Promise<LearnWorldsCourseProgress[]> {
+    try {
+      const response = await this.request<LearnWorldsApiResponse<Array<{
+        course: { id: string; title?: string };
+        progress?: number;
+        completed?: boolean;
+        completed_date?: number; // Unix timestamp
+        created?: number; // Enrollment timestamp
+      }>>>(
+        `/v2/users/${userId}/courses`
+      );
+
+      const courses = response.data || [];
+
+      return courses.map((c) => ({
+        courseId: c.course?.id || '',
+        courseTitle: c.course?.title || 'Unknown Course',
+        progress: c.progress || 0,
+        completed: c.completed || false,
+        completedAt: c.completed_date
+          ? new Date(c.completed_date * 1000).toISOString()
+          : null,
+        enrolledAt: c.created
+          ? new Date(c.created * 1000).toISOString()
+          : new Date().toISOString(),
+      })).filter((c) => c.courseId); // Filter out any with empty courseId
+    } catch (error) {
+      console.error('Error fetching user course progress:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get course progress by email (convenience method)
+   */
+  async getUserCourseProgressByEmail(email: string): Promise<LearnWorldsCourseProgress[]> {
+    const user = await this.getUserByEmail(email);
+    if (!user) return [];
+    return this.getUserCourseProgress(user.id);
   }
 
   /**
