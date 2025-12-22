@@ -440,11 +440,13 @@ class LearnWorldsClient {
 
         try {
           // Fetch progress from the per-course progress endpoint
+          // LearnWorlds returns unit-level progress data with completed_at at the root
           const progressResponse = await this.request<{
             progress?: number;
             pct_completed?: number;
             completed?: boolean;
             is_completed?: boolean;
+            completed_at?: number | null; // This is the KEY field - timestamp when completed, null if not
             completed_date?: number;
             completion_date?: number;
             score?: number;
@@ -453,10 +455,22 @@ class LearnWorldsClient {
             `/v2/users/${userId}/courses/${courseId}/progress`
           );
 
-          console.log(`Progress for course ${courseId}:`, JSON.stringify(progressResponse, null, 2));
+          // Log only key fields, not the entire massive response with units
+          console.log(`Progress for course ${courseId}: completed_at=${progressResponse.completed_at}, completed=${progressResponse.completed}, pct_completed=${progressResponse.pct_completed}, score=${progressResponse.score}`);
 
-          // Check multiple possible fields for completion status
+          // LearnWorlds uses completed_at as the primary completion indicator
+          // If completed_at is a valid timestamp (not null/undefined), the course is completed
+          const completionTimestamp =
+            progressResponse.completed_at ||
+            progressResponse.completed_date ||
+            progressResponse.completion_date;
+
+          // Course is completed if:
+          // 1. completed_at has a value (primary indicator for LearnWorlds)
+          // 2. OR completed boolean is true
+          // 3. OR pct_completed is 100
           const isCompleted =
+            (completionTimestamp !== null && completionTimestamp !== undefined && completionTimestamp > 0) ||
             progressResponse.completed === true ||
             progressResponse.is_completed === true ||
             progressResponse.status === 'completed' ||
@@ -468,16 +482,13 @@ class LearnWorldsClient {
             progressResponse.progress ??
             0;
 
-          // Get completion date from various possible fields
-          const completionTimestamp =
-            progressResponse.completed_date ||
-            progressResponse.completion_date;
-
           return {
             courseId: courseId,
             courseTitle: enrollment.course?.title || 'Unknown Course',
             progress: progressResponse.score || progressPercent, // Use score if available
             completed: isCompleted,
+            // ONLY use completion date if it exists - don't fall back to null here
+            // The sync function will decide what to do if date is missing
             completedAt: completionTimestamp
               ? new Date(completionTimestamp * 1000).toISOString()
               : null,
