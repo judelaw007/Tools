@@ -426,24 +426,38 @@ class LearnWorldsClient {
         completed?: boolean;
         completed_date?: number; // Unix timestamp
         created?: number; // Enrollment timestamp
+        // Additional fields that might exist
+        score?: number;
+        pct_completed?: number;
+        is_completed?: boolean;
       }>>>(
         `/v2/users/${userId}/courses`
       );
 
       const courses = response.data || [];
 
-      return courses.map((c) => ({
-        courseId: c.course?.id || '',
-        courseTitle: c.course?.title || 'Unknown Course',
-        progress: c.progress || 0,
-        completed: c.completed || false,
-        completedAt: c.completed_date
-          ? new Date(c.completed_date * 1000).toISOString()
-          : null,
-        enrolledAt: c.created
-          ? new Date(c.created * 1000).toISOString()
-          : new Date().toISOString(),
-      })).filter((c) => c.courseId); // Filter out any with empty courseId
+      // Log raw response for debugging
+      console.log(`LearnWorlds API raw course data for user ${userId}:`, JSON.stringify(courses, null, 2));
+
+      return courses.map((c) => {
+        // Check multiple possible fields for completion status
+        const isCompleted = c.completed === true || c.is_completed === true || c.pct_completed === 100;
+
+        console.log(`Course ${c.course?.id}: completed=${c.completed}, is_completed=${c.is_completed}, pct_completed=${c.pct_completed}, progress=${c.progress}, score=${c.score}`);
+
+        return {
+          courseId: c.course?.id || '',
+          courseTitle: c.course?.title || 'Unknown Course',
+          progress: c.score || c.pct_completed || c.progress || 0, // Use score if available
+          completed: isCompleted,
+          completedAt: c.completed_date
+            ? new Date(c.completed_date * 1000).toISOString()
+            : null,
+          enrolledAt: c.created
+            ? new Date(c.created * 1000).toISOString()
+            : new Date().toISOString(),
+        };
+      }).filter((c) => c.courseId); // Filter out any with empty courseId
     } catch (error) {
       console.error('Error fetching user course progress:', error);
       return [];

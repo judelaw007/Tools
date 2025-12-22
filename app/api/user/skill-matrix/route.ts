@@ -112,6 +112,14 @@ export async function POST() {
         totalCoursesInLearnWorlds: courseProgress.length,
         completedCourses: enrollmentData.filter((c) => c.completed).length,
         resetCoursesRemoved: syncResult.removed,
+        // Detailed course data for debugging
+        rawCourseProgress: courseProgress.map((c) => ({
+          id: c.courseId,
+          title: c.courseTitle,
+          progress: c.progress,
+          completed: c.completed,
+          completedAt: c.completedAt,
+        })),
       },
     });
   } catch (error) {
