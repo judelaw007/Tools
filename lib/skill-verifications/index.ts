@@ -70,7 +70,8 @@ export async function createVerification(
   userEmail: string,
   userName: string | null,
   skillsSnapshot: SkillSnapshot,
-  selectedSkillIds: string[]
+  selectedSkillIds: string[],
+  baseUrl?: string // Optional base URL - if not provided, uses env or default
 ): Promise<{ token: string; verificationUrl: string } | null> {
   const token = generateToken();
   const supabase = getSupabase();
@@ -92,8 +93,9 @@ export async function createVerification(
     return null;
   }
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-  const verificationUrl = `${baseUrl}/verify/skills/${token}`;
+  // Use provided baseUrl, or fall back to env variable, or default to production URL
+  const finalBaseUrl = baseUrl || process.env.NEXT_PUBLIC_APP_URL || 'https://mojitax.co.uk';
+  const verificationUrl = `${finalBaseUrl}/verify/skills/${token}`;
 
   return { token: data.token, verificationUrl };
 }

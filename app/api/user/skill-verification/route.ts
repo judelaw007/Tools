@@ -21,6 +21,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Get the actual base URL from the request
+    // This ensures QR codes work correctly in both dev and production
+    const protocol = request.headers.get('x-forwarded-proto') || 'https';
+    const host = request.headers.get('host') || request.headers.get('x-forwarded-host');
+    const baseUrl = host ? `${protocol}://${host}` : process.env.NEXT_PUBLIC_APP_URL || 'https://mojitax.co.uk';
+
     // Get request body for selected skill IDs
     const body = await request.json().catch(() => ({}));
     const selectedSkillIds: string[] = body.selectedSkillIds || [];
@@ -67,12 +73,13 @@ export async function POST(request: NextRequest) {
     // Get user's display name
     const userName = session.learnworldsUser?.username || session.email.split('@')[0];
 
-    // Create verification record
+    // Create verification record with the correct base URL
     const result = await createVerification(
       session.email,
       userName,
       skillsSnapshot,
-      selectedSkillIds
+      selectedSkillIds,
+      baseUrl
     );
 
     if (!result) {
