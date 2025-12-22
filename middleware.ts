@@ -29,12 +29,18 @@ const MAIN_SITE_URL = 'https://www.mojitax.co.uk';
 const SESSION_COOKIE_NAME = 'mojitax-session';
 
 // Routes that DON'T require authentication
+// IMPORTANT: Use exact paths or prefix patterns carefully
 const publicRoutes = [
-  '/',               // Home page
-  '/tools',          // Public tools page
+  '/tools',          // Public tools page (includes /tools/*)
   '/auth',           // All auth routes (email verification, admin login, etc.)
   '/api/auth',       // Auth API endpoints
   '/api/learnworlds', // LearnWorlds API (for SSO callbacks)
+  '/verify',         // Public verification pages
+];
+
+// Exact match routes (not prefix matching)
+const publicExactRoutes = [
+  '/',               // Home page only (exact match)
 ];
 
 // Routes that require admin role ONLY
@@ -88,6 +94,11 @@ function needsEnrollmentRefresh(session: ReturnType<typeof parseSession>): boole
  * Check if route is public (doesn't require auth)
  */
 function isPublicRoute(pathname: string): boolean {
+  // Check exact matches first (e.g., '/' should only match exactly '/')
+  if (publicExactRoutes.includes(pathname)) {
+    return true;
+  }
+  // Check prefix matches (e.g., '/tools' matches '/tools', '/tools/slug', etc.)
   return publicRoutes.some((route) => pathname.startsWith(route));
 }
 
