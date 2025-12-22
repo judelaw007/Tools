@@ -153,8 +153,8 @@ export const PrintableSkillsMatrix = forwardRef<HTMLDivElement, PrintableSkillsM
                             <div key={course.courseId} className="border-l-2 border-purple-200 pl-3 py-1">
                               <div className="flex items-center gap-2 flex-wrap">
                                 <span className="font-medium text-gray-800">{course.courseName}</span>
-                                <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
-                                  Score: {course.progressScore}%
+                                <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+                                  {course.progressScore > 0 ? `Score: ${course.progressScore}%` : 'Completed'}
                                 </span>
                               </div>
                               {course.knowledgeDescription && (

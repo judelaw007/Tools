@@ -453,8 +453,8 @@ export function SkillsMatrixV2({ className = '' }: SkillsMatrixV2Props) {
                               {course.courseName}
                             </span>
                           </div>
-                          <span className="text-sm font-semibold text-purple-700 bg-purple-100 px-2 py-0.5 rounded-full">
-                            Score: {course.progressScore}%
+                          <span className="text-sm font-semibold text-green-700 bg-green-100 px-2 py-0.5 rounded-full">
+                            {course.progressScore > 0 ? `Score: ${course.progressScore}%` : 'Completed'}
                           </span>
                         </div>
                         {course.knowledgeDescription && (
