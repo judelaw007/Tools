@@ -1111,6 +1111,9 @@ export async function getUserPortfolioMatrix(userEmail: string): Promise<Portfol
 /**
  * Sync user's course completions from LearnWorlds data
  * Uses BATCH upsert for production efficiency (1 query instead of N)
+ *
+ * IMPORTANT: This function now handles BOTH adding completed courses
+ * AND removing courses that are no longer completed (reset in LearnWorlds)
  */
 export async function syncUserCoursesWithProgress(
   userEmail: string,
@@ -1120,8 +1123,9 @@ export async function syncUserCoursesWithProgress(
     progress: number;
     completed: boolean;
     completedAt?: string;
-  }>
-): Promise<number> {
+  }>,
+  allCourseIds?: string[] // Optional: all course IDs from LearnWorlds (completed + not completed)
+): Promise<{ synced: number; removed: number }> {
   const supabase = createServiceClient();
 
   // Filter to only completed courses
@@ -1129,8 +1133,36 @@ export async function syncUserCoursesWithProgress(
     (e) => e.completed || e.progress >= 100
   );
 
+  const completedCourseIds = new Set(completedEnrollments.map(e => e.courseId));
+
+  // If allCourseIds provided, remove completions for courses that are no longer completed
+  let removedCount = 0;
+  if (allCourseIds && allCourseIds.length > 0) {
+    // Find courses that are in LearnWorlds but NOT completed
+    const notCompletedCourseIds = allCourseIds.filter(id => !completedCourseIds.has(id));
+
+    if (notCompletedCourseIds.length > 0) {
+      // Delete any existing completion records for these courses
+      const { data: deleted, error: deleteError } = await supabase
+        .from('user_course_completions')
+        .delete()
+        .eq('user_email', userEmail)
+        .in('course_id', notCompletedCourseIds)
+        .select();
+
+      if (deleteError) {
+        console.error('Error removing reset course completions:', deleteError);
+      } else {
+        removedCount = deleted?.length || 0;
+        if (removedCount > 0) {
+          console.log(`Removed ${removedCount} reset course completions for ${userEmail}`);
+        }
+      }
+    }
+  }
+
   if (completedEnrollments.length === 0) {
-    return 0;
+    return { synced: 0, removed: removedCount };
   }
 
   // Get all course-to-category mappings in one query
@@ -1164,8 +1196,8 @@ export async function syncUserCoursesWithProgress(
 
   if (error) {
     console.error('Error batch syncing course completions:', error);
-    return 0;
+    return { synced: 0, removed: removedCount };
   }
 
-  return data?.length || 0;
+  return { synced: data?.length || 0, removed: removedCount };
 }
