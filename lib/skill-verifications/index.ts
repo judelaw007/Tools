@@ -76,6 +76,8 @@ export async function createVerification(
   const token = generateToken();
   const supabase = getSupabase();
 
+  console.log(`Creating verification for user: ${userEmail}, token: ${token}`);
+
   const { data, error } = await supabase
     .from('skill_verifications')
     .insert({
@@ -89,9 +91,11 @@ export async function createVerification(
     .single();
 
   if (error) {
-    console.error('Error creating verification:', error);
+    console.error('Error creating verification:', error, 'for user:', userEmail);
     return null;
   }
+
+  console.log(`Successfully created verification: ${token} for ${userEmail}`);
 
   // Use provided baseUrl, or fall back to env variable, or default to production URL
   const finalBaseUrl = baseUrl || process.env.NEXT_PUBLIC_APP_URL || 'https://mojitax.co.uk';
@@ -107,6 +111,8 @@ export async function createVerification(
 export async function getVerification(token: string): Promise<VerificationRecord | null> {
   const supabase = getSupabase();
 
+  console.log(`Looking up verification for token: ${token}`);
+
   // First, get the verification
   const { data, error } = await supabase
     .from('skill_verifications')
@@ -115,12 +121,15 @@ export async function getVerification(token: string): Promise<VerificationRecord
     .single();
 
   if (error || !data) {
-    console.error('Error fetching verification:', error);
+    console.error('Error fetching verification:', error, 'Token:', token);
     return null;
   }
 
+  console.log(`Found verification for token ${token}, user: ${data.user_name}`);
+
   // Check if expired
   if (data.expires_at && new Date(data.expires_at) < new Date()) {
+    console.log(`Verification ${token} has expired`);
     return null;
   }
 
