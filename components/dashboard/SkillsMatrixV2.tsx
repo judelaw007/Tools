@@ -131,8 +131,10 @@ export function SkillsMatrixV2({ className = '' }: SkillsMatrixV2Props) {
   }, []);
 
   useEffect(() => {
-    syncPortfolio(); // Sync on mount to update from course completions
-  }, [syncPortfolio]);
+    // Load cached data from database on mount (fast)
+    // User can manually sync to fetch fresh data from LearnWorlds
+    fetchPortfolio();
+  }, [fetchPortfolio]);
 
   const toggleCategory = (categoryId: string) => {
     setExpandedCategories((prev) => {
@@ -277,7 +279,7 @@ export function SkillsMatrixV2({ className = '' }: SkillsMatrixV2Props) {
             </h3>
             <p className="text-slate-500 max-w-md mx-auto mb-4">
               Complete courses and use tools to build your professional skills portfolio.
-              Your achievements will appear here automatically.
+              Click &quot;Sync Progress&quot; to load your latest course completions from LearnWorlds.
             </p>
             <div className="flex justify-center gap-3">
               <Button
