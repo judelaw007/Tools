@@ -1128,10 +1128,19 @@ export async function syncUserCoursesWithProgress(
 ): Promise<{ synced: number; removed: number }> {
   const supabase = createServiceClient();
 
+  // Log incoming enrollments for debugging
+  console.log(`syncUserCoursesWithProgress for ${userEmail}:`);
+  console.log(`  Total enrollments received: ${enrollments.length}`);
+  enrollments.forEach((e) => {
+    console.log(`  - ${e.courseId}: completed=${e.completed}, progress=${e.progress}, completedAt=${e.completedAt}`);
+  });
+
   // Filter to only completed courses
   const completedEnrollments = enrollments.filter(
     (e) => e.completed || e.progress >= 100
   );
+
+  console.log(`  Completed enrollments (completed=true OR progress>=100): ${completedEnrollments.length}`);
 
   const completedCourseIds = new Set(completedEnrollments.map(e => e.courseId));
 
@@ -1175,15 +1184,22 @@ export async function syncUserCoursesWithProgress(
     categoryMap.set(m.course_id, m.category_id);
   }
 
+  console.log(`  Available course-to-category mappings: ${mappings?.length || 0}`);
+  mappings?.forEach((m) => console.log(`    - course_id: ${m.course_id} -> category: ${m.category_id}`));
+
   // Build batch data for upsert
-  const batchData = completedEnrollments.map((enrollment) => ({
-    user_email: userEmail,
-    course_id: enrollment.courseId,
-    course_name: enrollment.courseName,
-    category_id: categoryMap.get(enrollment.courseId) || null,
-    progress_score: Math.min(100, Math.max(0, enrollment.progress)),
-    completed_at: enrollment.completedAt || new Date().toISOString(),
-  }));
+  const batchData = completedEnrollments.map((enrollment) => {
+    const categoryId = categoryMap.get(enrollment.courseId);
+    console.log(`  Building upsert for ${enrollment.courseId}: category=${categoryId || 'NOT MAPPED'}`);
+    return {
+      user_email: userEmail,
+      course_id: enrollment.courseId,
+      course_name: enrollment.courseName,
+      category_id: categoryId || null,
+      progress_score: Math.min(100, Math.max(0, enrollment.progress)),
+      completed_at: enrollment.completedAt || new Date().toISOString(),
+    };
+  });
 
   // Single batch upsert - much more efficient than N individual calls
   const { data, error } = await supabase
