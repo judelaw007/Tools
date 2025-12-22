@@ -21,6 +21,7 @@ export type {
   LearnWorldsProduct,
   LearnWorldsEnrollment,
   LearnWorldsApiResponse,
+  LearnWorldsCourseProgress,
   SSOTokenPayload,
   AccessCheckResult,
 } from './types';

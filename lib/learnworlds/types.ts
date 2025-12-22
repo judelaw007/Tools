@@ -53,6 +53,16 @@ export interface LearnWorldsEnrollment {
   completed_at?: string;
 }
 
+// Course progress/completion details from LearnWorlds
+export interface LearnWorldsCourseProgress {
+  courseId: string;
+  courseTitle: string;
+  progress: number; // 0-100 percentage
+  completed: boolean;
+  completedAt: string | null; // ISO date string when completed
+  enrolledAt: string; // ISO date string when enrolled
+}
+
 // API Response wrapper
 export interface LearnWorldsApiResponse<T> {
   data: T;

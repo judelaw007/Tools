@@ -3,6 +3,11 @@
  *
  * GET  /api/user/skill-matrix - Get user's portfolio skill matrix
  * POST /api/user/skill-matrix - Sync skills from course completions
+ *
+ * IMPORTANT: Knowledge achievements only appear when:
+ * - Course is marked as completed in LearnWorlds (completed: true)
+ * - Score reflects actual progress from LearnWorlds
+ * - Date reflects actual completion date, not sync date
  */
 
 import { NextResponse } from 'next/server';
@@ -11,6 +16,7 @@ import {
   getUserPortfolioMatrix,
   syncUserCoursesWithProgress,
 } from '@/lib/skill-categories';
+import { learnworlds } from '@/lib/learnworlds';
 
 /**
  * GET /api/user/skill-matrix
@@ -47,7 +53,12 @@ export async function GET() {
 /**
  * POST /api/user/skill-matrix
  * Sync user's skills from their course completions
- * This records completed courses with their progress scores
+ *
+ * CRITICAL: Only syncs courses that are ACTUALLY completed in LearnWorlds
+ * - Fetches real progress data from LearnWorlds API
+ * - Only includes courses where completed: true
+ * - Uses actual progress score (not hardcoded 100%)
+ * - Uses actual completion date from LearnWorlds
  */
 export async function POST() {
   try {
@@ -60,24 +71,23 @@ export async function POST() {
       );
     }
 
-    // Get enrollments from session
-    const enrollments = session.enrollments || [];
-    const accessibleCourseIds = session.accessibleCourseIds || [];
+    // Fetch REAL course progress from LearnWorlds API
+    // This returns actual completion status, progress score, and completion date
+    const courseProgress = await learnworlds.getUserCourseProgressByEmail(session.email);
 
-    // Build enrollment data for sync
-    // For now, assume 100% progress for accessible courses
-    // TODO: Fetch actual progress from LearnWorlds API
-    const enrollmentData = accessibleCourseIds.map((courseId) => {
-      const enrollment = enrollments.find((e) => e.product_id === courseId);
-      return {
-        courseId,
-        courseName: enrollment?.product_name || courseId,
-        progress: 100, // Assume completed since they have access
+    // Build enrollment data for sync - ONLY include COMPLETED courses
+    // This ensures knowledge achievements only appear when course is truly completed
+    const enrollmentData = courseProgress
+      .filter((course) => course.completed) // Only completed courses
+      .map((course) => ({
+        courseId: course.courseId,
+        courseName: course.courseTitle,
+        progress: course.progress, // Actual score from LearnWorlds
         completed: true,
-      };
-    });
+        completedAt: course.completedAt || undefined, // Actual completion date (convert null to undefined)
+      }));
 
-    // Sync course completions
+    // Sync course completions (only completed courses will be recorded)
     const synced = await syncUserCoursesWithProgress(session.email, enrollmentData);
 
     // Get updated portfolio
@@ -88,6 +98,10 @@ export async function POST() {
       synced,
       portfolio,
       count: portfolio.length,
+      debug: {
+        totalCoursesInLearnWorlds: courseProgress.length,
+        completedCourses: enrollmentData.length,
+      },
     });
   } catch (error) {
     console.error('POST /api/user/skill-matrix error:', error);
