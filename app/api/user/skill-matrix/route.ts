@@ -59,6 +59,7 @@ export async function GET() {
  * - Only includes courses where completed: true
  * - Uses actual progress score (not hardcoded 100%)
  * - Uses actual completion date from LearnWorlds
+ * - REMOVES completions for courses that have been reset in LearnWorlds
  */
 export async function POST() {
   try {
@@ -75,32 +76,42 @@ export async function POST() {
     // This returns actual completion status, progress score, and completion date
     const courseProgress = await learnworlds.getUserCourseProgressByEmail(session.email);
 
-    // Build enrollment data for sync - ONLY include COMPLETED courses
-    // This ensures knowledge achievements only appear when course is truly completed
-    const enrollmentData = courseProgress
-      .filter((course) => course.completed) // Only completed courses
-      .map((course) => ({
-        courseId: course.courseId,
-        courseName: course.courseTitle,
-        progress: course.progress, // Actual score from LearnWorlds
-        completed: true,
-        completedAt: course.completedAt || undefined, // Actual completion date (convert null to undefined)
-      }));
+    // Get ALL course IDs (completed and not completed) for proper sync
+    // This allows the sync to remove completions that have been reset
+    const allCourseIds = courseProgress.map((course) => course.courseId);
 
-    // Sync course completions (only completed courses will be recorded)
-    const synced = await syncUserCoursesWithProgress(session.email, enrollmentData);
+    // Build enrollment data for sync - include ALL courses with their status
+    // The sync function will handle filtering and removing reset completions
+    const enrollmentData = courseProgress.map((course) => ({
+      courseId: course.courseId,
+      courseName: course.courseTitle,
+      progress: course.progress, // Actual score from LearnWorlds
+      completed: course.completed, // True completion status
+      completedAt: course.completedAt || undefined, // Actual completion date (convert null to undefined)
+    }));
+
+    // Sync course completions - this will:
+    // 1. Add/update completed courses
+    // 2. Remove completions for courses that are no longer completed (reset in LearnWorlds)
+    const syncResult = await syncUserCoursesWithProgress(
+      session.email,
+      enrollmentData,
+      allCourseIds
+    );
 
     // Get updated portfolio
     const portfolio = await getUserPortfolioMatrix(session.email);
 
     return NextResponse.json({
       success: true,
-      synced,
+      synced: syncResult.synced,
+      removed: syncResult.removed,
       portfolio,
       count: portfolio.length,
       debug: {
         totalCoursesInLearnWorlds: courseProgress.length,
-        completedCourses: enrollmentData.length,
+        completedCourses: enrollmentData.filter((c) => c.completed).length,
+        resetCoursesRemoved: syncResult.removed,
       },
     });
   } catch (error) {
