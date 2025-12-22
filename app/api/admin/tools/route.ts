@@ -1,8 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAllTools, updateTool } from '@/lib/db';
+import { getServerSession } from '@/lib/server-session';
 
 export async function GET() {
   try {
+    // Verify admin access
+    const session = await getServerSession();
+    if (!(session?.role === 'admin' || session?.role === 'super_admin')) {
+      return NextResponse.json(
+        { error: 'Admin access required' },
+        { status: 403 }
+      );
+    }
+
     const tools = await getAllTools();
     return NextResponse.json({ tools });
   } catch (error) {
@@ -12,6 +22,15 @@ export async function GET() {
 
 export async function PATCH(request: NextRequest) {
   try {
+    // Verify admin access
+    const session = await getServerSession();
+    if (!(session?.role === 'admin' || session?.role === 'super_admin')) {
+      return NextResponse.json(
+        { error: 'Admin access required' },
+        { status: 403 }
+      );
+    }
+
     const body = await request.json();
     const { id, ...updates } = body;
 

@@ -5,6 +5,7 @@ import {
   setToolsForCourse,
   clearCourseAllocations,
 } from '@/lib/course-allocations';
+import { getServerSession } from '@/lib/server-session';
 
 /**
  * GET /api/admin/courses/[courseId]/tools
@@ -14,6 +15,15 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ courseId: string }> }
 ) {
+  // Verify admin access
+  const session = await getServerSession();
+  if (!(session?.role === 'admin' || session?.role === 'super_admin')) {
+    return NextResponse.json(
+      { error: 'Admin access required' },
+      { status: 403 }
+    );
+  }
+
   const { courseId } = await params;
 
   try {
@@ -46,6 +56,15 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ courseId: string }> }
 ) {
+  // Verify admin access
+  const session = await getServerSession();
+  if (!(session?.role === 'admin' || session?.role === 'super_admin')) {
+    return NextResponse.json(
+      { error: 'Admin access required' },
+      { status: 403 }
+    );
+  }
+
   const { courseId } = await params;
 
   try {
@@ -93,6 +112,15 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ courseId: string }> }
 ) {
+  // Verify admin access
+  const session = await getServerSession();
+  if (!(session?.role === 'admin' || session?.role === 'super_admin')) {
+    return NextResponse.json(
+      { error: 'Admin access required' },
+      { status: 403 }
+    );
+  }
+
   const { courseId } = await params;
 
   try {
