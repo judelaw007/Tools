@@ -411,53 +411,104 @@ class LearnWorldsClient {
    * Get detailed course progress for a user
    * Returns completion status, progress percentage, and completion date
    *
-   * LearnWorlds API /v2/users/{id}/courses returns:
-   * - course.id, course.title
-   * - progress (0-100)
-   * - completed (boolean)
-   * - completed_date (timestamp)
-   * - created (enrollment timestamp)
+   * NOTE: The /v2/users/{id}/courses endpoint only returns enrollment data,
+   * NOT progress data. To get actual progress, we need to call
+   * /v2/users/{userId}/courses/{courseId}/progress for EACH course.
    */
   async getUserCourseProgress(userId: string): Promise<LearnWorldsCourseProgress[]> {
     try {
-      const response = await this.request<LearnWorldsApiResponse<Array<{
+      // Step 1: Get list of enrolled courses (enrollment data only)
+      const enrollmentResponse = await this.request<LearnWorldsApiResponse<Array<{
         course: { id: string; title?: string };
-        progress?: number;
-        completed?: boolean;
-        completed_date?: number; // Unix timestamp
         created?: number; // Enrollment timestamp
-        // Additional fields that might exist
-        score?: number;
-        pct_completed?: number;
-        is_completed?: boolean;
+        expires?: number | null;
       }>>>(
         `/v2/users/${userId}/courses`
       );
 
-      const courses = response.data || [];
+      const enrolledCourses = enrollmentResponse.data || [];
+      console.log(`User ${userId} is enrolled in ${enrolledCourses.length} courses`);
 
-      // Log raw response for debugging
-      console.log(`LearnWorlds API raw course data for user ${userId}:`, JSON.stringify(courses, null, 2));
+      if (enrolledCourses.length === 0) {
+        return [];
+      }
 
-      return courses.map((c) => {
-        // Check multiple possible fields for completion status
-        const isCompleted = c.completed === true || c.is_completed === true || c.pct_completed === 100;
+      // Step 2: Fetch progress for each course individually
+      const progressPromises = enrolledCourses.map(async (enrollment) => {
+        const courseId = enrollment.course?.id;
+        if (!courseId) return null;
 
-        console.log(`Course ${c.course?.id}: completed=${c.completed}, is_completed=${c.is_completed}, pct_completed=${c.pct_completed}, progress=${c.progress}, score=${c.score}`);
+        try {
+          // Fetch progress from the per-course progress endpoint
+          const progressResponse = await this.request<{
+            progress?: number;
+            pct_completed?: number;
+            completed?: boolean;
+            is_completed?: boolean;
+            completed_date?: number;
+            completion_date?: number;
+            score?: number;
+            status?: string;
+          }>(
+            `/v2/users/${userId}/courses/${courseId}/progress`
+          );
 
-        return {
-          courseId: c.course?.id || '',
-          courseTitle: c.course?.title || 'Unknown Course',
-          progress: c.score || c.pct_completed || c.progress || 0, // Use score if available
-          completed: isCompleted,
-          completedAt: c.completed_date
-            ? new Date(c.completed_date * 1000).toISOString()
-            : null,
-          enrolledAt: c.created
-            ? new Date(c.created * 1000).toISOString()
-            : new Date().toISOString(),
-        };
-      }).filter((c) => c.courseId); // Filter out any with empty courseId
+          console.log(`Progress for course ${courseId}:`, JSON.stringify(progressResponse, null, 2));
+
+          // Check multiple possible fields for completion status
+          const isCompleted =
+            progressResponse.completed === true ||
+            progressResponse.is_completed === true ||
+            progressResponse.status === 'completed' ||
+            progressResponse.pct_completed === 100;
+
+          // Get progress percentage from various possible fields
+          const progressPercent =
+            progressResponse.pct_completed ??
+            progressResponse.progress ??
+            0;
+
+          // Get completion date from various possible fields
+          const completionTimestamp =
+            progressResponse.completed_date ||
+            progressResponse.completion_date;
+
+          return {
+            courseId: courseId,
+            courseTitle: enrollment.course?.title || 'Unknown Course',
+            progress: progressResponse.score || progressPercent, // Use score if available
+            completed: isCompleted,
+            completedAt: completionTimestamp
+              ? new Date(completionTimestamp * 1000).toISOString()
+              : null,
+            enrolledAt: enrollment.created
+              ? new Date(enrollment.created * 1000).toISOString()
+              : new Date().toISOString(),
+          };
+        } catch (progressError) {
+          // If progress endpoint fails for this course, return with no completion
+          console.error(`Error fetching progress for course ${courseId}:`, progressError);
+          return {
+            courseId: courseId,
+            courseTitle: enrollment.course?.title || 'Unknown Course',
+            progress: 0,
+            completed: false,
+            completedAt: null,
+            enrolledAt: enrollment.created
+              ? new Date(enrollment.created * 1000).toISOString()
+              : new Date().toISOString(),
+          };
+        }
+      });
+
+      const results = await Promise.all(progressPromises);
+
+      // Filter out nulls and log summary
+      const validResults = results.filter((r): r is LearnWorldsCourseProgress => r !== null);
+      const completedCount = validResults.filter(r => r.completed).length;
+      console.log(`Fetched progress for ${validResults.length} courses, ${completedCount} completed`);
+
+      return validResults;
     } catch (error) {
       console.error('Error fetching user course progress:', error);
       return [];
