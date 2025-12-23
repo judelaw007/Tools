@@ -28,6 +28,9 @@ import {
   X,
   Check,
   Clock,
+  User,
+  Edit2,
+  Loader2,
 } from 'lucide-react';
 import { PrintableSkillsMatrix } from './PrintableSkillsMatrix';
 import { SkillSnapshot } from '@/lib/skill-verifications';
@@ -96,6 +99,52 @@ export function SkillsMatrixV2({ className = '' }: SkillsMatrixV2Props) {
   } | null>(null);
   const printRef = useRef<HTMLDivElement>(null);
 
+  // Portfolio name state
+  const [portfolioName, setPortfolioName] = useState<string | null>(null);
+  const [defaultName, setDefaultName] = useState<string>('');
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editNameValue, setEditNameValue] = useState('');
+  const [isSavingName, setIsSavingName] = useState(false);
+
+  // Fetch user profile (portfolio name)
+  const fetchProfile = useCallback(async () => {
+    try {
+      const response = await fetch('/api/user/profile');
+      if (response.ok) {
+        const data = await response.json();
+        setPortfolioName(data.profile.portfolioName);
+        setDefaultName(data.defaultName || '');
+      }
+    } catch (err) {
+      console.error('Error fetching profile:', err);
+    }
+  }, []);
+
+  // Save portfolio name
+  const savePortfolioName = async () => {
+    setIsSavingName(true);
+    try {
+      const response = await fetch('/api/user/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ portfolioName: editNameValue.trim() || null }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setPortfolioName(data.profile.portfolioName);
+        setIsEditingName(false);
+      }
+    } catch (err) {
+      console.error('Error saving portfolio name:', err);
+    } finally {
+      setIsSavingName(false);
+    }
+  };
+
+  // Get the display name (portfolio name or default)
+  const getDisplayName = () => portfolioName || defaultName;
+
   const fetchPortfolio = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -155,7 +204,8 @@ export function SkillsMatrixV2({ className = '' }: SkillsMatrixV2Props) {
     // Load cached data from database on mount (fast)
     // User can manually sync to fetch fresh data from LearnWorlds
     fetchPortfolio();
-  }, [fetchPortfolio]);
+    fetchProfile();
+  }, [fetchPortfolio, fetchProfile]);
 
   const toggleCategory = (categoryId: string) => {
     setExpandedCategories((prev) => {
@@ -361,6 +411,71 @@ export function SkillsMatrixV2({ className = '' }: SkillsMatrixV2Props) {
       </CardHeader>
 
       <CardContent className="space-y-4">
+        {/* Portfolio Name Editor */}
+        <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                <User className="w-5 h-5 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-xs text-blue-600 font-medium mb-0.5">Name on Portfolio</p>
+                {isEditingName ? (
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      className="px-2 py-1 text-sm border border-blue-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      placeholder="Enter your full name"
+                      value={editNameValue}
+                      onChange={(e) => setEditNameValue(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') savePortfolioName();
+                        if (e.key === 'Escape') setIsEditingName(false);
+                      }}
+                      autoFocus
+                    />
+                    <Button
+                      variant="success"
+                      size="sm"
+                      onClick={savePortfolioName}
+                      disabled={isSavingName}
+                    >
+                      {isSavingName ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsEditingName(false)}
+                    >
+                      <X className="w-3 h-3" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-blue-900">{getDisplayName()}</span>
+                    {!portfolioName && (
+                      <span className="text-xs text-blue-500">(from account)</span>
+                    )}
+                    <button
+                      onClick={() => {
+                        setEditNameValue(portfolioName || defaultName);
+                        setIsEditingName(true);
+                      }}
+                      className="p-1 hover:bg-blue-100 rounded transition-colors"
+                      title="Edit name"
+                    >
+                      <Edit2 className="w-3.5 h-3.5 text-blue-500" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+          <p className="text-xs text-blue-600 mt-2 ml-13">
+            This is the name that will appear on your printed Skills Portfolio
+          </p>
+        </div>
+
         {/* Selection Controls */}
         <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200">
           <div className="flex items-center gap-2 text-sm text-slate-600">
