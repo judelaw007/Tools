@@ -20,6 +20,7 @@ import {
   Eye,
   AlertCircle,
   Loader2,
+  Clock,
 } from 'lucide-react';
 import { SkillSnapshot } from '@/lib/skill-verifications';
 
@@ -114,6 +115,21 @@ export default function VerifySkillsPage() {
     0
   );
 
+  // Calculate learning hours by year
+  const learningHoursByYear = new Map<number, number>();
+  for (const category of verification.skillsSnapshot.categories) {
+    for (const course of category.courses) {
+      if (course.learningHours && course.learningHours > 0) {
+        const year = new Date(course.completedAt).getFullYear();
+        const current = learningHoursByYear.get(year) || 0;
+        learningHoursByYear.set(year, current + course.learningHours);
+      }
+    }
+  }
+  const createdYear = new Date(verification.createdAt).getFullYear();
+  const currentYearHours = learningHoursByYear.get(createdYear) || 0;
+  const totalLearningHours = Array.from(learningHoursByYear.values()).reduce((sum, h) => sum + h, 0);
+
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Header */}
@@ -172,6 +188,12 @@ export default function VerifySkillsPage() {
                 <span>{totalTools} tools used</span>
               </div>
             )}
+            {totalLearningHours > 0 && (
+              <div className="flex items-center gap-2 text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
+                <Clock className="w-4 h-4" />
+                <span className="font-medium">{currentYearHours} hrs ({createdYear})</span>
+              </div>
+            )}
             <div className="flex items-center gap-2 text-slate-500">
               <Eye className="w-4 h-4" />
               <span>Viewed {verification.viewCount} times</span>
@@ -210,11 +232,17 @@ export default function VerifySkillsPage() {
                             key={course.courseId}
                             className="pl-6 py-2 border-l-2 border-purple-200"
                           >
-                            <div className="flex items-center gap-2 mb-1">
+                            <div className="flex items-center gap-2 flex-wrap mb-1">
                               <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />
                               <span className="font-medium text-slate-800">
                                 {course.courseName}
                               </span>
+                              {course.learningHours && course.learningHours > 0 && (
+                                <span className="text-sm text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                  <Clock className="w-3 h-3" />
+                                  {course.learningHours} hrs
+                                </span>
+                              )}
                               <span className="text-sm text-purple-600 bg-purple-100 px-2 py-0.5 rounded-full">
                                 {course.progressScore}%
                               </span>

@@ -31,6 +31,7 @@ export interface SkillSnapshot {
       knowledgeDescription: string | null;
       progressScore: number;
       completedAt: string;
+      learningHours: number | null;
     }>;
     tools: Array<{
       toolId: string;
