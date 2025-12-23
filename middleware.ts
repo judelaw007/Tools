@@ -35,6 +35,7 @@ const publicRoutes = [
   '/auth',           // All auth routes (email verification, admin login, etc.)
   '/api/auth',       // Auth API endpoints
   '/api/learnworlds', // LearnWorlds API (for SSO callbacks)
+  '/api/verify',     // Public verification API (for QR code verification)
   '/verify',         // Public verification pages
 ];
 
