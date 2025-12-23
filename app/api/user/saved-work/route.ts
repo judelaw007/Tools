@@ -17,6 +17,7 @@ import {
 import { getToolById } from '@/lib/db';
 import { awardSavedWorkSkill } from '@/lib/skills';
 import { incrementToolProjectCount } from '@/lib/skill-categories';
+import { logActivity, extractRequestInfo } from '@/lib/activity-logs';
 
 /**
  * GET /api/user/saved-work?toolId={toolId}
@@ -129,22 +130,38 @@ export async function POST(request: NextRequest) {
     }
 
     // Award skill and increment project count (non-blocking)
+    const tool = await getToolById(toolId);
     Promise.all([
       // Legacy skill system
-      getToolById(toolId).then((tool) => {
-        if (tool) {
-          return awardSavedWorkSkill(
-            session.email!,
-            toolId,
-            tool.name,
-            tool.category
-          );
-        }
-      }),
+      tool ? awardSavedWorkSkill(
+        session.email!,
+        toolId,
+        tool.name,
+        tool.category
+      ) : Promise.resolve(),
       // New admin-defined skill system - increment project count
       incrementToolProjectCount(session.email!, toolId),
     ]).catch((err) => {
       console.error('Error updating skills:', err);
+    });
+
+    // Log the project save activity
+    const userName = session.learnworldsUser?.username || session.email.split('@')[0];
+    const { ipAddress, userAgent } = extractRequestInfo(request);
+    await logActivity({
+      type: 'project_save',
+      userEmail: session.email,
+      userName,
+      description: `${userName} saved project "${name}" using ${tool?.name || toolId}`,
+      metadata: {
+        projectId: savedItem.id,
+        projectName: name,
+        toolId,
+        toolName: tool?.name || null,
+        toolCategory: tool?.category || null,
+      },
+      ipAddress,
+      userAgent,
     });
 
     return NextResponse.json({

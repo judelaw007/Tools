@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from '@/lib/server-session';
 import { getUserPortfolioMatrix } from '@/lib/skill-categories';
 import { createVerification, SkillSnapshot } from '@/lib/skill-verifications';
+import { logActivity, extractRequestInfo } from '@/lib/activity-logs';
 
 export async function POST(request: NextRequest) {
   try {
@@ -88,6 +89,22 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
+
+    // Log the skills download/print activity
+    const { ipAddress, userAgent } = extractRequestInfo(request);
+    await logActivity({
+      type: 'skills_download',
+      userEmail: session.email,
+      userName,
+      description: `${userName} generated skills portfolio for printing/download`,
+      metadata: {
+        categoriesCount: skillsSnapshot.categories.length,
+        selectedSkillIds: selectedSkillIds.length > 0 ? selectedSkillIds : 'all',
+        verificationToken: result.token.substring(0, 8) + '...',
+      },
+      ipAddress,
+      userAgent,
+    });
 
     return NextResponse.json({
       success: true,
