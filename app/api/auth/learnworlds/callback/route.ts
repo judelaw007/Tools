@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { learnworlds, syncLearnWorldsUser, LearnWorldsEnrollment } from '@/lib/learnworlds';
 import { cookies } from 'next/headers';
+import { logActivity, extractRequestInfo } from '@/lib/activity-logs';
 
 const AUTH_COOKIE_NAME = 'mojitax-auth';
 const SESSION_COOKIE_NAME = 'mojitax-session';
@@ -120,6 +121,22 @@ export async function GET(request: NextRequest) {
         secure: process.env.NODE_ENV === 'production',
       }
     );
+
+    // Log user login activity (non-blocking)
+    const { ipAddress, userAgent } = extractRequestInfo(request);
+    logActivity({
+      type: 'user_login',
+      userEmail,
+      userName: userName || userEmail.split('@')[0],
+      description: `${userName || userEmail} logged in via LearnWorlds SSO`,
+      metadata: {
+        learnworldsId: sessionData.learnworldsId,
+        enrollmentsCount: sessionData.enrollments.length,
+        returnTo,
+      },
+      ipAddress,
+      userAgent,
+    }).catch((err) => console.error('Failed to log login activity:', err));
 
     return response;
   } catch (error) {
