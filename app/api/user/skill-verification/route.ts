@@ -10,6 +10,15 @@ import { getServerSession } from '@/lib/server-session';
 import { getUserPortfolioMatrix } from '@/lib/skill-categories';
 import { createVerification, SkillSnapshot } from '@/lib/skill-verifications';
 import { logActivity, extractRequestInfo } from '@/lib/activity-logs';
+import { createClient } from '@supabase/supabase-js';
+
+// Create Supabase client for fetching user profile
+function getSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -72,8 +81,25 @@ export async function POST(request: NextRequest) {
       generatedAt: new Date().toISOString(),
     };
 
-    // Get user's display name
-    const userName = session.learnworldsUser?.username || session.email.split('@')[0];
+    // Get user's display name - prefer portfolio name from user_profiles
+    let userName = session.learnworldsUser?.username || session.email.split('@')[0];
+
+    // Check for custom portfolio name in user_profiles
+    try {
+      const supabase = getSupabase();
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('portfolio_name')
+        .eq('user_email', session.email)
+        .single();
+
+      if (profile?.portfolio_name) {
+        userName = profile.portfolio_name;
+      }
+    } catch (err) {
+      // Silently continue with default name if profile fetch fails
+      console.error('Error fetching user profile for portfolio name:', err);
+    }
 
     // Create verification record with the correct base URL
     const result = await createVerification(
