@@ -13,6 +13,11 @@ export const metadata: Metadata = {
   keywords: ['transfer pricing', 'VAT', 'FATCA', 'CRS', 'tax tools', 'tax learning', 'tax calculator'],
   authors: [{ name: 'MojiTax' }],
   creator: 'MojiTax',
+  icons: {
+    icon: '/mojitax-logo.png',
+    shortcut: '/mojitax-logo.png',
+    apple: '/mojitax-logo.png',
+  },
   openGraph: {
     type: 'website',
     locale: 'en_GB',
@@ -20,6 +25,7 @@ export const metadata: Metadata = {
     siteName: 'MojiTax Demo Tools',
     title: 'MojiTax Demo Tools',
     description: 'Practical demo tools for learning international tax concepts.',
+    images: ['/mojitax-logo.png'],
   },
   twitter: {
     card: 'summary_large_image',
