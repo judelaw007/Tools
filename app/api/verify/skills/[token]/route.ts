@@ -7,6 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getVerification } from '@/lib/skill-verifications';
+import { logActivity, extractRequestInfo } from '@/lib/activity-logs';
 
 export async function GET(
   request: NextRequest,
@@ -30,6 +31,22 @@ export async function GET(
         { status: 404 }
       );
     }
+
+    // Log the verification activity
+    const { ipAddress, userAgent } = extractRequestInfo(request);
+    await logActivity({
+      type: 'skills_verification',
+      userEmail: verification.userEmail,
+      userName: verification.userName,
+      description: `Skills portfolio verified for ${verification.userName}`,
+      metadata: {
+        token: token.substring(0, 8) + '...', // Only log partial token
+        viewCount: verification.viewCount,
+        categoriesCount: verification.skillsSnapshot.categories.length,
+      },
+      ipAddress,
+      userAgent,
+    });
 
     // Return verification data (hide email for privacy)
     return NextResponse.json({

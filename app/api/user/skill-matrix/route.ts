@@ -17,6 +17,7 @@ import {
   syncUserCoursesWithProgress,
 } from '@/lib/skill-categories';
 import { learnworlds } from '@/lib/learnworlds';
+import { logActivity } from '@/lib/activity-logs';
 
 /**
  * GET /api/user/skill-matrix
@@ -101,6 +102,21 @@ export async function POST() {
 
     // Get updated portfolio
     const portfolio = await getUserPortfolioMatrix(session.email);
+
+    // Log the skills sync activity
+    await logActivity({
+      type: 'skills_sync',
+      userEmail: session.email,
+      userName: session.learnworldsUser?.username || session.email.split('@')[0],
+      description: `Synced skills: ${syncResult.synced} added/updated, ${syncResult.removed} removed`,
+      metadata: {
+        synced: syncResult.synced,
+        removed: syncResult.removed,
+        totalCourses: courseProgress.length,
+        completedCourses: enrollmentData.filter((c) => c.completed).length,
+        portfolioCategories: portfolio.length,
+      },
+    });
 
     return NextResponse.json({
       success: true,

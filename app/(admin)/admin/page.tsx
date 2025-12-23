@@ -13,6 +13,7 @@ import {
   FolderOpen,
   BookOpen,
   Link2,
+  Activity,
 } from 'lucide-react';
 
 export default async function AdminDashboardPage() {
@@ -34,12 +35,20 @@ export default async function AdminDashboardPage() {
             Manage tools, courses, and monitor platform usage
           </p>
         </div>
-        <Link href="/admin/tools">
-          <Button variant="primary">
-            <Settings className="w-4 h-4" />
-            Manage Tools
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link href="/admin/activity">
+            <Button variant="outline">
+              <Activity className="w-4 h-4" />
+              Activity Logs
+            </Button>
+          </Link>
+          <Link href="/admin/tools">
+            <Button variant="primary">
+              <Settings className="w-4 h-4" />
+              Manage Tools
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Stats Grid */}

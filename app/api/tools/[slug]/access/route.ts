@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { checkToolAccess } from '@/lib/learnworlds/access-control';
+import { logActivity, extractRequestInfo } from '@/lib/activity-logs';
 
 const SESSION_COOKIE_NAME = 'mojitax-session';
 
@@ -53,6 +54,24 @@ export async function GET(
 
     // Check access
     const accessResult = await checkToolAccess(user, slug);
+
+    // Log tool access when user has access
+    if (user && accessResult.hasAccess) {
+      const { ipAddress, userAgent } = extractRequestInfo(request);
+      // Non-blocking log - don't await
+      logActivity({
+        type: 'tool_usage',
+        userEmail: user.email,
+        userName: user.email.split('@')[0],
+        description: `Accessed tool: ${slug}`,
+        metadata: {
+          toolSlug: slug,
+          accessType: accessResult.reason || 'granted',
+        },
+        ipAddress,
+        userAgent,
+      }).catch((err) => console.error('Failed to log tool access:', err));
+    }
 
     return NextResponse.json({
       success: true,
