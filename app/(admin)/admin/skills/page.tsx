@@ -21,6 +21,7 @@ import {
   Check,
   Save,
   AlertCircle,
+  Clock,
 } from 'lucide-react';
 
 interface SkillCategory {
@@ -61,6 +62,15 @@ interface Tool {
   category: string;
 }
 
+// Track pending changes for courses and tools
+interface PendingChange {
+  categoryId: string;
+  courseId?: string;
+  toolId?: string;
+  field: 'knowledgeDescription' | 'learningHours' | 'applicationDescription';
+  value: string;
+}
+
 export default function AdminSkillsPage() {
   const [categories, setCategories] = useState<SkillCategory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -86,6 +96,92 @@ export default function AdminSkillsPage() {
   });
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Pending changes for inline edits
+  const [pendingChanges, setPendingChanges] = useState<Map<string, PendingChange>>(new Map());
+  const [isSavingChanges, setIsSavingChanges] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+
+  // Generate a unique key for pending changes
+  const getPendingKey = (categoryId: string, courseId?: string, toolId?: string, field?: string) => {
+    return `${categoryId}-${courseId || ''}-${toolId || ''}-${field || ''}`;
+  };
+
+  // Track a pending change
+  const trackChange = (change: PendingChange) => {
+    const key = getPendingKey(change.categoryId, change.courseId, change.toolId, change.field);
+    setPendingChanges(prev => {
+      const next = new Map(prev);
+      next.set(key, change);
+      return next;
+    });
+    setSaveSuccess(false);
+  };
+
+  // Get value from pending changes or original data
+  const getValue = (categoryId: string, courseId: string | undefined, toolId: string | undefined, field: string, originalValue: string | number | null) => {
+    const key = getPendingKey(categoryId, courseId, toolId, field);
+    const pending = pendingChanges.get(key);
+    if (pending) {
+      return pending.value;
+    }
+    return originalValue?.toString() || '';
+  };
+
+  // Save all pending changes
+  const saveAllChanges = async () => {
+    if (pendingChanges.size === 0) return;
+
+    setIsSavingChanges(true);
+    setError(null);
+
+    try {
+      const promises: Promise<Response>[] = [];
+      const changes = Array.from(pendingChanges.values());
+
+      for (const change of changes) {
+        if (change.courseId) {
+          // Course change
+          const body: Record<string, unknown> = { courseId: change.courseId };
+          if (change.field === 'knowledgeDescription') {
+            body.knowledgeDescription = change.value;
+          } else if (change.field === 'learningHours') {
+            body.learningHours = change.value === '' ? null : parseFloat(change.value);
+          }
+
+          promises.push(
+            fetch(`/api/admin/skills/${change.categoryId}/courses`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(body),
+            })
+          );
+        } else if (change.toolId) {
+          // Tool change
+          promises.push(
+            fetch(`/api/admin/skills/${change.categoryId}/tools`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ toolId: change.toolId, applicationDescription: change.value }),
+            })
+          );
+        }
+      }
+
+      await Promise.all(promises);
+      setPendingChanges(new Map());
+      setSaveSuccess(true);
+      await fetchCategories();
+
+      // Clear success message after 3 seconds
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (err) {
+      console.error('Failed to save changes:', err);
+      setError('Failed to save some changes. Please try again.');
+    } finally {
+      setIsSavingChanges(false);
+    }
+  };
 
   // Fetch categories
   const fetchCategories = useCallback(async () => {
@@ -295,58 +391,6 @@ export default function AdminSkillsPage() {
     }
   };
 
-  // Update tool description
-  const handleUpdateToolDescription = async (categoryId: string, toolId: string, description: string) => {
-    try {
-      const response = await fetch(`/api/admin/skills/${categoryId}/tools`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ toolId, applicationDescription: description }),
-      });
-
-      if (response.ok) {
-        await fetchCategories();
-      }
-    } catch (err) {
-      console.error('Failed to update tool description:', err);
-    }
-  };
-
-  // Update course knowledge description
-  const handleUpdateCourseDescription = async (categoryId: string, courseId: string, description: string) => {
-    try {
-      const response = await fetch(`/api/admin/skills/${categoryId}/courses`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ courseId, knowledgeDescription: description }),
-      });
-
-      if (response.ok) {
-        await fetchCategories();
-      }
-    } catch (err) {
-      console.error('Failed to update course description:', err);
-    }
-  };
-
-  // Update course learning hours
-  const handleUpdateCourseLearningHours = async (categoryId: string, courseId: string, hours: string) => {
-    try {
-      const learningHours = hours === '' ? null : parseFloat(hours);
-      const response = await fetch(`/api/admin/skills/${categoryId}/courses`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ courseId, learningHours }),
-      });
-
-      if (response.ok) {
-        await fetchCategories();
-      }
-    } catch (err) {
-      console.error('Failed to update course learning hours:', err);
-    }
-  };
-
   const resetForm = () => {
     setFormData({
       name: '',
@@ -388,17 +432,65 @@ export default function AdminSkillsPage() {
             Define skill categories with Knowledge (from courses) and Application (from tools).
           </p>
         </div>
-        <Button
-          variant="primary"
-          onClick={() => {
-            resetForm();
-            setIsCreateModalOpen(true);
-          }}
-        >
-          <Plus className="w-4 h-4" />
-          Add Skill Category
-        </Button>
+        <div className="flex items-center gap-3">
+          {/* Save Changes Button */}
+          {pendingChanges.size > 0 && (
+            <Button
+              variant="success"
+              onClick={saveAllChanges}
+              disabled={isSavingChanges}
+            >
+              {isSavingChanges ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4" />
+                  Save Changes ({pendingChanges.size})
+                </>
+              )}
+            </Button>
+          )}
+          {saveSuccess && (
+            <span className="text-sm text-green-600 flex items-center gap-1">
+              <Check className="w-4 h-4" />
+              Saved!
+            </span>
+          )}
+          <Button
+            variant="primary"
+            onClick={() => {
+              resetForm();
+              setIsCreateModalOpen(true);
+            }}
+          >
+            <Plus className="w-4 h-4" />
+            Add Skill Category
+          </Button>
+        </div>
       </div>
+
+      {/* Unsaved Changes Warning */}
+      {pendingChanges.size > 0 && (
+        <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-center justify-between">
+          <div className="flex items-center gap-2 text-amber-800">
+            <AlertCircle className="w-4 h-4" />
+            <span className="text-sm">You have {pendingChanges.size} unsaved change{pendingChanges.size !== 1 ? 's' : ''}. Click &quot;Save Changes&quot; to apply them.</span>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setPendingChanges(new Map());
+              fetchCategories();
+            }}
+          >
+            Discard
+          </Button>
+        </div>
+      )}
 
       {/* Categories List */}
       {isLoading ? (
@@ -509,19 +601,21 @@ export default function AdminSkillsPage() {
                             <span className="text-sm font-medium text-purple-800">{course.courseName || course.courseId}</span>
                             <div className="flex items-center gap-2">
                               <div className="flex items-center gap-1">
+                                <Clock className="w-3 h-3 text-purple-600" />
                                 <input
                                   type="number"
                                   step="0.5"
                                   min="0"
                                   className="w-16 p-1 text-xs border border-purple-200 rounded bg-white text-center"
                                   placeholder="0"
-                                  defaultValue={course.learningHours || ''}
-                                  onBlur={(e) => {
-                                    const newValue = e.target.value;
-                                    const currentValue = course.learningHours?.toString() || '';
-                                    if (newValue !== currentValue) {
-                                      handleUpdateCourseLearningHours(category.id, course.courseId, newValue);
-                                    }
+                                  value={getValue(category.id, course.courseId, undefined, 'learningHours', course.learningHours)}
+                                  onChange={(e) => {
+                                    trackChange({
+                                      categoryId: category.id,
+                                      courseId: course.courseId,
+                                      field: 'learningHours',
+                                      value: e.target.value,
+                                    });
                                   }}
                                 />
                                 <span className="text-xs text-purple-600">hrs</span>
@@ -539,11 +633,14 @@ export default function AdminSkillsPage() {
                             className="w-full p-2 text-sm border border-purple-200 rounded-lg resize-none bg-white"
                             rows={2}
                             placeholder="Knowledge description (e.g., 'Has demonstrated understanding of Pillar 2 fundamentals...')..."
-                            defaultValue={course.knowledgeDescription || ''}
-                            onBlur={(e) => {
-                              if (e.target.value !== course.knowledgeDescription) {
-                                handleUpdateCourseDescription(category.id, course.courseId, e.target.value);
-                              }
+                            value={getValue(category.id, course.courseId, undefined, 'knowledgeDescription', course.knowledgeDescription)}
+                            onChange={(e) => {
+                              trackChange({
+                                categoryId: category.id,
+                                courseId: course.courseId,
+                                field: 'knowledgeDescription',
+                                value: e.target.value,
+                              });
                             }}
                           />
                         </div>
@@ -595,11 +692,14 @@ export default function AdminSkillsPage() {
                             className="w-full p-2 text-sm border border-slate-200 rounded-lg resize-none"
                             rows={2}
                             placeholder="Application description (shown when user completes projects)..."
-                            defaultValue={tool.applicationDescription || ''}
-                            onBlur={(e) => {
-                              if (e.target.value !== tool.applicationDescription) {
-                                handleUpdateToolDescription(category.id, tool.toolId, e.target.value);
-                              }
+                            value={getValue(category.id, undefined, tool.toolId, 'applicationDescription', tool.applicationDescription)}
+                            onChange={(e) => {
+                              trackChange({
+                                categoryId: category.id,
+                                toolId: tool.toolId,
+                                field: 'applicationDescription',
+                                value: e.target.value,
+                              });
                             }}
                           />
                         </div>
@@ -773,7 +873,7 @@ export default function AdminSkillsPage() {
             <p><strong>Application:</strong> Each tool has its own description. When a user saves projects using a tool, it appears in their portfolio with the project count.</p>
             <p><strong>Portfolio View:</strong> A skill category only appears in the user&apos;s Skills Matrix after they complete at least one linked course. This creates a clean portfolio showcasing their actual achievements.</p>
             <p className="text-xs text-blue-600 mt-3">
-              Example: Link &quot;CIOT - Pillar 2&quot; to &quot;Pillar 2 Skills&quot;. When completed, the user sees: &quot;CIOT Pillar 2 (Score: 76%, 15 hrs) - Has demonstrated understanding of...&quot;
+              <strong>Tip:</strong> Make changes to descriptions and learning hours, then click the green &quot;Save Changes&quot; button to apply all updates at once.
             </p>
           </div>
         </CardContent>
