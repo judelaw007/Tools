@@ -35,7 +35,8 @@ interface SkillCategory {
     categoryId: string;
     courseId: string;
     courseName: string | null;
-    knowledgeDescription: string | null; // NEW: Per-course description
+    knowledgeDescription: string | null; // Per-course description
+    learningHours: number | null; // Estimated learning hours
   }>;
   tools: Array<{
     id: string;
@@ -328,6 +329,24 @@ export default function AdminSkillsPage() {
     }
   };
 
+  // Update course learning hours
+  const handleUpdateCourseLearningHours = async (categoryId: string, courseId: string, hours: string) => {
+    try {
+      const learningHours = hours === '' ? null : parseFloat(hours);
+      const response = await fetch(`/api/admin/skills/${categoryId}/courses`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ courseId, learningHours }),
+      });
+
+      if (response.ok) {
+        await fetchCategories();
+      }
+    } catch (err) {
+      console.error('Failed to update course learning hours:', err);
+    }
+  };
+
   const resetForm = () => {
     setFormData({
       name: '',
@@ -488,13 +507,33 @@ export default function AdminSkillsPage() {
                         <div key={course.id} className="p-3 bg-purple-50 rounded-lg">
                           <div className="flex items-center justify-between mb-2">
                             <span className="text-sm font-medium text-purple-800">{course.courseName || course.courseId}</span>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleRemoveCourse(category.id, course.courseId)}
-                            >
-                              <X className="w-3 h-3" />
-                            </Button>
+                            <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-1">
+                                <input
+                                  type="number"
+                                  step="0.5"
+                                  min="0"
+                                  className="w-16 p-1 text-xs border border-purple-200 rounded bg-white text-center"
+                                  placeholder="0"
+                                  defaultValue={course.learningHours || ''}
+                                  onBlur={(e) => {
+                                    const newValue = e.target.value;
+                                    const currentValue = course.learningHours?.toString() || '';
+                                    if (newValue !== currentValue) {
+                                      handleUpdateCourseLearningHours(category.id, course.courseId, newValue);
+                                    }
+                                  }}
+                                />
+                                <span className="text-xs text-purple-600">hrs</span>
+                              </div>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleRemoveCourse(category.id, course.courseId)}
+                              >
+                                <X className="w-3 h-3" />
+                              </Button>
+                            </div>
                           </div>
                           <textarea
                             className="w-full p-2 text-sm border border-purple-200 rounded-lg resize-none bg-white"
@@ -729,11 +768,12 @@ export default function AdminSkillsPage() {
         <CardContent className="p-4 bg-blue-50">
           <h4 className="font-medium text-blue-800 mb-2">How Skills Matrix Works (Portfolio Style)</h4>
           <div className="text-sm text-blue-700 space-y-2">
-            <p><strong>Knowledge:</strong> Each course has its own description. When a user completes a course, it appears in their portfolio with the description you wrote and their course score (from LearnWorlds).</p>
+            <p><strong>Knowledge:</strong> Each course has its own description and learning hours. When a user completes a course, it appears in their portfolio with the description, score, and learning hours.</p>
+            <p><strong>Learning Hours:</strong> Set estimated learning hours per course. These are displayed on the user&apos;s portfolio and totalled by year for professional development tracking.</p>
             <p><strong>Application:</strong> Each tool has its own description. When a user saves projects using a tool, it appears in their portfolio with the project count.</p>
             <p><strong>Portfolio View:</strong> A skill category only appears in the user&apos;s Skills Matrix after they complete at least one linked course. This creates a clean portfolio showcasing their actual achievements.</p>
             <p className="text-xs text-blue-600 mt-3">
-              Example: Link &quot;CIOT - Pillar 2&quot; to &quot;Pillar 2 Skills&quot;. When completed, the user sees: &quot;CIOT Pillar 2 (Course Score: 76%) - Has demonstrated understanding of...&quot;
+              Example: Link &quot;CIOT - Pillar 2&quot; to &quot;Pillar 2 Skills&quot;. When completed, the user sees: &quot;CIOT Pillar 2 (Score: 76%, 15 hrs) - Has demonstrated understanding of...&quot;
             </p>
           </div>
         </CardContent>

@@ -59,6 +59,7 @@ export async function POST(request: NextRequest) {
           knowledgeDescription: course.knowledgeDescription,
           progressScore: course.progressScore,
           completedAt: toISOString(course.completedAt),
+          learningHours: course.learningHours,
         })),
         tools: entry.toolsUsed.map((tool) => ({
           toolId: tool.toolId,

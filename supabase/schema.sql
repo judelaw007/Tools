@@ -406,6 +406,7 @@ CREATE TABLE IF NOT EXISTS skill_category_courses (
   course_id VARCHAR(255) NOT NULL, -- LearnWorlds course ID
   course_name VARCHAR(255), -- Cached course name
   knowledge_description TEXT, -- Description shown when user completes THIS course
+  learning_hours DECIMAL(5,1) DEFAULT NULL, -- Estimated learning hours (admin-configured)
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   UNIQUE(category_id, course_id)
 );

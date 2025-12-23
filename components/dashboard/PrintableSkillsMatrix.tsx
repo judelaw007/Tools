@@ -115,6 +115,25 @@ function getCardClasses(mode: LayoutMode): string {
   }
 }
 
+/**
+ * Calculate learning hours by year from snapshot
+ */
+function calculateLearningHoursByYear(snapshot: SkillSnapshot): Map<number, number> {
+  const hoursByYear = new Map<number, number>();
+
+  for (const category of snapshot.categories) {
+    for (const course of category.courses) {
+      if (course.learningHours && course.learningHours > 0) {
+        const year = new Date(course.completedAt).getFullYear();
+        const current = hoursByYear.get(year) || 0;
+        hoursByYear.set(year, current + course.learningHours);
+      }
+    }
+  }
+
+  return hoursByYear;
+}
+
 interface PrintableSkillsMatrixProps {
   userName: string;
   snapshot: SkillSnapshot;
@@ -143,6 +162,12 @@ export const PrintableSkillsMatrix = forwardRef<HTMLDivElement, PrintableSkillsM
       (sum, cat) => sum + cat.tools.length,
       0
     );
+
+    // Calculate learning hours by year
+    const hoursByYear = useMemo(() => calculateLearningHoursByYear(snapshot), [snapshot]);
+    const currentYear = new Date(generatedAt).getFullYear();
+    const currentYearHours = hoursByYear.get(currentYear) || 0;
+    const totalLearningHours = Array.from(hoursByYear.values()).reduce((sum, h) => sum + h, 0);
 
     // Dynamic sizes based on layout mode
     const isCompact = layoutMode === 'compact';
@@ -239,7 +264,7 @@ export const PrintableSkillsMatrix = forwardRef<HTMLDivElement, PrintableSkillsM
         {/* User Info */}
         <section className={isCompact ? 'mb-4' : 'mb-8'}>
           <h1 className={`font-bold text-[#0B1F3A] mb-2 ${isCompact ? 'text-2xl' : 'text-3xl'}`}>{userName}</h1>
-          <div className="flex gap-6 text-sm text-gray-600">
+          <div className="flex flex-wrap gap-4 text-sm text-gray-600">
             <span>{totalCourses} course{totalCourses !== 1 ? 's' : ''} completed</span>
             {totalTools > 0 && (
               <span>{totalTools} tool{totalTools !== 1 ? 's' : ''} used</span>
@@ -248,6 +273,37 @@ export const PrintableSkillsMatrix = forwardRef<HTMLDivElement, PrintableSkillsM
               <span className="text-gray-400">({snapshot.categories.length} skill areas)</span>
             )}
           </div>
+
+          {/* Learning Hours Summary */}
+          {totalLearningHours > 0 && (
+            <div className={`mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg ${isCompact ? 'text-xs' : 'text-sm'}`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-amber-900">Learning Hours</span>
+                  <span className="text-amber-700">({currentYear})</span>
+                </div>
+                <span className="font-bold text-amber-900 text-lg">{currentYearHours} hrs</span>
+              </div>
+              {hoursByYear.size > 1 && (
+                <div className="mt-2 pt-2 border-t border-amber-200 flex flex-wrap gap-2">
+                  {Array.from(hoursByYear.entries())
+                    .sort((a, b) => b[0] - a[0])
+                    .map(([year, hours]) => (
+                      <span
+                        key={year}
+                        className={`px-2 py-0.5 rounded-full ${
+                          year === currentYear
+                            ? 'bg-amber-200 text-amber-900 font-medium'
+                            : 'bg-amber-100 text-amber-700'
+                        }`}
+                      >
+                        {year}: {hours} hrs
+                      </span>
+                    ))}
+                </div>
+              )}
+            </div>
+          )}
         </section>
 
         {/* Skills Content */}
@@ -290,6 +346,11 @@ export const PrintableSkillsMatrix = forwardRef<HTMLDivElement, PrintableSkillsM
                             <div key={course.courseId} className={`border-l-2 border-purple-200 ${isCompact ? 'pl-2 py-0.5' : 'pl-3 py-1'}`}>
                               <div className="flex items-center gap-2 flex-wrap">
                                 <span className={`font-medium text-gray-800 ${isCompact ? 'text-xs' : ''}`}>{course.courseName}</span>
+                                {course.learningHours && course.learningHours > 0 && (
+                                  <span className={`${isCompact ? 'text-[10px]' : 'text-xs'} bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full`}>
+                                    {course.learningHours} hrs
+                                  </span>
+                                )}
                                 <span className={`${isCompact ? 'text-[10px]' : 'text-xs'} bg-green-100 text-green-700 px-2 py-0.5 rounded-full`}>
                                   {course.progressScore > 0 ? `Score: ${course.progressScore}%` : 'Completed'}
                                 </span>

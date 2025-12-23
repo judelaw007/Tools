@@ -30,6 +30,7 @@ export interface SkillCategoryCourse {
   courseId: string;
   courseName: string | null;
   knowledgeDescription: string | null;
+  learningHours: number | null; // Estimated learning hours (admin-configured)
 }
 
 // User's completion record for a specific course
@@ -109,6 +110,7 @@ export interface PortfolioSkillEntry {
     knowledgeDescription: string | null;
     progressScore: number; // 0-100 from LearnWorlds
     completedAt: Date;
+    learningHours: number | null; // Estimated learning hours (admin-configured)
   }>;
   // Total courses available in this category (for "X more to complete" hint)
   totalCoursesInCategory: number;
@@ -143,6 +145,7 @@ interface SkillCategoryCourseRow {
   course_id: string;
   course_name: string | null;
   knowledge_description: string | null;
+  learning_hours: number | null;
 }
 
 interface UserCourseCompletionRow {
@@ -201,6 +204,7 @@ function rowToCourse(row: SkillCategoryCourseRow): SkillCategoryCourse {
     courseId: row.course_id,
     courseName: row.course_name,
     knowledgeDescription: row.knowledge_description,
+    learningHours: row.learning_hours,
   };
 }
 
@@ -925,6 +929,48 @@ export async function updateCourseKnowledgeDescription(
   return rowToCourse(data as SkillCategoryCourseRow);
 }
 
+/**
+ * Update course details (knowledge description and/or learning hours)
+ */
+export async function updateCourseDetails(
+  categoryId: string,
+  courseId: string,
+  updates: {
+    knowledgeDescription?: string;
+    learningHours?: number | null;
+  }
+): Promise<SkillCategoryCourse | null> {
+  const supabase = createServiceClient();
+
+  const updateData: Record<string, unknown> = {};
+  if (updates.knowledgeDescription !== undefined) {
+    updateData.knowledge_description = updates.knowledgeDescription;
+  }
+  if (updates.learningHours !== undefined) {
+    updateData.learning_hours = updates.learningHours;
+  }
+
+  if (Object.keys(updateData).length === 0) {
+    console.error('No updates provided');
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .from('skill_category_courses')
+    .update(updateData)
+    .eq('category_id', categoryId)
+    .eq('course_id', courseId)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error updating course details:', error);
+    return null;
+  }
+
+  return rowToCourse(data as SkillCategoryCourseRow);
+}
+
 // ===========================================
 // USER FUNCTIONS - Course Completions
 // ===========================================
@@ -1001,7 +1047,7 @@ export async function getUserPortfolioMatrix(userEmail: string): Promise<Portfol
     .from('skill_categories')
     .select(`
       id, name, slug, display_order,
-      skill_category_courses (course_id, course_name, knowledge_description),
+      skill_category_courses (course_id, course_name, knowledge_description, learning_hours),
       skill_category_tools (tool_id, tool_name, application_description)
     `)
     .eq('is_active', true)
@@ -1047,6 +1093,7 @@ export async function getUserPortfolioMatrix(userEmail: string): Promise<Portfol
         course_id: string;
         course_name: string | null;
         knowledge_description: string | null;
+        learning_hours: number | null;
       }>;
       skill_category_tools: Array<{
         tool_id: string;
@@ -1069,6 +1116,7 @@ export async function getUserPortfolioMatrix(userEmail: string): Promise<Portfol
           knowledgeDescription: course.knowledge_description,
           progressScore: completion.progress_score,
           completedAt: new Date(completion.completed_at),
+          learningHours: course.learning_hours,
         });
       }
     }

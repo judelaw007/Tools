@@ -3,7 +3,7 @@
  *
  * GET    /api/admin/skills/[id]/courses - List courses for category
  * POST   /api/admin/skills/[id]/courses - Add course to category
- * PUT    /api/admin/skills/[id]/courses - Update course knowledge description
+ * PUT    /api/admin/skills/[id]/courses - Update course details (description, learning hours)
  * DELETE /api/admin/skills/[id]/courses - Remove course from category
  */
 
@@ -13,7 +13,7 @@ import {
   getCoursesForCategory,
   addCourseToCategory,
   removeCourseFromCategory,
-  updateCourseKnowledgeDescription,
+  updateCourseDetails,
 } from '@/lib/skill-categories';
 
 interface RouteParams {
@@ -108,11 +108,12 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
 /**
  * PUT /api/admin/skills/[id]/courses
- * Update course knowledge description
+ * Update course details (knowledge description and/or learning hours)
  *
  * Body:
  * - courseId: string (required)
- * - knowledgeDescription: string (required)
+ * - knowledgeDescription: string (optional)
+ * - learningHours: number | null (optional) - Estimated learning hours
  */
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
@@ -127,7 +128,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
     const { id } = await params;
     const body = await request.json();
-    const { courseId, knowledgeDescription } = body;
+    const { courseId, knowledgeDescription, learningHours } = body;
 
     if (!courseId) {
       return NextResponse.json(
@@ -136,11 +137,23 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    const course = await updateCourseKnowledgeDescription(id, courseId, knowledgeDescription || '');
+    // Build updates object with only provided fields
+    const updates: { knowledgeDescription?: string; learningHours?: number | null } = {};
+    if (knowledgeDescription !== undefined) {
+      updates.knowledgeDescription = knowledgeDescription;
+    }
+    if (learningHours !== undefined) {
+      // Parse to number or null
+      updates.learningHours = learningHours === null || learningHours === ''
+        ? null
+        : parseFloat(learningHours);
+    }
+
+    const course = await updateCourseDetails(id, courseId, updates);
 
     if (!course) {
       return NextResponse.json(
-        { error: 'Failed to update course description' },
+        { error: 'Failed to update course details' },
         { status: 500 }
       );
     }

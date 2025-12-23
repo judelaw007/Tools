@@ -27,6 +27,7 @@ import {
   Printer,
   X,
   Check,
+  Clock,
 } from 'lucide-react';
 import { PrintableSkillsMatrix } from './PrintableSkillsMatrix';
 import { SkillSnapshot } from '@/lib/skill-verifications';
@@ -43,6 +44,7 @@ interface PortfolioEntry {
     knowledgeDescription: string | null;
     progressScore: number;
     completedAt: string;
+    learningHours: number | null;
   }>;
   totalCoursesInCategory: number;
   toolsUsed: Array<{
@@ -52,6 +54,25 @@ interface PortfolioEntry {
     projectCount: number;
     lastUsedAt: string;
   }>;
+}
+
+/**
+ * Calculate learning hours by year from portfolio entries
+ */
+function calculateLearningHoursByYear(portfolio: PortfolioEntry[]): Map<number, number> {
+  const hoursByYear = new Map<number, number>();
+
+  for (const entry of portfolio) {
+    for (const course of entry.completedCourses) {
+      if (course.learningHours && course.learningHours > 0) {
+        const year = new Date(course.completedAt).getFullYear();
+        const current = hoursByYear.get(year) || 0;
+        hoursByYear.set(year, current + course.learningHours);
+      }
+    }
+  }
+
+  return hoursByYear;
 }
 
 interface SkillsMatrixV2Props {
@@ -367,6 +388,62 @@ export function SkillsMatrixV2({ className = '' }: SkillsMatrixV2Props) {
           </div>
         </div>
 
+        {/* Learning Hours Summary */}
+        {(() => {
+          const hoursByYear = calculateLearningHoursByYear(portfolio);
+          const currentYear = new Date().getFullYear();
+          const currentYearHours = hoursByYear.get(currentYear) || 0;
+          const totalHours = Array.from(hoursByYear.values()).reduce((sum, h) => sum + h, 0);
+
+          if (totalHours === 0) return null;
+
+          const sortedYears = Array.from(hoursByYear.keys()).sort((a, b) => b - a);
+
+          return (
+            <div className="p-4 bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg border border-amber-200">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center">
+                    <Clock className="w-5 h-5 text-amber-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-amber-900">Learning Hours</h3>
+                    <p className="text-xs text-amber-700">
+                      {currentYearHours > 0
+                        ? `${currentYearHours} hrs in ${currentYear}`
+                        : `No hours recorded for ${currentYear}`}
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-2xl font-bold text-amber-900">{currentYearHours}</div>
+                  <div className="text-xs text-amber-600">hours this year</div>
+                </div>
+              </div>
+
+              {/* Year breakdown if multiple years */}
+              {sortedYears.length > 1 && (
+                <div className="mt-3 pt-3 border-t border-amber-200">
+                  <div className="flex flex-wrap gap-3 text-sm">
+                    {sortedYears.map((year) => (
+                      <div
+                        key={year}
+                        className={`px-3 py-1 rounded-full ${
+                          year === currentYear
+                            ? 'bg-amber-200 text-amber-900 font-medium'
+                            : 'bg-amber-100 text-amber-700'
+                        }`}
+                      >
+                        {year}: {hoursByYear.get(year)} hrs
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })()}
+
         {portfolio.map((entry) => {
           const isExpanded = expandedCategories.has(entry.category.id);
           const isSelected = selectedForPrint.has(entry.category.id);
@@ -455,18 +532,28 @@ export function SkillsMatrixV2({ className = '' }: SkillsMatrixV2Props) {
                               {course.courseName}
                             </span>
                           </div>
-                          <span className="text-sm font-semibold text-green-700 bg-green-100 px-2 py-0.5 rounded-full">
-                            {course.progressScore > 0 ? `Score: ${course.progressScore}%` : 'Completed'}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            {course.learningHours && course.learningHours > 0 && (
+                              <span className="text-sm font-semibold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                {course.learningHours} hrs
+                              </span>
+                            )}
+                            <span className="text-sm font-semibold text-green-700 bg-green-100 px-2 py-0.5 rounded-full">
+                              {course.progressScore > 0 ? `Score: ${course.progressScore}%` : 'Completed'}
+                            </span>
+                          </div>
                         </div>
                         {course.knowledgeDescription && (
                           <p className="text-sm text-purple-800 ml-6 mb-2">
                             {course.knowledgeDescription}
                           </p>
                         )}
-                        <div className="flex items-center gap-1 text-xs text-purple-500 ml-6">
-                          <Calendar className="w-3 h-3" />
-                          Completed {formatDate(course.completedAt)}
+                        <div className="flex items-center gap-3 text-xs text-purple-500 ml-6">
+                          <span className="flex items-center gap-1">
+                            <Calendar className="w-3 h-3" />
+                            Completed {formatDate(course.completedAt)}
+                          </span>
                         </div>
                       </div>
                     ))}
