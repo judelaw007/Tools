@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { learnworlds } from '@/lib/learnworlds';
-import { parseSession, SessionData } from '@/lib/session';
+import { SessionData } from '@/lib/session';
 import { unsealSession, sealSession } from '@/lib/secure-session';
 
 /**
@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
 
     // User no longer exists - IMMEDIATE REVOCATION
     if (!user) {
-      console.log(`Session refresh: User ${session.email} no longer exists in LearnWorlds`);
+      // User no longer exists — revoke session
 
       const response = NextResponse.redirect('https://www.mojitax.co.uk');
       response.cookies.delete('mojitax-auth');

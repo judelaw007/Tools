@@ -77,7 +77,7 @@ export async function createVerification(
   const token = generateToken();
   const supabase = getSupabase();
 
-  console.log(`Creating verification for user: ${userEmail}, token: ${token}`);
+  // Creating verification token
 
   const { data, error } = await supabase
     .from('skill_verifications')
@@ -96,7 +96,7 @@ export async function createVerification(
     return null;
   }
 
-  console.log(`Successfully created verification: ${token} for ${userEmail}`);
+  // Verification created successfully
 
   // Use provided baseUrl, or fall back to env variable, or default to production URL
   const finalBaseUrl = baseUrl || process.env.NEXT_PUBLIC_APP_URL || 'https://mojitax.co.uk';

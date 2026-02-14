@@ -1176,19 +1176,14 @@ export async function syncUserCoursesWithProgress(
 ): Promise<{ synced: number; removed: number }> {
   const supabase = createServiceClient();
 
-  // Log incoming enrollments for debugging
-  console.log(`syncUserCoursesWithProgress for ${userEmail}:`);
-  console.log(`  Total enrollments received: ${enrollments.length}`);
-  enrollments.forEach((e) => {
-    console.log(`  - ${e.courseId}: completed=${e.completed}, progress=${e.progress}, completedAt=${e.completedAt}`);
-  });
+  // Process incoming enrollments
 
   // Filter to only completed courses
   const completedEnrollments = enrollments.filter(
     (e) => e.completed || e.progress >= 100
   );
 
-  console.log(`  Completed enrollments (completed=true OR progress>=100): ${completedEnrollments.length}`);
+  // Filter to completed enrollments
 
   const completedCourseIds = new Set(completedEnrollments.map(e => e.courseId));
 
@@ -1212,7 +1207,7 @@ export async function syncUserCoursesWithProgress(
       } else {
         removedCount = deleted?.length || 0;
         if (removedCount > 0) {
-          console.log(`Removed ${removedCount} reset course completions for ${userEmail}`);
+          // Removed reset course completions
         }
       }
     }
