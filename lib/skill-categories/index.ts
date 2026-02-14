@@ -1227,13 +1227,9 @@ export async function syncUserCoursesWithProgress(
     categoryMap.set(m.course_id, m.category_id);
   }
 
-  console.log(`  Available course-to-category mappings: ${mappings?.length || 0}`);
-  mappings?.forEach((m) => console.log(`    - course_id: ${m.course_id} -> category: ${m.category_id}`));
-
   // Build batch data for upsert
   const batchData = completedEnrollments.map((enrollment) => {
     const categoryId = categoryMap.get(enrollment.courseId);
-    console.log(`  Building upsert for ${enrollment.courseId}: category=${categoryId || 'NOT MAPPED'}`);
     return {
       user_email: userEmail,
       course_id: enrollment.courseId,
