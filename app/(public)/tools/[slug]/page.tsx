@@ -74,6 +74,12 @@ export default async function ToolPage({ params }: ToolPageProps) {
   // Fetch courses that include this tool (from course-tool allocations)
   const courses = await getCoursesForToolWithNames(tool.id);
 
+  // Unallocated tools are invisible to non-admins
+  const isAdmin = session?.role === 'admin' || session?.role === 'super_admin';
+  if (courses.length === 0 && !isAdmin) {
+    notFound();
+  }
+
   // If authenticated AND has access, render the tool
   if (isAuthenticated && canAccessTool) {
     return (

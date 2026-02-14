@@ -56,16 +56,8 @@ export async function checkToolAccess(
   // Get course IDs this tool is allocated to
   const allocatedCourseIds = await getCoursesForTool(tool.id);
 
-  // If tool has no course allocations, it might be free/public
+  // If tool has no course allocations, it's not available
   if (allocatedCourseIds.length === 0) {
-    // Check if tool is marked as public and not premium
-    if (tool.isPublic && !tool.isPremium) {
-      return {
-        hasAccess: true,
-        reason: 'enrolled', // Free tool
-      };
-    }
-    // No allocations - deny access (tool must be allocated to a course)
     return {
       hasAccess: false,
       reason: 'no_enrollment',

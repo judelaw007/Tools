@@ -77,9 +77,31 @@ export async function getActiveTools(): Promise<Tool[]> {
   }
 }
 
+/**
+ * Get tool IDs that have at least one active course allocation.
+ * Tools without allocations are considered invisible to non-admin users.
+ */
+export async function getAllocatedToolIds(): Promise<Set<string>> {
+  if (!isSupabaseConfigured()) return new Set();
+
+  try {
+    const supabase = createServiceClient();
+    const { data } = await supabase
+      .from('course_tool_allocations')
+      .select('tool_id')
+      .eq('is_active', true);
+    return new Set((data || []).map((row: { tool_id: string }) => row.tool_id));
+  } catch {
+    return new Set();
+  }
+}
+
 export async function getPublicTools(): Promise<Tool[]> {
+  const allocatedIds = await getAllocatedToolIds();
+  const filterAllocated = (tools: Tool[]) => tools.filter(t => allocatedIds.has(t.id));
+
   if (!isSupabaseConfigured()) {
-    return SEED_TOOLS.filter(tool => tool.status === 'active' && tool.isPublic);
+    return filterAllocated(SEED_TOOLS.filter(tool => tool.status === 'active' && tool.isPublic));
   }
 
   try {
@@ -94,13 +116,13 @@ export async function getPublicTools(): Promise<Tool[]> {
     if (error) throw error;
 
     if (!data || data.length === 0) {
-      return SEED_TOOLS.filter(tool => tool.status === 'active' && tool.isPublic);
+      return filterAllocated(SEED_TOOLS.filter(tool => tool.status === 'active' && tool.isPublic));
     }
 
-    return data.map(dbToolToAppTool);
+    return filterAllocated(data.map(dbToolToAppTool));
   } catch (error) {
     console.error('Error fetching public tools from Supabase:', error);
-    return SEED_TOOLS.filter(tool => tool.status === 'active' && tool.isPublic);
+    return filterAllocated(SEED_TOOLS.filter(tool => tool.status === 'active' && tool.isPublic));
   }
 }
 
