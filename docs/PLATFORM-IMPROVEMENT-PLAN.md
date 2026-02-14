@@ -1,13 +1,17 @@
 # MojiTax Tools Platform — Improvement Plan
 
+## Status: COMPLETE
+
+All 4 steps have been implemented, tested, and deployed.
+
 ## Context
 
 The platform provides interactive tax tools that enhance mojitax.co.uk course studies. An audit identified three gaps and one bug:
 
-1. **Journey tracking is shallow** — only "opened" and "saved" are logged; no step-by-step progress or completion tracking
-2. **Skills integration is disconnected** — `incrementToolUsage()` exists but is never called from tool components; skills only update on save or manual sync
-3. **No tool creation formula** — adding a new tool is a manual 6-step developer process with no standardised checklist
-4. **Visibility bug** — unallocated tools appear on `/tools` (public listing) and `/tools/[slug]` (as "Locked" or preview); they must be completely invisible
+1. **Journey tracking is shallow** — only "opened" and "saved" were logged; no step-by-step progress or completion tracking
+2. **Skills integration is disconnected** — `incrementToolUsage()` existed but was never called from tool components; skills only updated on save or manual sync
+3. **No tool creation formula** — adding a new tool was a manual 6-step developer process with no standardised checklist
+4. **Visibility bug** — unallocated tools appeared on `/tools` (public listing) and `/tools/[slug]` (as "Locked" or preview); they needed to be completely invisible
 
 ---
 
@@ -32,18 +36,18 @@ The platform provides interactive tax tools that enhance mojitax.co.uk course st
 - **Skills matrix** — Auto-detected skills + admin-defined categories with printable PDF and QR verification
 - **Admin dashboards** — Tool management, course allocation, activity logs, skill configuration
 
-### What's Missing
+### What Was Missing (Now Resolved)
 
-- No tool session concept (start → progress → complete)
-- No step-by-step tracking within tools
-- `tool_usage_logs` actions (`calculate`, `export`, `error`) never emitted from tool components
-- `incrementToolUsage()` defined but never called
-- Unallocated tools visible to users
-- No standardised process for creating new tools
+- ~~No tool session concept (start → progress → complete)~~ → Fixed in Step 2: `useToolTracking` hook provides session lifecycle
+- ~~No step-by-step tracking within tools~~ → Fixed in Step 2: all 6 tools instrumented with `onTrackStepChange`
+- ~~`tool_usage_logs` actions never emitted from tool components~~ → Fixed in Step 2: `calculate`, `view`, `error` events fired via `/api/tools/track`
+- ~~`incrementToolUsage()` defined but never called~~ → Fixed in Step 3: called on every `calculate` event
+- ~~Unallocated tools visible to users~~ → Fixed in Step 1: `getAllocatedToolIds()` filters public listing, page, and API
+- ~~No standardised process for creating new tools~~ → Fixed in Step 4: `docs/TOOL-CREATION-GUIDE.md`
 
 ---
 
-## Step 1: Tool Visibility Fix (Unallocated = Invisible)
+## Step 1: Tool Visibility Fix (Unallocated = Invisible) — COMPLETE
 
 **Goal**: Tools with zero active course allocations must not appear anywhere except admin panels.
 
@@ -75,7 +79,7 @@ Ensure no `is_active` filters are applied (the column does not exist in the depl
 
 ---
 
-## Step 2: Journey Tracking System
+## Step 2: Journey Tracking System — COMPLETE
 
 **Goal**: Track every meaningful user interaction — session lifecycle, step navigation, calculations, errors, and completion — with automatic skill progression.
 
@@ -185,7 +189,7 @@ Each tool accepts `ToolTrackingProps` and calls them at appropriate moments:
 
 ---
 
-## Step 3: Skills Auto-Wiring
+## Step 3: Skills Auto-Wiring — COMPLETE
 
 **Goal**: Every meaningful tool interaction automatically updates the skills matrix in real-time.
 
@@ -207,7 +211,7 @@ The existing saved-work flow (`/api/user/saved-work` POST → `awardSavedWorkSki
 
 ---
 
-## Step 4: Tool Creation Formula
+## Step 4: Tool Creation Formula — COMPLETE
 
 **Goal**: Codify the process so every new tool is born with tracking, skills, and allocation correctly wired.
 
