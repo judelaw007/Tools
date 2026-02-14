@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { unsealSession } from '@/lib/secure-session';
 
 /**
  * Authentication & Access Control Middleware
@@ -48,28 +49,29 @@ const publicExactRoutes = [
 const adminOnlyRoutes = ['/admin'];
 
 /**
- * Parse session data from cookie
+ * Parse session data from cookie (sealed or legacy base64)
  */
-function parseSession(sessionCookie: string | undefined): {
+async function parseSessionFromCookie(sessionCookie: string | undefined): Promise<{
   email?: string;
   role?: 'user' | 'admin' | 'super_admin';
   learnworldsId?: string;
   enrollments?: Array<{ product_id: string }>;
   lastEnrollmentCheck?: string;
-} | null {
+} | null> {
   if (!sessionCookie) return null;
-
-  try {
-    return JSON.parse(Buffer.from(sessionCookie, 'base64').toString());
-  } catch {
-    return null;
-  }
+  return unsealSession(sessionCookie) as Promise<{
+    email?: string;
+    role?: 'user' | 'admin' | 'super_admin';
+    learnworldsId?: string;
+    enrollments?: Array<{ product_id: string }>;
+    lastEnrollmentCheck?: string;
+  } | null>;
 }
 
 /**
  * Check if enrollment refresh is needed (every 24 hours)
  */
-function needsEnrollmentRefresh(session: ReturnType<typeof parseSession>): boolean {
+function needsEnrollmentRefresh(session: Awaited<ReturnType<typeof parseSessionFromCookie>>): boolean {
   // No session or admin - no refresh needed
   if (!session || session.role === 'admin' || session.role === 'super_admin') {
     return false;
@@ -92,6 +94,25 @@ function needsEnrollmentRefresh(session: ReturnType<typeof parseSession>): boole
 }
 
 /**
+ * Add security headers to a response
+ */
+function addSecurityHeaders(response: NextResponse): NextResponse {
+  response.headers.set('X-Frame-Options', 'DENY');
+  response.headers.set('X-Content-Type-Options', 'nosniff');
+  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  response.headers.set('X-XSS-Protection', '1; mode=block');
+  response.headers.set(
+    'Strict-Transport-Security',
+    'max-age=31536000; includeSubDomains'
+  );
+  response.headers.set(
+    'Content-Security-Policy',
+    "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' https://*.supabase.co data:; connect-src 'self' https://*.supabase.co; font-src 'self' data:; frame-ancestors 'none';"
+  );
+  return response;
+}
+
+/**
  * Check if route is public (doesn't require auth)
  */
 function isPublicRoute(pathname: string): boolean {
@@ -103,21 +124,21 @@ function isPublicRoute(pathname: string): boolean {
   return publicRoutes.some((route) => pathname.startsWith(route));
 }
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // ========================================
   // PUBLIC ROUTES - No auth required
   // ========================================
   if (isPublicRoute(pathname)) {
-    return NextResponse.next();
+    return addSecurityHeaders(NextResponse.next());
   }
 
   // Get session cookie
   const sessionCookie = request.cookies.get(SESSION_COOKIE_NAME)?.value;
 
-  // Parse session data
-  const session = parseSession(sessionCookie);
+  // Parse session data (supports sealed + legacy base64)
+  const session = await parseSessionFromCookie(sessionCookie);
 
   // Check authentication status - must have valid session with email
   const authenticated = !!session?.email;
@@ -161,7 +182,7 @@ export function middleware(request: NextRequest) {
   // AUTHENTICATED USER - Allow access
   // Tool access control happens at page/component level
   // ========================================
-  return NextResponse.next();
+  return addSecurityHeaders(NextResponse.next());
 }
 
 export const config = {

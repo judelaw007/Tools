@@ -3,71 +3,34 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { User, AuthState } from './types';
 
-const SESSION_COOKIE_NAME = 'mojitax-session';
-
 interface AuthContextType extends AuthState {
   logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-function getCookie(name: string): string | null {
-  if (typeof document === 'undefined') return null;
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop()?.split(';').shift() || null;
-  return null;
-}
-
-/**
- * Parse the mojitax-session cookie to get user info
- */
-function parseSessionCookie(): User | null {
-  const sessionCookie = getCookie(SESSION_COOKIE_NAME);
-  if (!sessionCookie) return null;
-
-  try {
-    // URL decode the cookie first in case it was encoded
-    let cookieValue = sessionCookie;
-    try {
-      cookieValue = decodeURIComponent(sessionCookie);
-    } catch {
-      // If decoding fails, use the original value
-    }
-
-    const decoded = atob(cookieValue);
-    const session = JSON.parse(decoded);
-
-    if (session.email) {
-      return {
-        id: session.learnworldsId || session.email,
-        name: session.learnworldsUser?.username || session.email.split('@')[0],
-        email: session.email,
-        role: session.role || 'user',
-      };
-    }
-  } catch (e) {
-    // Silently fail - user is not authenticated
-    // Clear the invalid cookie
-    if (typeof document !== 'undefined') {
-      document.cookie = `${SESSION_COOKIE_NAME}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
-    }
-  }
-
-  return null;
-}
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Check for existing session on mount
+  // Fetch session from server (cookie is httpOnly, can't read client-side)
   useEffect(() => {
-    const sessionUser = parseSessionCookie();
-    if (sessionUser) {
-      setUser(sessionUser);
-    }
-    setIsLoading(false);
+    fetch('/api/auth/me')
+      .then((res) => {
+        if (!res.ok) return null;
+        return res.json();
+      })
+      .then((data) => {
+        if (data?.authenticated && data.user) {
+          setUser(data.user);
+        }
+      })
+      .catch(() => {
+        // Not authenticated or network error
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
   }, []);
 
   const logout = useCallback(async () => {

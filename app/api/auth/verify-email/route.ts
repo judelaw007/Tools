@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { learnworlds } from '@/lib/learnworlds';
+import { sealSession } from '@/lib/secure-session';
 
 /**
  * POST /api/auth/verify-email
@@ -74,8 +75,8 @@ export async function POST(request: NextRequest) {
       lastEnrollmentCheck: now, // Set initial check time to prevent immediate refresh
     };
 
-    // Encode session data
-    const encodedSession = Buffer.from(JSON.stringify(sessionData)).toString('base64');
+    // Encrypt session data
+    const encodedSession = await sealSession(sessionData);
 
     // Create response with session cookies
     const response = NextResponse.json({
@@ -88,9 +89,8 @@ export async function POST(request: NextRequest) {
     });
 
     // Set session cookie (7 days expiry)
-    // httpOnly: false so client-side auth context can read the session
     const cookieOptions = {
-      httpOnly: false,
+      httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax' as const,
       maxAge: 60 * 60 * 24 * 7, // 7 days

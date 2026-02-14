@@ -7,6 +7,7 @@
 
 import { cookies } from 'next/headers';
 import { getCoursesForTool } from '@/lib/course-allocations';
+import { unsealSession } from '@/lib/secure-session';
 
 const STUDENT_VIEW_COOKIE = 'mojitax-student-view';
 
@@ -69,12 +70,8 @@ export async function getServerSession(): Promise<ServerSessionData | null> {
 
   if (!sessionCookie) return null;
 
-  try {
-    const decoded = Buffer.from(sessionCookie, 'base64').toString('utf-8');
-    return JSON.parse(decoded);
-  } catch {
-    return null;
-  }
+  const data = await unsealSession(sessionCookie);
+  return data as ServerSessionData | null;
 }
 
 /**

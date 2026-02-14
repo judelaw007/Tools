@@ -315,9 +315,11 @@ export default async function ToolPage({ params }: ToolPageProps) {
                         {items.map((item, j) => (
                           <li key={j} className="text-slate-600 flex items-start gap-2">
                             <span className="w-1.5 h-1.5 rounded-full bg-mojitax-green mt-2 flex-shrink-0" />
-                            <span dangerouslySetInnerHTML={{
-                              __html: item.replace(/^-\s*/, '').replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-                            }} />
+                            <span>
+                              {item.replace(/^-\s*/, '').split(/\*\*(.+?)\*\*/g).map((part, k) =>
+                                k % 2 === 1 ? <strong key={k}>{part}</strong> : part
+                              )}
+                            </span>
                           </li>
                         ))}
                       </ul>

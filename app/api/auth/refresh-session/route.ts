@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { learnworlds } from '@/lib/learnworlds';
-import { parseSession, encodeSession, SessionData } from '@/lib/session';
+import { parseSession, SessionData } from '@/lib/session';
+import { unsealSession, sealSession } from '@/lib/secure-session';
 
 /**
  * GET /api/auth/refresh-session
@@ -23,8 +24,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect('https://www.mojitax.co.uk');
   }
 
-  // Parse session
-  const session = parseSession(sessionCookie);
+  // Parse session (try sealed first, then legacy base64)
+  const session = (await unsealSession(sessionCookie)) as SessionData | null;
   if (!session) {
     // Invalid session - clear and redirect
     const response = NextResponse.redirect('https://www.mojitax.co.uk');
@@ -85,19 +86,16 @@ export async function GET(request: NextRequest) {
     // Create response with redirect
     const response = NextResponse.redirect(new URL(returnTo, request.url));
 
-    // Cookie options - httpOnly: false for client-side auth context
     const cookieOptions = {
-      httpOnly: false,
+      httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax' as const,
       maxAge: 60 * 60 * 24 * 7, // 7 days
       path: '/',
     };
 
-    // Update session cookie
-    response.cookies.set('mojitax-session', encodeSession(updatedSession), cookieOptions);
-
-    console.log(`Session refreshed for ${session.email}: ${enrollments.length} enrollments`);
+    // Update session cookie with encrypted data
+    response.cookies.set('mojitax-session', await sealSession(updatedSession as unknown as Record<string, unknown>), cookieOptions);
 
     return response;
   } catch (error) {
@@ -113,9 +111,9 @@ export async function GET(request: NextRequest) {
     const response = NextResponse.redirect(new URL(returnTo, request.url));
     response.cookies.set(
       'mojitax-session',
-      encodeSession(updatedSession),
+      await sealSession(updatedSession as unknown as Record<string, unknown>),
       {
-        httpOnly: false, // Must match for client-side auth
+        httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax' as const,
         maxAge: 60 * 60 * 24 * 7,

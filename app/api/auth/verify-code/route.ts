@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { learnworlds } from '@/lib/learnworlds';
 import { verifyCode } from '@/lib/auth/verification-codes';
+import { sealSession } from '@/lib/secure-session';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 /**
  * POST /api/auth/verify-code
@@ -15,6 +17,14 @@ import { verifyCode } from '@/lib/auth/verification-codes';
  * 5. Return success with redirect URL
  */
 export async function POST(request: NextRequest) {
+  // Rate limit: 10 requests per IP per 15 minutes
+  const rateLimited = checkRateLimit(request, {
+    limit: 10,
+    windowMs: 15 * 60 * 1000,
+    prefix: 'verify-code',
+  });
+  if (rateLimited) return rateLimited;
+
   try {
     const { email, code, returnTo = '/dashboard', rememberMe = true } = await request.json();
 
@@ -92,8 +102,8 @@ export async function POST(request: NextRequest) {
       lastEnrollmentCheck: now,
     };
 
-    // Encode session data
-    const encodedSession = Buffer.from(JSON.stringify(sessionData)).toString('base64');
+    // Encrypt session data
+    const encodedSession = await sealSession(sessionData);
 
     // Create response with session cookies
     const response = NextResponse.json({
@@ -108,7 +118,6 @@ export async function POST(request: NextRequest) {
 
     // Set session cookies
     // rememberMe: true = 30 days, false = session cookie (browser close)
-    // httpOnly: false so client-side auth context can read the session
     const cookieOptions: {
       httpOnly: boolean;
       secure: boolean;
@@ -116,7 +125,7 @@ export async function POST(request: NextRequest) {
       path: string;
       maxAge?: number;
     } = {
-      httpOnly: false, // Must be false for client-side parseSessionCookie()
+      httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       path: '/',
