@@ -22,7 +22,25 @@ No test runner is configured. There are no unit tests in this project.
 
 ## Environment Setup
 
-Copy `.env.local.example` to `.env.local`. Required variables: Supabase credentials (URL, anon key, service role key), LearnWorlds API credentials (client ID/secret, access token), SSO secret, and app URL.
+Copy `.env.local.example` to `.env.local`. On Replit, secrets are configured via the Secrets tab (already provisioned for production). The following environment variables are required:
+
+| Variable | Purpose | Client-exposed |
+|---|---|---|
+| `DATABASE_URL` | PostgreSQL connection string (Supabase) | No |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL | Yes |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anonymous/public key (RLS-restricted) | Yes |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key (bypasses RLS, server-only) | No |
+| `LEARNWORLDS_CLIENT_ID` | LearnWorlds OAuth2 client ID | No |
+| `LEARNWORLDS_CLIENT_SECRET` | LearnWorlds OAuth2 client secret | No |
+| `LEARNWORLDS_ACCESS_TOKEN` | Long-lived LearnWorlds API token | No |
+| `LEARNWORLDS_SCHOOL_URL` | LearnWorlds school base URL | No |
+| `LEARNWORLDS_API_URL` | LearnWorlds API base URL | No |
+| `SSO_SECRET` | Secret for signing SSO tokens | No |
+| `ADMIN_EMAILS` | Comma-separated list of admin email addresses | No |
+| `NEXT_PUBLIC_APP_URL` | Public-facing app URL (tools.mojitax.co.uk) | Yes |
+| `REPLIT_DOMAINS` | Replit-provided domain (auto-set by Replit) | No |
+
+**Important:** Variables prefixed with `NEXT_PUBLIC_` are bundled into client-side JavaScript. Never add secrets to `NEXT_PUBLIC_` variables. All other variables are server-only.
 
 ## Architecture
 
