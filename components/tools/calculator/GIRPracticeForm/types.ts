@@ -108,4 +108,8 @@ export interface GIRPracticeFormProps {
   onLoad?: (id: string) => Promise<SavedPracticeSession | null>;
   onDelete?: (id: string) => Promise<void>;
   savedItems?: SavedPracticeSession[];
+  onTrackCalculation?: (stepName: string, metadata?: Record<string, unknown>) => void;
+  onTrackStepChange?: (fromStep: number | string, toStep: number | string) => void;
+  onTrackError?: (errorMessage: string, context?: Record<string, unknown>) => void;
+  onTrackCompletion?: (metadata?: Record<string, unknown>) => void;
 }

@@ -16,6 +16,7 @@ import type { Tool } from '@/types';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Loader2, Calculator, AlertCircle } from 'lucide-react';
 import { useSavedWork, SavedWorkItem } from '@/hooks/useSavedWork';
+import { useToolTracking } from '@/hooks/useToolTracking';
 
 interface ToolPageClientProps {
   tool: Tool;
@@ -37,6 +38,14 @@ type SavedItemData = SavedCalculation | SavedAssessment | SavedDeadlineCalculati
  * localStorage if the API is unavailable.
  */
 export function ToolPageClient({ tool, userEmail }: ToolPageClientProps) {
+  // Journey tracking
+  const tracking = useToolTracking({
+    toolId: tool.id,
+    toolName: tool.name,
+    toolCategory: tool.category,
+    userEmail,
+  });
+
   // Use the centralized saved work hook - persists to database with localStorage fallback
   const {
     items: savedWorkItems,
@@ -116,6 +125,10 @@ export function ToolPageClient({ tool, userEmail }: ToolPageClientProps) {
             onSave={handleSave as (data: Omit<SavedCalculation, 'id' | 'updatedAt'>) => Promise<string>}
             onDelete={handleDelete}
             savedItems={savedItems as SavedCalculation[]}
+            onTrackCalculation={tracking.trackCalculation}
+            onTrackStepChange={tracking.trackStepChange}
+            onTrackError={tracking.trackError}
+            onTrackCompletion={tracking.trackCompletion}
           />
         </>
       );
@@ -131,6 +144,9 @@ export function ToolPageClient({ tool, userEmail }: ToolPageClientProps) {
             onSave={handleSave as (data: Omit<SavedAssessment, 'id' | 'updatedAt'>) => Promise<string>}
             onDelete={handleDelete}
             savedItems={savedItems as SavedAssessment[]}
+            onTrackCalculation={tracking.trackCalculation}
+            onTrackError={tracking.trackError}
+            onTrackCompletion={tracking.trackCompletion}
           />
         </>
       );
@@ -146,6 +162,9 @@ export function ToolPageClient({ tool, userEmail }: ToolPageClientProps) {
             onSave={handleSave as (data: Omit<SavedDeadlineCalculation, 'id' | 'updatedAt'>) => Promise<string>}
             onDelete={handleDelete}
             savedItems={savedItems as SavedDeadlineCalculation[]}
+            onTrackCalculation={tracking.trackCalculation}
+            onTrackError={tracking.trackError}
+            onTrackCompletion={tracking.trackCompletion}
           />
         </>
       );
@@ -161,6 +180,10 @@ export function ToolPageClient({ tool, userEmail }: ToolPageClientProps) {
             onSave={handleSave as (data: Omit<SavedPracticeSession, 'id' | 'updatedAt'>) => Promise<string>}
             onDelete={handleDelete}
             savedItems={savedItems as SavedPracticeSession[]}
+            onTrackCalculation={tracking.trackCalculation}
+            onTrackStepChange={tracking.trackStepChange}
+            onTrackError={tracking.trackError}
+            onTrackCompletion={tracking.trackCompletion}
           />
         </>
       );
@@ -176,6 +199,9 @@ export function ToolPageClient({ tool, userEmail }: ToolPageClientProps) {
             onSave={handleSave as (data: Omit<SavedDFEAssessment, 'id' | 'updatedAt'>) => Promise<string>}
             onDelete={handleDelete}
             savedItems={savedItems as SavedDFEAssessment[]}
+            onTrackCalculation={tracking.trackCalculation}
+            onTrackStepChange={tracking.trackStepChange}
+            onTrackCompletion={tracking.trackCompletion}
           />
         </>
       );
@@ -191,6 +217,9 @@ export function ToolPageClient({ tool, userEmail }: ToolPageClientProps) {
             onSave={handleSave as (data: Omit<SavedAuditChecklist, 'id' | 'updatedAt'>) => Promise<string>}
             onDelete={handleDelete}
             savedItems={savedItems as SavedAuditChecklist[]}
+            onTrackCalculation={tracking.trackCalculation}
+            onTrackStepChange={tracking.trackStepChange}
+            onTrackCompletion={tracking.trackCompletion}
           />
         </>
       );

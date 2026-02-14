@@ -66,6 +66,9 @@ export function SafeHarbourQualifier({
   onSave,
   onDelete,
   savedItems = [],
+  onTrackCalculation,
+  onTrackError,
+  onTrackCompletion,
 }: SafeHarbourQualifierProps) {
   // Form state
   const [mneName, setMneName] = useState('');
@@ -178,13 +181,16 @@ export function SafeHarbourQualifier({
       qualifyingTest = 'routine_profits';
     }
 
+    const overallQualifies = qualifyingTest !== null;
     setResult({
       deMinimis,
       simplifiedETR,
       routineProfits,
-      overallQualifies: qualifyingTest !== null,
+      overallQualifies,
       qualifyingTest,
     });
+    onTrackCalculation?.('assessment', { overallQualifies, qualifyingTest });
+    onTrackCompletion?.({ overallQualifies, qualifyingTest });
   };
 
   // Save assessment
