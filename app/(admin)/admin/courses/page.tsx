@@ -80,9 +80,18 @@ export default function AdminCoursesPage() {
   const testConnection = async () => {
     setIsRefreshing(true);
     try {
-      const response = await fetch('/api/learnworlds/test');
+      const response = await fetch('/api/admin/courses/list');
       const data = await response.json();
-      setConnectionStatus(data);
+      // Map response to expected connection status shape
+      setConnectionStatus({
+        success: data.success,
+        configured: true,
+        message: data.success
+          ? `Found ${data.courses?.length || 0} products`
+          : (data.error || 'Failed to fetch products'),
+        courses: data.courses || [],
+        courseCount: data.courses?.length || 0,
+      });
     } catch (error) {
       setConnectionStatus({
         success: false,

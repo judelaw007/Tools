@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { learnworlds } from '@/lib/learnworlds';
 import { createVerificationCode, getCodeExpirySeconds } from '@/lib/auth/verification-codes';
 import { sendVerificationCodeEmail, isEmailConfigured } from '@/lib/email';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 /**
  * POST /api/auth/send-code
@@ -16,6 +17,14 @@ import { sendVerificationCodeEmail, isEmailConfigured } from '@/lib/email';
  * 5. Return success with masked email
  */
 export async function POST(request: NextRequest) {
+  // Rate limit: 5 requests per IP per 15 minutes
+  const rateLimited = checkRateLimit(request, {
+    limit: 5,
+    windowMs: 15 * 60 * 1000,
+    prefix: 'send-code',
+  });
+  if (rateLimited) return rateLimited;
+
   try {
     const { email } = await request.json();
 
@@ -47,7 +56,6 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify user exists in LearnWorlds
-    console.log('Looking up user in LearnWorlds:', normalizedEmail);
     let lwUser;
     try {
       lwUser = await learnworlds.getUserByEmail(normalizedEmail);
@@ -63,7 +71,6 @@ export async function POST(request: NextRequest) {
     }
 
     if (!lwUser) {
-      console.log('User not found in LearnWorlds:', normalizedEmail);
       return NextResponse.json(
         {
           error: 'Account not found',
@@ -72,8 +79,6 @@ export async function POST(request: NextRequest) {
         { status: 404 }
       );
     }
-
-    console.log('User found in LearnWorlds:', lwUser.id);
 
     // Create verification code
     const codeResult = await createVerificationCode(normalizedEmail);

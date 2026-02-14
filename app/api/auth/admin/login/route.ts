@@ -1,7 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { signInAdmin } from '@/lib/supabase/admin-auth';
+import { sealSession } from '@/lib/secure-session';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 export async function POST(request: NextRequest) {
+  // Rate limit: 5 requests per IP per 15 minutes
+  const rateLimited = checkRateLimit(request, {
+    limit: 5,
+    windowMs: 15 * 60 * 1000,
+    prefix: 'admin-login',
+  });
+  if (rateLimited) return rateLimited;
+
   try {
     const { email, password } = await request.json();
 
@@ -28,8 +38,8 @@ export async function POST(request: NextRequest) {
       authenticatedAt: new Date().toISOString(),
     };
 
-    // Encode session data
-    const encodedSession = Buffer.from(JSON.stringify(sessionData)).toString('base64');
+    // Encrypt session data
+    const encodedSession = await sealSession(sessionData);
 
     // Create response
     const response = NextResponse.json({
@@ -49,7 +59,7 @@ export async function POST(request: NextRequest) {
       path: string;
       maxAge: number;
     } = {
-      httpOnly: false, // Must be false for client-side auth context
+      httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       path: '/',

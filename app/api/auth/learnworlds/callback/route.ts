@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { learnworlds, syncLearnWorldsUser, LearnWorldsEnrollment } from '@/lib/learnworlds';
 import { cookies } from 'next/headers';
 import { logActivity, extractRequestInfo } from '@/lib/activity-logs';
+import { sealSession } from '@/lib/secure-session';
 
 const AUTH_COOKIE_NAME = 'mojitax-auth';
 const SESSION_COOKIE_NAME = 'mojitax-session';
@@ -105,14 +106,16 @@ export async function GET(request: NextRequest) {
     response.cookies.set(AUTH_COOKIE_NAME, sessionData.role, {
       path: '/',
       maxAge: 60 * 60 * 24 * 7, // 7 days
-      httpOnly: false,
+      httpOnly: true,
       sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
     });
 
-    // Set session cookie with user data (encrypted in production)
+    // Set session cookie with sealed (encrypted + signed) data
+    const sealedSession = await sealSession(sessionData as unknown as Record<string, unknown>);
     response.cookies.set(
       SESSION_COOKIE_NAME,
-      Buffer.from(JSON.stringify(sessionData)).toString('base64'),
+      sealedSession,
       {
         path: '/',
         maxAge: 60 * 60 * 24 * 7, // 7 days

@@ -78,7 +78,6 @@ class LearnWorldsClient {
    */
   async getUserByEmail(email: string): Promise<LearnWorldsUser | null> {
     const normalizedEmail = email.toLowerCase().trim();
-    console.log(`Looking up user in LearnWorlds: ${normalizedEmail}`);
 
     try {
       // First try the direct email query (in case it works for some schools)
@@ -91,12 +90,10 @@ class LearnWorldsClient {
       );
 
       if (directUser) {
-        console.log(`Found user via direct query: ${directUser.email}`);
         return directUser;
       }
 
       // If direct query didn't work, search through paginated results
-      console.log(`Direct query failed, searching through all users...`);
       let page = 1;
       const itemsPerPage = 50;
       let hasMore = true;
@@ -114,7 +111,6 @@ class LearnWorldsClient {
         );
 
         if (matchingUser) {
-          console.log(`Found user on page ${page}: ${matchingUser.email}`);
           return matchingUser;
         }
 
@@ -131,7 +127,6 @@ class LearnWorldsClient {
         }
       }
 
-      console.log(`User not found in LearnWorlds: ${normalizedEmail}`);
       return null;
     } catch (error) {
       console.error('Error fetching user by email:', error);
@@ -427,7 +422,7 @@ class LearnWorldsClient {
       );
 
       const enrolledCourses = enrollmentResponse.data || [];
-      console.log(`User ${userId} is enrolled in ${enrolledCourses.length} courses`);
+      // User is enrolled in enrolledCourses.length courses
 
       if (enrolledCourses.length === 0) {
         return [];
@@ -454,9 +449,6 @@ class LearnWorldsClient {
           }>(
             `/v2/users/${userId}/courses/${courseId}/progress`
           );
-
-          // Log only key fields, not the entire massive response with units
-          console.log(`Progress for course ${courseId}: completed_at=${progressResponse.completed_at}, completed=${progressResponse.completed}, pct_completed=${progressResponse.pct_completed}, score=${progressResponse.score}`);
 
           // LearnWorlds uses completed_at as the primary completion indicator
           // If completed_at is a valid timestamp (not null/undefined), the course is completed
@@ -516,9 +508,6 @@ class LearnWorldsClient {
 
       // Filter out nulls and log summary
       const validResults = results.filter((r): r is LearnWorldsCourseProgress => r !== null);
-      const completedCount = validResults.filter(r => r.completed).length;
-      console.log(`Fetched progress for ${validResults.length} courses, ${completedCount} completed`);
-
       return validResults;
     } catch (error) {
       console.error('Error fetching user course progress:', error);

@@ -109,7 +109,7 @@ export async function refreshEnrollments(
 
     // User no longer exists - invalidate session immediately
     if (!user) {
-      console.log(`User ${session.email} no longer exists in LearnWorlds - invalidating session`);
+      // User no longer exists in LearnWorlds
       return null;
     }
 

@@ -177,20 +177,10 @@ export function evaluateFormula(
   variables: Record<string, number>
 ): number {
   try {
-    // Replace variable names with values
-    let expression = formula;
-    for (const [name, value] of Object.entries(variables)) {
-      expression = expression.replace(new RegExp(name, 'g'), value.toString());
-    }
-    
-    // Only allow safe characters: numbers, operators, parentheses, decimal points
-    if (!/^[\d\s+\-*/().]+$/.test(expression)) {
-      throw new Error('Invalid formula');
-    }
-    
-    // Evaluate the expression
-    // eslint-disable-next-line no-new-func
-    return new Function(`return ${expression}`)() as number;
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { Parser } = require('expr-eval');
+    const parser = new Parser();
+    return parser.evaluate(formula, variables) as number;
   } catch {
     return 0;
   }

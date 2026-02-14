@@ -202,7 +202,7 @@ export default function AdminSkillsPage() {
   const fetchCourses = useCallback(async () => {
     setIsLoadingCourses(true);
     try {
-      const response = await fetch('/api/learnworlds/test');
+      const response = await fetch('/api/admin/courses/list');
       const data = await response.json();
       if (data.success && data.courses) {
         setAvailableCourses(data.courses.filter((c: Course) => c.type === 'course'));
