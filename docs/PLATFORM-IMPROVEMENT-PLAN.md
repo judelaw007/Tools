@@ -69,7 +69,7 @@ Add allocation check — return 404 for unallocated tools via API.
 
 ### 1F. Fix `getCoursesForTool()` in `lib/course-allocations.ts`
 
-Add `.eq('is_active', true)` filter to be consistent with database helper functions.
+Ensure no `is_active` filters are applied (the column does not exist in the deployed database; queries that used it silently returned empty results).
 
 **Files modified**: `lib/db/index.ts`, `app/(public)/tools/[slug]/page.tsx`, `lib/learnworlds/access-control.ts`, `app/api/tools/[slug]/route.ts`, `lib/course-allocations.ts`
 
