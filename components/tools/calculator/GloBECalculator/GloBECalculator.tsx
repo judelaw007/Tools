@@ -71,6 +71,10 @@ export function GloBECalculator({
   onLoad,
   onDelete,
   savedItems = [],
+  onTrackCalculation,
+  onTrackStepChange,
+  onTrackError,
+  onTrackCompletion,
 }: GloBECalculatorProps) {
   // Session state
   const [mneName, setMneName] = useState('');
@@ -111,10 +115,12 @@ export function GloBECalculator({
 
     if (!s1Data.income || inc <= 0) {
       setErrors({ s1: 'GloBE Income must be greater than zero' });
+      onTrackError?.('ETR validation failed', { step: 1 });
       return;
     }
     if (!s1Data.taxes || tax < 0) {
       setErrors({ s1: 'Covered Taxes cannot be negative' });
+      onTrackError?.('ETR validation failed', { step: 1 });
       return;
     }
 
@@ -131,6 +137,7 @@ export function GloBECalculator({
 
     setS1Result({ etr: round(etr, 2), topUpPct: round(topUpPct, 2), status });
     setErrors({});
+    onTrackCalculation?.('etr', { etr: round(etr, 2), status });
     if (!unlockedSteps.includes(2)) setUnlockedSteps([...unlockedSteps, 2]);
   };
 
@@ -141,10 +148,12 @@ export function GloBECalculator({
 
     if (isNaN(pay) || pay < 0) {
       setErrors({ s2: 'Invalid Payroll amount' });
+      onTrackError?.('SBIE validation failed', { step: 2 });
       return;
     }
     if (isNaN(ast) || ast < 0) {
       setErrors({ s2: 'Invalid Asset amount' });
+      onTrackError?.('SBIE validation failed', { step: 2 });
       return;
     }
 
@@ -160,6 +169,7 @@ export function GloBECalculator({
       totalSbie: round(total, 2),
     });
     setErrors({});
+    onTrackCalculation?.('sbie', { totalSbie: round(total, 2) });
     if (!unlockedSteps.includes(3)) setUnlockedSteps([...unlockedSteps, 3]);
   };
 
@@ -174,6 +184,7 @@ export function GloBECalculator({
 
     if (qdmtt < 0) {
       setErrors({ s3: 'QDMTT cannot be negative' });
+      onTrackError?.('TopUp validation failed', { step: 3 });
       return;
     }
 
@@ -195,6 +206,8 @@ export function GloBECalculator({
       status,
     });
     setErrors({});
+    onTrackCalculation?.('topup', { netTopUp: round(net, 2), status });
+    onTrackCompletion?.({ netTopUp: round(net, 2), status });
   };
 
   // Save calculation
@@ -332,7 +345,12 @@ export function GloBECalculator({
         return (
           <button
             key={step.id}
-            onClick={() => isUnlocked && setActiveStep(step.id)}
+            onClick={() => {
+              if (isUnlocked) {
+                onTrackStepChange?.(activeStep, step.id);
+                setActiveStep(step.id);
+              }
+            }}
             disabled={!isUnlocked}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all relative ${
               isActive
@@ -600,7 +618,10 @@ export function GloBECalculator({
                             </div>
                           </div>
                           <Button
-                            onClick={() => setActiveStep(2)}
+                            onClick={() => {
+                              onTrackStepChange?.(1, 2);
+                              setActiveStep(2);
+                            }}
                             variant="secondary"
                             className="w-full"
                           >
@@ -708,7 +729,10 @@ export function GloBECalculator({
                             </div>
                           </div>
                           <Button
-                            onClick={() => setActiveStep(3)}
+                            onClick={() => {
+                              onTrackStepChange?.(2, 3);
+                              setActiveStep(3);
+                            }}
                             variant="secondary"
                             className="w-full mt-4"
                           >

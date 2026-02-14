@@ -44,6 +44,9 @@ export function FilingDeadlineCalculator({
   onSave,
   onDelete,
   savedItems = [],
+  onTrackCalculation,
+  onTrackError,
+  onTrackCompletion,
 }: FilingDeadlineCalculatorProps) {
   // Form state
   const [mneName, setMneName] = useState('');
@@ -96,6 +99,7 @@ export function FilingDeadlineCalculator({
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
+      onTrackError?.('Deadline validation failed', { errors: newErrors });
       return null;
     }
 
@@ -130,6 +134,8 @@ export function FilingDeadlineCalculator({
     setResult(calcResult);
     setErrors({});
     setShowMilestones(true);
+    onTrackCalculation?.('deadline', { daysRemaining, isFirst, jurisdiction: jurisdiction.name });
+    onTrackCompletion?.({ daysRemaining });
 
     setTimeout(() => {
       resultsRef.current?.scrollIntoView({ behavior: 'smooth' });

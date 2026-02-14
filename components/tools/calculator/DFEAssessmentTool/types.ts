@@ -47,6 +47,9 @@ export interface DFEAssessmentToolProps {
   onSave?: (data: Omit<SavedDFEAssessment, 'id' | 'updatedAt'>) => Promise<string>;
   onDelete?: (id: string) => Promise<void>;
   savedItems?: SavedDFEAssessment[];
+  onTrackCalculation?: (stepName: string, metadata?: Record<string, unknown>) => void;
+  onTrackStepChange?: (fromStep: number | string, toStep: number | string) => void;
+  onTrackCompletion?: (metadata?: Record<string, unknown>) => void;
 }
 
 export interface SelectOption {

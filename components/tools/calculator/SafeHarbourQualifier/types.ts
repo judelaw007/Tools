@@ -84,4 +84,7 @@ export interface SafeHarbourQualifierProps {
   onLoad?: (id: string) => Promise<SavedAssessment | null>;
   onDelete?: (id: string) => Promise<void>;
   savedItems?: SavedAssessment[];
+  onTrackCalculation?: (stepName: string, metadata?: Record<string, unknown>) => void;
+  onTrackError?: (errorMessage: string, context?: Record<string, unknown>) => void;
+  onTrackCompletion?: (metadata?: Record<string, unknown>) => void;
 }

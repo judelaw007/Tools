@@ -49,4 +49,7 @@ export interface FilingDeadlineCalculatorProps {
   onLoad?: (id: string) => Promise<SavedDeadlineCalculation | null>;
   onDelete?: (id: string) => Promise<void>;
   savedItems?: SavedDeadlineCalculation[];
+  onTrackCalculation?: (stepName: string, metadata?: Record<string, unknown>) => void;
+  onTrackError?: (errorMessage: string, context?: Record<string, unknown>) => void;
+  onTrackCompletion?: (metadata?: Record<string, unknown>) => void;
 }

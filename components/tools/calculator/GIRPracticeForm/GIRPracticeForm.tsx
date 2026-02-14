@@ -45,6 +45,10 @@ export function GIRPracticeForm({
   onSave,
   onDelete,
   savedItems = [],
+  onTrackCalculation,
+  onTrackStepChange,
+  onTrackError,
+  onTrackCompletion,
 }: GIRPracticeFormProps) {
   const [activeTab, setActiveTab] = useState(1);
   const [activeField, setActiveField] = useState<string | null>(null);
@@ -82,6 +86,8 @@ export function GIRPracticeForm({
         section2,
         section3,
       });
+      onTrackCalculation?.('gir_save', { jurisdictionCount: section3.length });
+      onTrackCompletion?.({ jurisdictionCount: section3.length });
     } catch (error) {
       console.error('Error saving:', error);
     } finally {
@@ -800,20 +806,29 @@ export function GIRPracticeForm({
           <div className="flex space-x-1 overflow-x-auto pb-1">
             <TabButton
               active={activeTab === 1}
-              onClick={() => setActiveTab(1)}
+              onClick={() => {
+                onTrackStepChange?.(activeTab, 1);
+                setActiveTab(1);
+              }}
               label="Section 1: General"
               icon={FileText}
             />
             <TabButton
               active={activeTab === 2}
-              onClick={() => setActiveTab(2)}
+              onClick={() => {
+                onTrackStepChange?.(activeTab, 2);
+                setActiveTab(2);
+              }}
               label="Section 2: Structure"
               icon={Layout}
               count={section2.length}
             />
             <TabButton
               active={activeTab === 3}
-              onClick={() => setActiveTab(3)}
+              onClick={() => {
+                onTrackStepChange?.(activeTab, 3);
+                setActiveTab(3);
+              }}
               label="Section 3: GloBE Calc"
               icon={Calculator}
               count={section3.length}

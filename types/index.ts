@@ -265,6 +265,13 @@ export interface ToolFormData {
   config: ToolConfig;
 }
 
+export interface ToolTrackingProps {
+  onTrackCalculation?: (stepName: string, metadata?: Record<string, unknown>) => void;
+  onTrackStepChange?: (fromStep: number | string, toStep: number | string) => void;
+  onTrackError?: (errorMessage: string, context?: Record<string, unknown>) => void;
+  onTrackCompletion?: (metadata?: Record<string, unknown>) => void;
+}
+
 export interface CourseFormData {
   name: string;
   slug: string;

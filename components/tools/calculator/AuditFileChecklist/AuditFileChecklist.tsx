@@ -44,6 +44,9 @@ type FilterMode = 'ALL' | 'INCOMPLETE' | 'CRITICAL';
 export function AuditFileChecklist({
   onSave,
   savedItems = [],
+  onTrackCalculation,
+  onTrackStepChange,
+  onTrackCompletion,
 }: AuditFileChecklistProps) {
   const [view, setView] = useState<ViewMode>('SETUP');
 
@@ -123,6 +126,12 @@ export function AuditFileChecklist({
         metadata,
         itemStates,
       });
+      if (stats.overallStatus === 'COMPLETE' || stats.overallStatus === 'SUBSTANTIALLY_COMPLETE') {
+        onTrackCalculation?.('checklist_progress', { percent: stats.percent, overallStatus: stats.overallStatus });
+      }
+      if (stats.percent === 100) {
+        onTrackCompletion?.({ percent: 100, overallStatus: stats.overallStatus });
+      }
       alert('Audit checklist saved successfully.');
     } catch {
       alert('Save failed.');
@@ -310,7 +319,10 @@ export function AuditFileChecklist({
 
           <div className="mt-8 flex justify-end">
             <Button
-              onClick={() => setView('DASHBOARD')}
+              onClick={() => {
+                onTrackStepChange?.(view, 'DASHBOARD');
+                setView('DASHBOARD');
+              }}
               disabled={!metadata.entityName}
               className="bg-mojitax-green hover:bg-mojitax-green/90"
             >
@@ -462,12 +474,18 @@ export function AuditFileChecklist({
         </div>
         <div className="flex gap-3">
           <Button
-            onClick={() => setView('CHECKLIST')}
+            onClick={() => {
+              onTrackStepChange?.(view, 'CHECKLIST');
+              setView('CHECKLIST');
+            }}
             className="bg-mojitax-green hover:bg-mojitax-green/90"
           >
             View Full Checklist
           </Button>
-          <Button variant="outline" onClick={() => setView('GAP')}>
+          <Button variant="outline" onClick={() => {
+            onTrackStepChange?.(view, 'GAP');
+            setView('GAP');
+          }}>
             Gap Analysis
           </Button>
         </div>
@@ -744,24 +762,36 @@ export function AuditFileChecklist({
           <div className="flex space-x-1 overflow-x-auto px-2">
             <NavTab
               active={view === 'DASHBOARD'}
-              onClick={() => setView('DASHBOARD')}
+              onClick={() => {
+                onTrackStepChange?.(view, 'DASHBOARD');
+                setView('DASHBOARD');
+              }}
               icon={PieChart}
               label="Dashboard"
             />
             <NavTab
               active={view === 'CHECKLIST'}
-              onClick={() => setView('CHECKLIST')}
+              onClick={() => {
+                onTrackStepChange?.(view, 'CHECKLIST');
+                setView('CHECKLIST');
+              }}
               icon={List}
               label="Checklist"
             />
             <NavTab
               active={view === 'GAP'}
-              onClick={() => setView('GAP')}
+              onClick={() => {
+                onTrackStepChange?.(view, 'GAP');
+                setView('GAP');
+              }}
               icon={AlertTriangle}
               label="Gap Analysis"
             />
             <button
-              onClick={() => setView('SETUP')}
+              onClick={() => {
+                onTrackStepChange?.(view, 'SETUP');
+                setView('SETUP');
+              }}
               className="ml-auto px-4 py-3 text-sm font-medium text-slate-500 hover:text-mojitax-green flex items-center"
             >
               <ChevronDown className="w-4 h-4 mr-1" />

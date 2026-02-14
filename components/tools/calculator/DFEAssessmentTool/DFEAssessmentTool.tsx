@@ -45,6 +45,9 @@ export function DFEAssessmentTool({
   onSave,
   onDelete,
   savedItems = [],
+  onTrackCalculation,
+  onTrackStepChange,
+  onTrackCompletion,
 }: DFEAssessmentToolProps) {
   // State
   const [mneInfo, setMneInfo] = useState<MNEInfo>(INITIAL_MNE_INFO);
@@ -533,7 +536,12 @@ export function DFEAssessmentTool({
       {candidates.length > 0 && (
         <div className="flex justify-center pt-8 pb-4">
           <Button
-            onClick={() => setViewMode('RESULTS')}
+            onClick={() => {
+              onTrackStepChange?.('INPUT', 'RESULTS');
+              onTrackCalculation?.('assessment', { candidateCount: candidates.length, topScore: processedResults[0]?.score });
+              onTrackCompletion?.({ candidateCount: candidates.length });
+              setViewMode('RESULTS');
+            }}
             size="lg"
             className="bg-mojitax-green hover:bg-mojitax-green/90"
           >
