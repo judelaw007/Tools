@@ -54,7 +54,7 @@ export async function getCoursesForTool(toolId: string): Promise<string[]> {
       .from('course_tool_allocations')
       .select('course_id')
       .eq('tool_id', toolId)
-      .eq('is_active', true);
+      .neq('is_active', false);
 
     if (error) {
       console.error('Error fetching courses for tool:', error);
@@ -321,7 +321,7 @@ export async function getCoursesForToolWithNames(toolId: string): Promise<Course
       .from('course_tool_allocations')
       .select('course_id, course_name, tool_id')
       .eq('tool_id', toolId)
-      .eq('is_active', true);
+      .neq('is_active', false);
 
     if (error) {
       console.error('Error fetching courses for tool:', error);

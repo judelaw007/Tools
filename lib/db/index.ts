@@ -89,7 +89,7 @@ export async function getAllocatedToolIds(): Promise<Set<string>> {
     const { data } = await supabase
       .from('course_tool_allocations')
       .select('tool_id')
-      .eq('is_active', true);
+      .neq('is_active', false);
     return new Set((data || []).map((row: { tool_id: string }) => row.tool_id));
   } catch {
     return new Set();
@@ -339,7 +339,7 @@ export async function getToolsForCourse(courseId: string): Promise<Tool[]> {
         tools (*)
       `)
       .eq('course_id', courseId)
-      .eq('is_active', true)
+      .neq('is_active', false)
       .order('display_order');
 
     if (error) throw error;
@@ -372,7 +372,7 @@ export async function getCourseIdsForTool(toolId: string): Promise<string[]> {
       .from('course_tool_allocations')
       .select('course_id')
       .eq('tool_id', toolId)
-      .eq('is_active', true);
+      .neq('is_active', false);
 
     if (error) throw error;
 
