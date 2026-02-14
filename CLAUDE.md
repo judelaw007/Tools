@@ -64,8 +64,15 @@ The app uses Next.js route groups with middleware-enforced authentication (`midd
 ### Access Control Logic
 User tool access = intersection of user's LearnWorlds enrollments and course-tool allocations in `course_tool_allocations` table. Admins bypass all checks. Enrollments refresh every 24 hours. Implemented in `lib/learnworlds/access-control.ts` and `lib/course-allocations.ts`.
 
+**Tool Visibility Rule**: Tools with zero course allocations are completely invisible to non-admin users. `getPublicTools()` in `lib/db/index.ts` filters through `getAllocatedToolIds()`, the tool page returns `notFound()`, and the API returns 404. The `course_tool_allocations` table does **not** have an `is_active` column in the deployed database — never filter by it.
+
 ### Tool System
-Tools are React components in `components/tools/calculator/`. Each tool (GloBECalculator, FilingDeadlineCalculator, SafeHarbourQualifier, DFEAssessmentTool, GIRPracticeForm, AuditFileChecklist) is a self-contained component. The tool registry at `lib/tools/registry.ts` maps tool types to components and defines metadata for types (calculator, search, validator, generator, tracker, reference, external-link, spreadsheet, form) and categories (transfer_pricing, vat, fatca_crs, withholding_tax, pillar_two, pe_assessment, cross_category).
+Tools are React components in `components/tools/calculator/`. Each tool (GloBECalculator, FilingDeadlineCalculator, SafeHarbourQualifier, DFEAssessmentTool, GIRPracticeForm, AuditFileChecklist) is a self-contained 4-file folder (`types.ts`, `utils.ts`, `ToolName.tsx`, `index.ts`). The tool registry at `lib/tools/registry.ts` maps tool types to components and defines metadata for types (calculator, search, validator, generator, tracker, reference, external-link, spreadsheet, form) and categories (transfer_pricing, vat, fatca_crs, withholding_tax, pillar_two, pe_assessment, cross_category).
+
+**Adding new tools**: Follow the standardised process in `docs/TOOL-CREATION-GUIDE.md`. Key registration points: component folder, `CALCULATOR_COMPONENTS` registry in `components/tools/calculator/index.ts`, render block in `components/tools/ToolPageClient.tsx`, database `tools` record, and `course_tool_allocations` row.
+
+### Journey Tracking
+All 6 tools are instrumented with tracking callbacks via `hooks/useToolTracking.ts`. The hook generates a per-session UUID and fires events to `POST /api/tools/track` (fire-and-forget, `keepalive: true`). The API endpoint writes to `tool_usage_logs`, updates `user_skills` via `incrementToolUsage()` on `calculate` events, updates `user_tool_projects` via `incrementToolProjectCount()` on `workflow_complete` events, and logs to the activity dashboard. Skill auto-levelling: 1-4 uses = familiar, 5-14 = proficient, 15+ = expert.
 
 ### Key Modules in `lib/`
 - `supabase/` — Server/client Supabase clients (service role pattern for server ops)
@@ -79,6 +86,8 @@ Tools are React components in `components/tools/calculator/`. Each tool (GloBECa
 - `skills/` — Skill tracking with auto-detection from usage (1-4 uses = familiar, 5-14 = proficient, 15+ = expert)
 - `skill-verifications/` — QR code verification for skill portfolios
 - `activity-logs/` — User activity tracking
+- `hooks/useToolTracking.ts` — Client-side journey tracking hook (session lifecycle, step changes, calculations, errors, completion)
+- `app/api/tools/track/route.ts` — Server endpoint for tracking events (writes to `tool_usage_logs`, `user_skills`, `user_tool_projects`, `activity_logs`)
 
 ### Security Architecture
 - **Session cookies**: Encrypted with AES-256-GCM (PBKDF2 key derivation from `SSO_SECRET`), `httpOnly`, `secure`, `sameSite=lax`. Format: `salt.iv.ciphertext` (base64url). Legacy base64 sessions are accepted on read but re-sealed on next write.
