@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getToolBySlug } from '@/lib/db';
+import { getCoursesForTool } from '@/lib/course-allocations';
 
 export async function GET(
   request: Request,
@@ -15,11 +16,19 @@ export async function GET(
       );
     }
 
-    // Only return active tools to non-admin users
-    // In production, you would check the user's role here
+    // Only return active tools
     if (tool.status !== 'active') {
       return NextResponse.json(
         { error: 'Tool not available' },
+        { status: 404 }
+      );
+    }
+
+    // Unallocated tools are invisible
+    const allocatedCourses = await getCoursesForTool(tool.id);
+    if (allocatedCourses.length === 0) {
+      return NextResponse.json(
+        { error: 'Tool not found' },
         { status: 404 }
       );
     }

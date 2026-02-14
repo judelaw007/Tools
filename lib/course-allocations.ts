@@ -53,7 +53,8 @@ export async function getCoursesForTool(toolId: string): Promise<string[]> {
     const { data, error } = await supabase
       .from('course_tool_allocations')
       .select('course_id')
-      .eq('tool_id', toolId);
+      .eq('tool_id', toolId)
+      .eq('is_active', true);
 
     if (error) {
       console.error('Error fetching courses for tool:', error);
@@ -319,7 +320,8 @@ export async function getCoursesForToolWithNames(toolId: string): Promise<Course
     const { data, error } = await supabase
       .from('course_tool_allocations')
       .select('course_id, course_name, tool_id')
-      .eq('tool_id', toolId);
+      .eq('tool_id', toolId)
+      .eq('is_active', true);
 
     if (error) {
       console.error('Error fetching courses for tool:', error);
