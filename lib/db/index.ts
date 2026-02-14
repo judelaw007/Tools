@@ -88,8 +88,7 @@ export async function getAllocatedToolIds(): Promise<Set<string>> {
     const supabase = createServiceClient();
     const { data } = await supabase
       .from('course_tool_allocations')
-      .select('tool_id')
-      .neq('is_active', false);
+      .select('tool_id');
     return new Set((data || []).map((row: { tool_id: string }) => row.tool_id));
   } catch {
     return new Set();
@@ -339,7 +338,6 @@ export async function getToolsForCourse(courseId: string): Promise<Tool[]> {
         tools (*)
       `)
       .eq('course_id', courseId)
-      .neq('is_active', false)
       .order('display_order');
 
     if (error) throw error;
@@ -371,8 +369,7 @@ export async function getCourseIdsForTool(toolId: string): Promise<string[]> {
     const { data, error } = await supabase
       .from('course_tool_allocations')
       .select('course_id')
-      .eq('tool_id', toolId)
-      .neq('is_active', false);
+      .eq('tool_id', toolId);
 
     if (error) throw error;
 
