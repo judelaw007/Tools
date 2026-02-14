@@ -35,7 +35,7 @@ Copy `.env.local.example` to `.env.local`. On Replit, secrets are configured via
 | `LEARNWORLDS_ACCESS_TOKEN` | Long-lived LearnWorlds API token | No |
 | `LEARNWORLDS_SCHOOL_URL` | LearnWorlds school base URL | No |
 | `LEARNWORLDS_API_URL` | LearnWorlds API base URL | No |
-| `SSO_SECRET` | Secret for signing SSO tokens | No |
+| `SSO_SECRET` | Secret for session encryption (AES-256-GCM, must be ≥32 chars) | No |
 | `ADMIN_EMAILS` | Comma-separated list of admin email addresses | No |
 | `NEXT_PUBLIC_APP_URL` | Public-facing app URL (tools.mojitax.co.uk) | Yes |
 | `REPLIT_DOMAINS` | Replit-provided domain (auto-set by Replit) | No |
@@ -59,7 +59,7 @@ The app uses Next.js route groups with middleware-enforced authentication (`midd
 - `app/(admin)/` — Requires admin/super_admin role
 - `app/api/` — 35+ API route handlers organized by domain
 
-**No-Door Model**: There is no visible login page. Users arrive via LearnWorlds "Access Tools" button, verify via email code, and get a `mojitax-session` cookie (base64 JSON). Unauthenticated users redirect to mojitax.co.uk. Admin access is at `/auth/admin`.
+**No-Door Model**: There is no visible login page. Users arrive via LearnWorlds "Access Tools" button, verify via email code, and get a `mojitax-session` cookie (AES-256-GCM encrypted, httpOnly). Unauthenticated users redirect to mojitax.co.uk. Admin access is at `/auth/admin`.
 
 ### Access Control Logic
 User tool access = intersection of user's LearnWorlds enrollments and course-tool allocations in `course_tool_allocations` table. Admins bypass all checks. Enrollments refresh every 24 hours. Implemented in `lib/learnworlds/access-control.ts` and `lib/course-allocations.ts`.
@@ -70,11 +70,24 @@ Tools are React components in `components/tools/calculator/`. Each tool (GloBECa
 ### Key Modules in `lib/`
 - `supabase/` — Server/client Supabase clients (service role pattern for server ops)
 - `learnworlds/` — LearnWorlds API client, types, and access control
-- `auth/` — Auth context, types, session handling (`server-session.ts`, `session.ts`)
+- `auth/` — Auth context (`context.tsx` fetches session via `/api/auth/me`), types, session handling
+- `secure-session.ts` — AES-256-GCM session encryption/decryption using Web Crypto API (Edge-compatible)
+- `server-session.ts` — Server-side session reading (uses `unsealSession`)
+- `session.ts` — Session types, enrollment refresh logic
+- `rate-limit.ts` — In-memory IP-based rate limiter for auth endpoints
 - `saved-work/` — User saved work persistence (CRUD against Supabase)
 - `skills/` — Skill tracking with auto-detection from usage (1-4 uses = familiar, 5-14 = proficient, 15+ = expert)
 - `skill-verifications/` — QR code verification for skill portfolios
 - `activity-logs/` — User activity tracking
+
+### Security Architecture
+- **Session cookies**: Encrypted with AES-256-GCM (PBKDF2 key derivation from `SSO_SECRET`), `httpOnly`, `secure`, `sameSite=lax`. Format: `salt.iv.ciphertext` (base64url). Legacy base64 sessions are accepted on read but re-sealed on next write.
+- **Client auth**: `AuthProvider` calls `GET /api/auth/me` to hydrate user state (cookies are httpOnly, not readable via `document.cookie`).
+- **Security headers**: `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy`, HSTS, and CSP are set on all middleware responses.
+- **Rate limiting**: `/api/auth/send-code` (5/15min), `/api/auth/verify-code` (10/15min), `/api/auth/admin/login` (5/15min) per IP.
+- **XSS prevention**: No `dangerouslySetInnerHTML` in codebase. Formula evaluation uses `expr-eval` (no `new Function()`).
+- **Error boundary**: `app/global-error.tsx` catches unhandled errors without leaking stack traces.
+- **Health check**: `GET /api/health` returns `{ status: 'ok' }`.
 
 ### Database Schema
 Defined in `supabase/schema.sql`. Key tables: `tools`, `course_tool_allocations`, `admin_users`, `tool_usage_logs`, `user_saved_work`, `user_skills`, `skill_categories`, `user_skill_progress`, `user_tool_projects`, `user_course_completions`, `skill_verifications`.

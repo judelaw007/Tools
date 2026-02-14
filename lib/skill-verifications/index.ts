@@ -112,8 +112,6 @@ export async function createVerification(
 export async function getVerification(token: string): Promise<VerificationRecord | null> {
   const supabase = getSupabase();
 
-  console.log(`Looking up verification for token: ${token}`);
-
   // First, get the verification
   const { data, error } = await supabase
     .from('skill_verifications')
@@ -126,11 +124,8 @@ export async function getVerification(token: string): Promise<VerificationRecord
     return null;
   }
 
-  console.log(`Found verification for token ${token}, user: ${data.user_name}`);
-
   // Check if expired
   if (data.expires_at && new Date(data.expires_at) < new Date()) {
-    console.log(`Verification ${token} has expired`);
     return null;
   }
 

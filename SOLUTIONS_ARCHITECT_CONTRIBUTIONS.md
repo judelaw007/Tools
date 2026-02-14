@@ -200,7 +200,7 @@ API Structure
 │
 └── /api/
     ├── GET    /verify/skills/[token] # QR verification
-    └── GET    /learnworlds/test      # Health check
+    └── GET    /health                 # Health check
 ```
 
 #### Consistent Response Format

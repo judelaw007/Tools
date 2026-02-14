@@ -97,18 +97,28 @@ function needsEnrollmentRefresh(session: Awaited<ReturnType<typeof parseSessionF
  * Add security headers to a response
  */
 function addSecurityHeaders(response: NextResponse): NextResponse {
-  response.headers.set('X-Frame-Options', 'DENY');
+  const isReplit = !!process.env.REPLIT_DOMAINS;
+
   response.headers.set('X-Content-Type-Options', 'nosniff');
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
   response.headers.set('X-XSS-Protection', '1; mode=block');
-  response.headers.set(
-    'Strict-Transport-Security',
-    'max-age=31536000; includeSubDomains'
-  );
+
+  if (!isReplit) {
+    // Production-only: block framing and enforce HSTS
+    response.headers.set('X-Frame-Options', 'DENY');
+    response.headers.set(
+      'Strict-Transport-Security',
+      'max-age=31536000; includeSubDomains'
+    );
+  }
+
+  // CSP: allow Replit iframe embedding in dev, block in production
+  const frameAncestors = isReplit ? 'frame-ancestors *' : "frame-ancestors 'none'";
   response.headers.set(
     'Content-Security-Policy',
-    "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' https://*.supabase.co data:; connect-src 'self' https://*.supabase.co; font-src 'self' data:; frame-ancestors 'none';"
+    `default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' https://*.supabase.co data:; connect-src 'self' https://*.supabase.co; font-src 'self' data:; ${frameAncestors};`
   );
+
   return response;
 }
 
