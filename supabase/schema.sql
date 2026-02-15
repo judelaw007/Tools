@@ -96,6 +96,9 @@ CREATE TABLE IF NOT EXISTS tool_usage_logs (
 -- Index for analytics queries
 CREATE INDEX IF NOT EXISTS idx_usage_tool ON tool_usage_logs(tool_id);
 CREATE INDEX IF NOT EXISTS idx_usage_created ON tool_usage_logs(created_at);
+CREATE INDEX IF NOT EXISTS idx_usage_user_email ON tool_usage_logs(user_email);
+CREATE INDEX IF NOT EXISTS idx_usage_user_action ON tool_usage_logs(user_email, action);
+CREATE INDEX IF NOT EXISTS idx_usage_session_id ON tool_usage_logs(session_id);
 
 -- ===========================================
 -- ROW LEVEL SECURITY (RLS)
@@ -311,6 +314,8 @@ CREATE TABLE IF NOT EXISTS user_skills (
 CREATE INDEX IF NOT EXISTS idx_user_skills_email ON user_skills(user_email);
 CREATE INDEX IF NOT EXISTS idx_user_skills_category ON user_skills(skill_category);
 CREATE INDEX IF NOT EXISTS idx_user_skills_level ON user_skills(skill_level);
+CREATE INDEX IF NOT EXISTS idx_user_skills_evidence_lookup ON user_skills(user_email, skill_name, evidence_type, evidence_source_id);
+CREATE INDEX IF NOT EXISTS idx_user_skills_visible ON user_skills(user_email, is_visible);
 
 -- Enable RLS
 ALTER TABLE user_skills ENABLE ROW LEVEL SECURITY;
@@ -515,7 +520,7 @@ CREATE TABLE IF NOT EXISTS user_tool_projects (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_email VARCHAR(255) NOT NULL,
   tool_id TEXT NOT NULL REFERENCES tools(id) ON DELETE CASCADE,
-  project_count INT NOT NULL DEFAULT 0,
+  project_count INT NOT NULL DEFAULT 0 CHECK (project_count >= 0),
   last_project_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -618,3 +623,40 @@ CREATE POLICY "Service role can manage skill verifications"
   ON skill_verifications FOR ALL
   USING (true)
   WITH CHECK (true);
+
+-- ===========================================
+-- ACTIVITY_LOGS TABLE
+-- ===========================================
+-- Tracks user activities for admin monitoring
+-- (login, logout, tool usage, project saves, skills sync, etc.)
+
+CREATE TABLE IF NOT EXISTS activity_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  activity_type TEXT NOT NULL,
+  user_email TEXT,
+  user_name TEXT,
+  description TEXT NOT NULL,
+  metadata JSONB DEFAULT '{}'::jsonb,
+  ip_address TEXT,
+  user_agent TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Indexes
+CREATE INDEX IF NOT EXISTS idx_activity_logs_type ON activity_logs(activity_type);
+CREATE INDEX IF NOT EXISTS idx_activity_logs_user_email ON activity_logs(user_email);
+CREATE INDEX IF NOT EXISTS idx_activity_logs_created_at ON activity_logs(created_at DESC);
+
+-- Enable RLS
+ALTER TABLE activity_logs ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies
+CREATE POLICY "Service role can insert activity logs"
+  ON activity_logs FOR INSERT
+  TO service_role
+  WITH CHECK (true);
+
+CREATE POLICY "Service role can read activity logs"
+  ON activity_logs FOR SELECT
+  TO service_role
+  USING (true);
