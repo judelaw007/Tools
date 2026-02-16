@@ -316,4 +316,50 @@ Generate PDF reports or Excel workbooks for your audit file.
     createdAt: new Date('2024-12-08'),
     updatedAt: new Date('2024-12-08'),
   },
+  {
+    id: 'vat-return-boxes-1-9',
+    name: 'VAT Return (Boxes 1-9)',
+    slug: 'vat-return',
+    toolType: 'form',
+    category: 'vat',
+    icon: 'FileText',
+    shortDescription: 'Complete a UK VAT return with transaction-level breakdown, auto-calculations, and comprehensive validation.',
+    description: `The standard UK VAT return (form VAT100) filed quarterly via Making Tax Digital. Enter transactions into 9 boxes with auto-calculation of Boxes 3 and 5, partial exemption module, bad debt relief calculator, error correction threshold checker, and 10 validation checks with educational notes.
+
+## What You'll Learn
+
+- How to complete a UK VAT return (Boxes 1-9)
+- Transaction-level allocation to correct boxes
+- Auto-calculation of Box 3 (Box 1 + Box 2) and Box 5 (Box 3 - Box 4)
+- Postponed VAT Accounting (PVA) and reverse charge entries
+- Partial exemption standard method with de minimis tests
+- Bad debt relief conditions under s.36 VATA 1994
+- Error correction thresholds (VAT Notice 700/45)
+
+## How It Works
+
+**Step 1: Setup**
+Configure the return period, business type (GB or XI/Northern Ireland), PVA election, partial exemption status, and error correction.
+
+**Step 2: Transactions**
+Enter transactions with automatic box allocation based on type. Add PVA imports, reverse charges, exports, exempt supplies, and more. Optional modules for partial exemption calculation, error correction, and bad debt relief.
+
+**Step 3: Review & Submit**
+View 9-box summary, net VAT position, filing deadline, and 10 validation checks with educational notes and common error guidance.
+
+> **Note:** This is an educational tool for practising VAT return completion. It does not submit returns to HMRC.`,
+    previewImage: undefined,
+    config: {
+      calculatorType: 'vat-return',
+      version: '1.0',
+      steps: 3,
+    },
+    status: 'active',
+    isPublic: true,
+    isPremium: false,
+    version: '1.0',
+    createdBy: undefined,
+    createdAt: new Date('2025-02-16'),
+    updatedAt: new Date('2025-02-16'),
+  },
 ];
