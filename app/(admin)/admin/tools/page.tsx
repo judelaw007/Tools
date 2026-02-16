@@ -24,6 +24,7 @@ import {
   FolderOpen,
   X,
   Check,
+  RefreshCw,
 } from 'lucide-react';
 import type { Tool, ToolStatus, ToolCategory } from '@/types';
 
@@ -53,6 +54,10 @@ export default function AdminToolsPage() {
   const [categoryFilter, setCategoryFilter] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+
+  // Sync state
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncMessage, setSyncMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   // Edit modal state
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -89,6 +94,30 @@ export default function AdminToolsPage() {
   useEffect(() => {
     fetchTools();
   }, [fetchTools]);
+
+  // Sync seed data to database
+  const syncTools = async () => {
+    setIsSyncing(true);
+    setSyncMessage(null);
+    try {
+      const response = await fetch('/api/admin/sync-tools', { method: 'POST' });
+      const data = await response.json();
+      if (data.success) {
+        setSyncMessage({
+          type: 'success',
+          text: `Synced: ${data.stats.insertedCount} added, ${data.stats.updatedCount} updated`,
+        });
+        await fetchTools();
+      } else {
+        setSyncMessage({ type: 'error', text: data.error || 'Sync failed' });
+      }
+    } catch {
+      setSyncMessage({ type: 'error', text: 'Failed to sync tools' });
+    } finally {
+      setIsSyncing(false);
+      setTimeout(() => setSyncMessage(null), 5000);
+    }
+  };
 
   // Open edit modal
   const openEditModal = (tool: Tool) => {
@@ -189,7 +218,35 @@ export default function AdminToolsPage() {
             Categorise, configure, and manage tools uploaded by developers
           </p>
         </div>
+        <Button
+          variant="outline"
+          onClick={syncTools}
+          disabled={isSyncing}
+        >
+          {isSyncing ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <RefreshCw className="w-4 h-4" />
+          )}
+          {isSyncing ? 'Syncing...' : 'Sync Tools'}
+        </Button>
       </div>
+
+      {/* Sync status message */}
+      {syncMessage && (
+        <div className={`mb-4 p-3 rounded-lg flex items-center gap-2 text-sm ${
+          syncMessage.type === 'success'
+            ? 'bg-green-50 border border-green-200 text-green-700'
+            : 'bg-red-50 border border-red-200 text-red-700'
+        }`}>
+          {syncMessage.type === 'success' ? (
+            <Check className="w-4 h-4" />
+          ) : (
+            <X className="w-4 h-4" />
+          )}
+          {syncMessage.text}
+        </div>
+      )}
 
       {/* Filters Bar */}
       <Card className="mb-6">
