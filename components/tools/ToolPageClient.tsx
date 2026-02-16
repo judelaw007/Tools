@@ -147,6 +147,7 @@ export function ToolPageClient({ tool, userEmail }: ToolPageClientProps) {
             onDelete={handleDelete}
             savedItems={savedItems as SavedAssessment[]}
             onTrackCalculation={tracking.trackCalculation}
+            onTrackStepChange={tracking.trackStepChange}
             onTrackError={tracking.trackError}
             onTrackCompletion={tracking.trackCompletion}
           />
@@ -165,6 +166,7 @@ export function ToolPageClient({ tool, userEmail }: ToolPageClientProps) {
             onDelete={handleDelete}
             savedItems={savedItems as SavedDeadlineCalculation[]}
             onTrackCalculation={tracking.trackCalculation}
+            onTrackStepChange={tracking.trackStepChange}
             onTrackError={tracking.trackError}
             onTrackCompletion={tracking.trackCompletion}
           />
@@ -203,6 +205,7 @@ export function ToolPageClient({ tool, userEmail }: ToolPageClientProps) {
             savedItems={savedItems as SavedDFEAssessment[]}
             onTrackCalculation={tracking.trackCalculation}
             onTrackStepChange={tracking.trackStepChange}
+            onTrackError={tracking.trackError}
             onTrackCompletion={tracking.trackCompletion}
           />
         </>
@@ -221,6 +224,7 @@ export function ToolPageClient({ tool, userEmail }: ToolPageClientProps) {
             savedItems={savedItems as SavedAuditChecklist[]}
             onTrackCalculation={tracking.trackCalculation}
             onTrackStepChange={tracking.trackStepChange}
+            onTrackError={tracking.trackError}
             onTrackCompletion={tracking.trackCompletion}
           />
         </>
@@ -262,28 +266,6 @@ export function ToolPageClient({ tool, userEmail }: ToolPageClientProps) {
         </CardContent>
       </Card>
     );
-  }
-
-  // Form tools
-  if (tool.toolType === 'form') {
-    // VAT Return
-    if (tool.id === 'vat-return-boxes-1-9' || tool.slug === 'vat-return') {
-      return (
-        <>
-          {errorBanner}
-          <VATReturn
-            userId={userEmail}
-            onSave={handleSave as (data: Omit<SavedVATReturnData, 'id' | 'updatedAt'>) => Promise<string>}
-            onDelete={handleDelete}
-            savedItems={savedItems as SavedVATReturnData[]}
-            onTrackCalculation={tracking.trackCalculation}
-            onTrackStepChange={tracking.trackStepChange}
-            onTrackError={tracking.trackError}
-            onTrackCompletion={tracking.trackCompletion}
-          />
-        </>
-      );
-    }
   }
 
   // Default: return null to show the preview

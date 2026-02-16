@@ -2,14 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { checkToolAccess } from '@/lib/learnworlds/access-control';
 import { logActivity, extractRequestInfo } from '@/lib/activity-logs';
+import { unsealSession } from '@/lib/secure-session';
 
 const SESSION_COOKIE_NAME = 'mojitax-session';
-
-interface SessionData {
-  email: string;
-  learnworldsId?: string;
-  role?: 'user' | 'admin' | 'super_admin';
-}
 
 /**
  * GET /api/tools/[slug]/access
@@ -38,15 +33,19 @@ export async function GET(
 
     if (sessionCookie?.value) {
       try {
-        const session: SessionData = JSON.parse(
-          Buffer.from(sessionCookie.value, 'base64').toString()
-        );
-        user = {
-          id: session.learnworldsId || session.email,
-          email: session.email,
-          role: session.role || 'user',
-          learnworldsId: session.learnworldsId,
-        };
+        const session = await unsealSession(sessionCookie.value) as {
+          email?: string;
+          learnworldsId?: string;
+          role?: 'user' | 'admin' | 'super_admin';
+        } | null;
+        if (session?.email) {
+          user = {
+            id: session.learnworldsId || session.email,
+            email: session.email,
+            role: session.role || 'user',
+            learnworldsId: session.learnworldsId,
+          };
+        }
       } catch {
         // Invalid session
       }
