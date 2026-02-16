@@ -6,12 +6,14 @@ import { FilingDeadlineCalculator } from '@/components/tools/calculator/FilingDe
 import { GIRPracticeForm } from '@/components/tools/calculator/GIRPracticeForm';
 import { DFEAssessmentTool } from '@/components/tools/calculator/DFEAssessmentTool';
 import { AuditFileChecklist } from '@/components/tools/calculator/AuditFileChecklist';
+import { VATReturn } from '@/components/tools/calculator/VATReturn';
 import type { SavedCalculation } from '@/components/tools/calculator/GloBECalculator';
 import type { SavedAssessment } from '@/components/tools/calculator/SafeHarbourQualifier';
 import type { SavedDeadlineCalculation } from '@/components/tools/calculator/FilingDeadlineCalculator';
 import type { SavedPracticeSession } from '@/components/tools/calculator/GIRPracticeForm';
 import type { SavedDFEAssessment } from '@/components/tools/calculator/DFEAssessmentTool';
 import type { SavedAuditChecklist } from '@/components/tools/calculator/AuditFileChecklist';
+import type { SavedVATReturnData } from '@/components/tools/calculator/VATReturn';
 import type { Tool } from '@/types';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Loader2, Calculator, AlertCircle } from 'lucide-react';
@@ -24,7 +26,7 @@ interface ToolPageClientProps {
 }
 
 // Generic saved item type - union of all tool-specific types
-type SavedItemData = SavedCalculation | SavedAssessment | SavedDeadlineCalculation | SavedPracticeSession | SavedDFEAssessment | SavedAuditChecklist;
+type SavedItemData = SavedCalculation | SavedAssessment | SavedDeadlineCalculation | SavedPracticeSession | SavedDFEAssessment | SavedAuditChecklist | SavedVATReturnData;
 
 /**
  * Client component for rendering tool content.
@@ -225,6 +227,25 @@ export function ToolPageClient({ tool, userEmail }: ToolPageClientProps) {
       );
     }
 
+    // VAT Return
+    if (tool.id === 'vat-return-boxes-1-9' || tool.slug === 'vat-return') {
+      return (
+        <>
+          {errorBanner}
+          <VATReturn
+            userId={userEmail}
+            onSave={handleSave as (data: Omit<SavedVATReturnData, 'id' | 'updatedAt'>) => Promise<string>}
+            onDelete={handleDelete}
+            savedItems={savedItems as SavedVATReturnData[]}
+            onTrackCalculation={tracking.trackCalculation}
+            onTrackStepChange={tracking.trackStepChange}
+            onTrackError={tracking.trackError}
+            onTrackCompletion={tracking.trackCompletion}
+          />
+        </>
+      );
+    }
+
     // Default calculator placeholder
     return (
       <Card>
@@ -241,6 +262,28 @@ export function ToolPageClient({ tool, userEmail }: ToolPageClientProps) {
         </CardContent>
       </Card>
     );
+  }
+
+  // Form tools
+  if (tool.toolType === 'form') {
+    // VAT Return
+    if (tool.id === 'vat-return-boxes-1-9' || tool.slug === 'vat-return') {
+      return (
+        <>
+          {errorBanner}
+          <VATReturn
+            userId={userEmail}
+            onSave={handleSave as (data: Omit<SavedVATReturnData, 'id' | 'updatedAt'>) => Promise<string>}
+            onDelete={handleDelete}
+            savedItems={savedItems as SavedVATReturnData[]}
+            onTrackCalculation={tracking.trackCalculation}
+            onTrackStepChange={tracking.trackStepChange}
+            onTrackError={tracking.trackError}
+            onTrackCompletion={tracking.trackCompletion}
+          />
+        </>
+      );
+    }
   }
 
   // Default: return null to show the preview

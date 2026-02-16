@@ -19,6 +19,9 @@ export type { DFEAssessmentToolProps, SavedDFEAssessment } from './DFEAssessment
 export { AuditFileChecklist } from './AuditFileChecklist';
 export type { AuditFileChecklistProps, SavedAuditChecklist } from './AuditFileChecklist';
 
+export { VATReturn } from './VATReturn';
+export type { VATReturnProps, SavedVATReturnData } from './VATReturn';
+
 // Calculator registry - maps calculator IDs to their components
 import { GloBECalculator } from './GloBECalculator';
 import { SafeHarbourQualifier } from './SafeHarbourQualifier';
@@ -26,6 +29,7 @@ import { FilingDeadlineCalculator } from './FilingDeadlineCalculator';
 import { GIRPracticeForm } from './GIRPracticeForm';
 import { DFEAssessmentTool } from './DFEAssessmentTool';
 import { AuditFileChecklist } from './AuditFileChecklist';
+import { VATReturn } from './VATReturn';
 import type { ComponentType } from 'react';
 
 export const CALCULATOR_COMPONENTS: Record<string, ComponentType<any>> = {
@@ -40,6 +44,8 @@ export const CALCULATOR_COMPONENTS: Record<string, ComponentType<any>> = {
   'dfe-assessment-tool': DFEAssessmentTool, // alias
   'gir-audit-file-checklist': AuditFileChecklist,
   'audit-file-checklist': AuditFileChecklist, // alias
+  'vat-return-boxes-1-9': VATReturn,
+  'vat-return': VATReturn, // alias
 };
 
 export function getCalculatorComponent(calculatorId: string): ComponentType<any> | null {
