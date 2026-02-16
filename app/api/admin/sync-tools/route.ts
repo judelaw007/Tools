@@ -87,7 +87,7 @@ export async function POST() {
       if (insertError) {
         console.error('Error inserting tools:', insertError);
         return NextResponse.json(
-          { success: false, error: 'Failed to insert tools', details: insertError.message },
+          { success: false, error: `Failed to insert tools: ${insertError.message}`, details: insertError.message, code: insertError.code },
           { status: 500 }
         );
       }

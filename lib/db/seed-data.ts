@@ -320,7 +320,7 @@ Generate PDF reports or Excel workbooks for your audit file.
     id: 'vat-return-boxes-1-9',
     name: 'VAT Return (Boxes 1-9)',
     slug: 'vat-return',
-    toolType: 'form',
+    toolType: 'calculator',
     category: 'vat',
     icon: 'FileText',
     shortDescription: 'Complete a UK VAT return with transaction-level breakdown, auto-calculations, and comprehensive validation.',
