@@ -69,5 +69,6 @@ export interface AuditFileChecklistProps {
   savedItems?: SavedAuditChecklist[];
   onTrackCalculation?: (stepName: string, metadata?: Record<string, unknown>) => void;
   onTrackStepChange?: (fromStep: number | string, toStep: number | string) => void;
+  onTrackError?: (errorMessage: string, context?: Record<string, unknown>) => void;
   onTrackCompletion?: (metadata?: Record<string, unknown>) => void;
 }

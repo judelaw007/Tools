@@ -188,8 +188,29 @@ export function formatCurrency(val: number, currency = 'EUR'): string {
   }).format(val || 0);
 }
 
+// SBIE rates by year (decreasing transition rates per OECD GloBE rules)
+const SBIE_RATES_BY_YEAR: Record<number, { payroll: number; asset: number }> = {
+  2024: { payroll: 0.098, asset: 0.078 },
+  2025: { payroll: 0.096, asset: 0.076 },
+  2026: { payroll: 0.094, asset: 0.074 },
+  2027: { payroll: 0.092, asset: 0.072 },
+  2028: { payroll: 0.090, asset: 0.070 },
+  2029: { payroll: 0.082, asset: 0.066 },
+  2030: { payroll: 0.074, asset: 0.062 },
+  2031: { payroll: 0.066, asset: 0.058 },
+  2032: { payroll: 0.058, asset: 0.054 },
+  2033: { payroll: 0.050, asset: 0.050 },
+};
+
+function getSBIERates(fiscalYear?: string): { payroll: number; asset: number } {
+  if (!fiscalYear) return SBIE_RATES_BY_YEAR[2024];
+  const year = new Date(fiscalYear).getFullYear();
+  if (year >= 2033) return SBIE_RATES_BY_YEAR[2033];
+  return SBIE_RATES_BY_YEAR[year] || SBIE_RATES_BY_YEAR[2024];
+}
+
 // Calculate jurisdiction results
-export function calculateJurisdiction(data: JurisdictionCalcData): JurisdictionCalcResult {
+export function calculateJurisdiction(data: JurisdictionCalcData, fiscalYearEnd?: string): JurisdictionCalcResult {
   // 3.2 GloBE Income
   const globeIncome =
     parseFloat(String(data.fani || 0)) +
@@ -208,9 +229,10 @@ export function calculateJurisdiction(data: JurisdictionCalcData): JurisdictionC
     parseFloat(String(data.utpAdj || 0)) +
     parseFloat(String(data.nonCoveredAdj || 0));
 
-  // 3.4 SBIE (Using 2024 rates: 9.8% payroll, 7.8% assets)
-  const payrollSBIE = parseFloat(String(data.payrollCosts || 0)) * 0.098;
-  const assetSBIE = parseFloat(String(data.tangibleAssets || 0)) * 0.078;
+  // 3.4 SBIE (rates vary by fiscal year per OECD transition schedule)
+  const sbieRates = getSBIERates(fiscalYearEnd);
+  const payrollSBIE = parseFloat(String(data.payrollCosts || 0)) * sbieRates.payroll;
+  const assetSBIE = parseFloat(String(data.tangibleAssets || 0)) * sbieRates.asset;
   const totalSBIE = payrollSBIE + assetSBIE;
 
   // 3.5 Top-up Tax

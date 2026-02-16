@@ -91,7 +91,7 @@ export function FilingDeadlineCalculator({
 
     if (formData.fiscal_year_end) {
       const fyDate = parseDate(formData.fiscal_year_end);
-      const minDate = new Date(2023, 11, 31);
+      const minDate = new Date(2024, 11, 31);
       if (fyDate && fyDate < minDate) {
         newErrors.fy = 'GIR applies to FY ending on/after 31 Dec 2024';
       }

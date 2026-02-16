@@ -576,7 +576,7 @@ export function GIRPracticeForm({
         )}
 
         {section3.map((jurData, idx) => {
-          const calc = calculateJurisdiction(jurData);
+          const calc = calculateJurisdiction(jurData, section1.fiscalYearEnd);
           const updateJur = (field: keyof JurisdictionCalcData, val: string | number) => {
             const newS3 = [...section3];
             (newS3[idx] as any)[field] = val;
@@ -866,7 +866,7 @@ export function GIRPracticeForm({
                   )}
                 </div>
                 {section3.map((jur, idx) => {
-                  const calc = calculateJurisdiction(jur);
+                  const calc = calculateJurisdiction(jur, section1.fiscalYearEnd);
                   return (
                     <div
                       key={idx}
