@@ -136,9 +136,10 @@ CREATE POLICY "Admins can manage tools"
   );
 
 -- COURSE_TOOL_ALLOCATIONS policies
--- Anyone can read allocations (needed for access control)
-CREATE POLICY "Anyone can view allocations"
+-- Service role reads allocations for access control (all queries go through server-side API)
+CREATE POLICY "Service role can view allocations"
   ON course_tool_allocations FOR SELECT
+  TO service_role
   USING (true);
 
 -- Only admins can manage allocations
@@ -182,9 +183,10 @@ CREATE POLICY "Admins can view usage logs"
     EXISTS (SELECT 1 FROM admin_users WHERE id = auth.uid() AND is_active = true)
   );
 
--- Anyone can insert logs (for tracking)
-CREATE POLICY "Anyone can log usage"
+-- Only service role can insert logs (tracking goes through API routes)
+CREATE POLICY "Service role can log usage"
   ON tool_usage_logs FOR INSERT
+  TO service_role
   WITH CHECK (true);
 
 -- ===========================================
@@ -253,6 +255,13 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+-- Revoke public access to SECURITY DEFINER functions
+-- These should only be callable by authenticated users and service role
+REVOKE EXECUTE ON FUNCTION get_tools_for_course(VARCHAR) FROM anon;
+REVOKE EXECUTE ON FUNCTION get_courses_for_tool(TEXT) FROM anon;
+REVOKE EXECUTE ON FUNCTION is_admin(UUID) FROM anon;
+REVOKE EXECUTE ON FUNCTION get_skill_level_from_count(INT) FROM anon;
+
 -- ===========================================
 -- USER_SAVED_WORK TABLE
 -- ===========================================
@@ -276,9 +285,10 @@ CREATE INDEX IF NOT EXISTS idx_saved_work_updated ON user_saved_work(updated_at 
 -- Enable RLS
 ALTER TABLE user_saved_work ENABLE ROW LEVEL SECURITY;
 
--- RLS Policies - Service role handles email filtering
+-- RLS Policies - Only service role can manage saved work (server-side only)
 CREATE POLICY "Service role can manage saved work"
   ON user_saved_work FOR ALL
+  TO service_role
   USING (true)
   WITH CHECK (true);
 
@@ -320,9 +330,10 @@ CREATE INDEX IF NOT EXISTS idx_user_skills_visible ON user_skills(user_email, is
 -- Enable RLS
 ALTER TABLE user_skills ENABLE ROW LEVEL SECURITY;
 
--- RLS Policies - Service role handles email filtering
+-- RLS Policies - Only service role can manage user skills (server-side only)
 CREATE POLICY "Service role can manage user skills"
   ON user_skills FOR ALL
+  TO service_role
   USING (true)
   WITH CHECK (true);
 
@@ -391,6 +402,7 @@ CREATE POLICY "Anyone can view active skill categories"
 
 CREATE POLICY "Service role can manage skill categories"
   ON skill_categories FOR ALL
+  TO service_role
   USING (true)
   WITH CHECK (true);
 
@@ -426,10 +438,12 @@ ALTER TABLE skill_category_courses ENABLE ROW LEVEL SECURITY;
 -- RLS Policies
 CREATE POLICY "Anyone can view skill category courses"
   ON skill_category_courses FOR SELECT
+  TO authenticated, service_role
   USING (true);
 
 CREATE POLICY "Service role can manage skill category courses"
   ON skill_category_courses FOR ALL
+  TO service_role
   USING (true)
   WITH CHECK (true);
 
@@ -460,10 +474,12 @@ ALTER TABLE skill_category_tools ENABLE ROW LEVEL SECURITY;
 -- RLS Policies
 CREATE POLICY "Anyone can view skill category tools"
   ON skill_category_tools FOR SELECT
+  TO authenticated, service_role
   USING (true);
 
 CREATE POLICY "Service role can manage skill category tools"
   ON skill_category_tools FOR ALL
+  TO service_role
   USING (true)
   WITH CHECK (true);
 
@@ -502,6 +518,7 @@ ALTER TABLE user_skill_progress ENABLE ROW LEVEL SECURITY;
 -- RLS Policies
 CREATE POLICY "Service role can manage user skill progress"
   ON user_skill_progress FOR ALL
+  TO service_role
   USING (true)
   WITH CHECK (true);
 
@@ -537,6 +554,7 @@ ALTER TABLE user_tool_projects ENABLE ROW LEVEL SECURITY;
 -- RLS Policies
 CREATE POLICY "Service role can manage user tool projects"
   ON user_tool_projects FOR ALL
+  TO service_role
   USING (true)
   WITH CHECK (true);
 
@@ -576,6 +594,7 @@ ALTER TABLE user_course_completions ENABLE ROW LEVEL SECURITY;
 -- RLS Policies
 CREATE POLICY "Service role can manage user course completions"
   ON user_course_completions FOR ALL
+  TO service_role
   USING (true)
   WITH CHECK (true);
 
@@ -618,9 +637,35 @@ CREATE POLICY "Anyone can view skill verifications"
   ON skill_verifications FOR SELECT
   USING (true);
 
--- Service role can create verifications
+-- Service role can create and manage verifications
 CREATE POLICY "Service role can manage skill verifications"
   ON skill_verifications FOR ALL
+  TO service_role
+  USING (true)
+  WITH CHECK (true);
+
+-- ===========================================
+-- VERIFICATION_CODES TABLE
+-- ===========================================
+-- Stores email verification codes for user authentication
+-- Codes expire after 5 minutes and are single-use
+-- Referenced by lib/auth/verification-codes.ts
+
+CREATE TABLE IF NOT EXISTS verification_codes (
+  email TEXT PRIMARY KEY,
+  code TEXT NOT NULL,
+  expires_at TIMESTAMPTZ NOT NULL,
+  attempts INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Enable RLS
+ALTER TABLE verification_codes ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies - Only service role can manage verification codes (server-side auth flow only)
+CREATE POLICY "Service role can manage verification codes"
+  ON verification_codes FOR ALL
+  TO service_role
   USING (true)
   WITH CHECK (true);
 
