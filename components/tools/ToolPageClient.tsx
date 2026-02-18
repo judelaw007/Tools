@@ -7,6 +7,10 @@ import { GIRPracticeForm } from '@/components/tools/calculator/GIRPracticeForm';
 import { DFEAssessmentTool } from '@/components/tools/calculator/DFEAssessmentTool';
 import { AuditFileChecklist } from '@/components/tools/calculator/AuditFileChecklist';
 import { VATReturn } from '@/components/tools/calculator/VATReturn';
+import { CCL100Return } from '@/components/tools/calculator/ccl100-return';
+import { CDSImportDeclaration } from '@/components/tools/calculator/cds-import-declaration';
+import { CustomsValuationWorksheet } from '@/components/tools/calculator/customs-valuation-worksheet';
+import { UKTradeTariffLookup } from '@/components/tools/calculator/uk-trade-tariff-lookup';
 import type { SavedCalculation } from '@/components/tools/calculator/GloBECalculator';
 import type { SavedAssessment } from '@/components/tools/calculator/SafeHarbourQualifier';
 import type { SavedDeadlineCalculation } from '@/components/tools/calculator/FilingDeadlineCalculator';
@@ -245,6 +249,68 @@ export function ToolPageClient({ tool, userEmail }: ToolPageClientProps) {
             onTrackStepChange={tracking.trackStepChange}
             onTrackError={tracking.trackError}
             onTrackCompletion={tracking.trackCompletion}
+          />
+        </>
+      );
+    }
+
+    // CCL100 Return
+    if (tool.id === 'ccl100-return' || tool.slug === 'ccl100-return') {
+      return (
+        <>
+          {errorBanner}
+          <CCL100Return
+            config={{
+              showTooltips: true,
+              showBreakdowns: true,
+              showCPSBoxes: true,
+            }}
+          />
+        </>
+      );
+    }
+
+    // CDS Import Declaration
+    if (tool.id === 'cds-import-declaration' || tool.slug === 'cds-import-declaration') {
+      return (
+        <>
+          {errorBanner}
+          <CDSImportDeclaration
+            config={{
+              showTooltips: true,
+              showCalculationSteps: true,
+            }}
+          />
+        </>
+      );
+    }
+
+    // Customs Valuation Worksheet
+    if (tool.id === 'customs-valuation-worksheet' || tool.slug === 'customs-valuation-worksheet') {
+      return (
+        <>
+          {errorBanner}
+          <CustomsValuationWorksheet
+            config={{
+              showTooltips: true,
+              showBuildUp: true,
+            }}
+          />
+        </>
+      );
+    }
+
+    // UK Trade Tariff Lookup
+    if (tool.id === 'uk-trade-tariff-lookup' || tool.slug === 'uk-trade-tariff-lookup') {
+      return (
+        <>
+          {errorBanner}
+          <UKTradeTariffLookup
+            config={{
+              initialMode: 'text',
+              compareEnabled: true,
+            }}
+            showTooltips
           />
         </>
       );
