@@ -362,4 +362,186 @@ View 9-box summary, net VAT position, filing deadline, and 10 validation checks 
     createdAt: new Date('2025-02-16'),
     updatedAt: new Date('2025-02-16'),
   },
+  {
+    id: 'ccl100-return',
+    name: 'CCL100 Return',
+    slug: 'ccl100-return',
+    toolType: 'calculator',
+    category: 'vat',
+    icon: 'FileText',
+    shortDescription: 'Complete an HMRC CCL100 quarterly return for Climate Change Levy covering electricity, gas, LPG, and solid fuel supplies with CCA discount calculations.',
+    description: `Practice completing the HMRC CCL100 quarterly return for Climate Change Levy. Enter commodity quantities and CCA details, and the tool calculates levy due per commodity with full validation.
+
+## What You'll Learn
+
+- Climate Change Levy (CCL) compliance mechanics
+- Four-commodity tax breakdown (electricity, gas, LPG, solid fuels)
+- Climate Change Agreement (CCA) reduced rate application and relief calculations
+- Exemption handling (renewables, CHP, mineralogical/metallurgical processes)
+- Prior period credits and payment deadline rules
+
+## How It Works
+
+**Step 1: Accounting Period**
+Configure the return period and select which commodities your business supplies.
+
+**Step 2: Commodity Data**
+Enter quantities for standard and CCA-covered supplies, exemptions, and prior period credits.
+
+**Step 3: Review**
+View Boxes 1–5 (main rates), optional Boxes 6–9 (CPS for generators), commodity breakdowns, and validation checks.
+
+> **Note:** This is an educational tool for practising CCL100 return completion. It does not submit returns to HMRC.`,
+    previewImage: undefined,
+    config: {
+      calculatorType: 'ccl100-return',
+      version: '1.0',
+    },
+    status: 'active',
+    isPublic: true,
+    isPremium: false,
+    version: '1.0',
+    createdBy: undefined,
+    createdAt: new Date('2025-02-18'),
+    updatedAt: new Date('2025-02-18'),
+  },
+  {
+    id: 'cds-import-declaration',
+    name: 'CDS Import Declaration (C88)',
+    slug: 'cds-import-declaration',
+    toolType: 'calculator',
+    category: 'vat',
+    icon: 'FileText',
+    shortDescription: 'Complete a UK customs import declaration on the Customs Declaration Service with procedure codes, preference claims, and duty/VAT calculation.',
+    description: `Practice completing a UK import declaration on the Customs Declaration Service (CDS). Enter header and item-level data elements, and the tool validates procedure-preference compatibility, generates a document checklist, and calculates duty and import VAT.
+
+## What You'll Learn
+
+- CDS data elements for import declarations
+- Procedure codes (4000 standard import, 6121 OP re-import, etc.) and validation rules
+- Preference codes (100 MFN, 200 DCTS, 300 TCA/CEPA) and proof-of-origin requirements
+- Document reference codes and required supporting documents
+- Duty and import VAT calculation for standard imports and OP re-imports
+- PVA election mechanics (Postponed VAT Accounting)
+
+## How It Works
+
+**Step 1: Header**
+Complete declarant EORI, importer details, representation type, and PVA election.
+
+**Step 2: Items**
+Enter procedure code, preference code, commodity code, customs value, Incoterms, and country of dispatch/origin.
+
+**Step 3: Review**
+View duty calculation breakdown, document checklist, and validation results.
+
+> **Note:** This is an educational tool for practising CDS declarations. It does not submit declarations to HMRC.`,
+    previewImage: undefined,
+    config: {
+      calculatorType: 'cds-import-declaration',
+      version: '1.0',
+    },
+    status: 'active',
+    isPublic: true,
+    isPremium: false,
+    version: '1.0',
+    createdBy: undefined,
+    createdAt: new Date('2025-02-18'),
+    updatedAt: new Date('2025-02-18'),
+  },
+  {
+    id: 'customs-valuation-worksheet',
+    name: 'Customs Valuation Worksheet',
+    slug: 'customs-valuation-worksheet',
+    toolType: 'calculator',
+    category: 'vat',
+    icon: 'Calculator',
+    shortDescription: 'Calculate the customs value of imported goods under valuation Method 1 (transaction value) with currency conversion, Incoterms adjustments, and additions/deductions.',
+    description: `Calculate customs value under Method 1 (transaction value). Enter invoice price, currency, Incoterms, freight, insurance, and additions/deductions to build up the dutiable value with educational annotations at each step.
+
+## What You'll Learn
+
+- Customs valuation legal framework (TCTA 2018, Retained UCC Arts 70–74)
+- Method 1 (transaction value) — the primary valuation method used in ~90% of declarations
+- Incoterms impact on customs value (EXW/FOB add freight & insurance; CIF/DDP already include)
+- Currency conversion using HMRC monthly exchange rates
+- Additions (selling commissions, royalties, assists, packing costs)
+- Deductions (post-import transport, installation/assembly)
+
+## How It Works
+
+**Step 1: Invoice & Currency**
+Enter invoice price, select currency, and provide the HMRC exchange rate for conversion to GBP.
+
+**Step 2: Incoterms & Freight**
+Select the delivery term and enter freight and insurance costs. The tool adjusts based on Incoterms rules.
+
+**Step 3: Additions & Deductions**
+Add commissions, royalties, assists, and packing costs. Deduct post-import transport or installation.
+
+**Step 4: Build-Up**
+View the itemised customs value build-up with duty and import VAT calculations.
+
+> **Note:** This is an educational tool. Always verify valuations with HMRC guidance and professional advice.`,
+    previewImage: undefined,
+    config: {
+      calculatorType: 'customs-valuation',
+      version: '1.0',
+    },
+    status: 'active',
+    isPublic: true,
+    isPremium: false,
+    version: '1.0',
+    createdBy: undefined,
+    createdAt: new Date('2025-02-18'),
+    updatedAt: new Date('2025-02-18'),
+  },
+  {
+    id: 'uk-trade-tariff-lookup',
+    name: 'UK Trade Tariff Lookup',
+    slug: 'uk-trade-tariff-lookup',
+    toolType: 'calculator',
+    category: 'vat',
+    icon: 'Search',
+    shortDescription: 'Look up UK commodity codes, duty rates (MFN and preferential), trade remedies, and import controls for goods classified across food, ceramics, and homeware.',
+    description: `Search, browse, and look up UK commodity codes with duty rates, trade remedies, and import controls. Compare duty impact across countries and understand classification rationale.
+
+## What You'll Learn
+
+- UK tariff hierarchy (Section → Chapter → Heading → Subheading → 10-digit Commodity Code)
+- Commodity classification rationale
+- MFN (Third Country) duty rates vs. preferential FTA/DCTS rates
+- Trade remedies (anti-dumping, countervailing, safeguard duties)
+- Proof-of-origin requirements per preference scheme
+- VAT on importation (zero-rated vs. standard-rated)
+- Import controls (phytosanitary, organic certification)
+
+## How It Works
+
+**Text Search**
+Search by description (e.g., "olive oil", "ceramic cups") to find matching commodity codes.
+
+**Hierarchy Browse**
+Navigate Section → Chapter → Heading to explore the tariff structure.
+
+**Direct Code Entry**
+Enter a known commodity code to retrieve its full duty picture.
+
+**Compare Mode**
+Compare duty impact side-by-side for two countries on the same commodity code.
+
+> **Note:** This tool uses a curated dataset of ~30 commodity codes for educational purposes. For live tariff data, use trade-tariff.service.gov.uk.`,
+    previewImage: undefined,
+    config: {
+      calculatorType: 'tariff-lookup',
+      version: '1.0',
+    },
+    status: 'active',
+    isPublic: true,
+    isPremium: false,
+    version: '1.0',
+    createdBy: undefined,
+    createdAt: new Date('2025-02-18'),
+    updatedAt: new Date('2025-02-18'),
+  },
 ];
