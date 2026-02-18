@@ -22,6 +22,18 @@ export type { AuditFileChecklistProps, SavedAuditChecklist } from './AuditFileCh
 export { VATReturn } from './VATReturn';
 export type { VATReturnProps, SavedVATReturnData } from './VATReturn';
 
+export { CCL100Return } from './ccl100-return';
+export type { CCL100ReturnProps } from './ccl100-return';
+
+export { CDSImportDeclaration } from './cds-import-declaration';
+export type { CDSImportDeclarationProps } from './cds-import-declaration';
+
+export { CustomsValuationWorksheet } from './customs-valuation-worksheet';
+export type { CustomsValuationWorksheetProps } from './customs-valuation-worksheet';
+
+export { UKTradeTariffLookup } from './uk-trade-tariff-lookup';
+export type { UKTradeTariffLookupProps } from './uk-trade-tariff-lookup';
+
 // Calculator registry - maps calculator IDs to their components
 import { GloBECalculator } from './GloBECalculator';
 import { SafeHarbourQualifier } from './SafeHarbourQualifier';
@@ -30,6 +42,10 @@ import { GIRPracticeForm } from './GIRPracticeForm';
 import { DFEAssessmentTool } from './DFEAssessmentTool';
 import { AuditFileChecklist } from './AuditFileChecklist';
 import { VATReturn } from './VATReturn';
+import { CCL100Return } from './ccl100-return';
+import { CDSImportDeclaration } from './cds-import-declaration';
+import { CustomsValuationWorksheet } from './customs-valuation-worksheet';
+import { UKTradeTariffLookup } from './uk-trade-tariff-lookup';
 import type { ComponentType } from 'react';
 
 export const CALCULATOR_COMPONENTS: Record<string, ComponentType<any>> = {
@@ -46,6 +62,10 @@ export const CALCULATOR_COMPONENTS: Record<string, ComponentType<any>> = {
   'audit-file-checklist': AuditFileChecklist, // alias
   'vat-return-boxes-1-9': VATReturn,
   'vat-return': VATReturn, // alias
+  'ccl100-return': CCL100Return,
+  'cds-import-declaration': CDSImportDeclaration,
+  'customs-valuation-worksheet': CustomsValuationWorksheet,
+  'uk-trade-tariff-lookup': UKTradeTariffLookup,
 };
 
 export function getCalculatorComponent(calculatorId: string): ComponentType<any> | null {
