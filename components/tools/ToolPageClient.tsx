@@ -11,6 +11,13 @@ import { CCL100Return } from '@/components/tools/calculator/ccl100-return';
 import { CDSImportDeclaration } from '@/components/tools/calculator/cds-import-declaration';
 import { CustomsValuationWorksheet } from '@/components/tools/calculator/customs-valuation-worksheet';
 import { UKTradeTariffLookup } from '@/components/tools/calculator/uk-trade-tariff-lookup';
+import { BadrChecker } from '@/components/tools/calculator/badr-checker';
+import { CapitalAllowances } from '@/components/tools/calculator/capital-allowances';
+import { CestStatus } from '@/components/tools/calculator/cest-status';
+import { CtComputation } from '@/components/tools/calculator/ct-computation';
+import { PenpCalculator } from '@/components/tools/calculator/penp-calculator';
+import { ProfitExtraction } from '@/components/tools/calculator/profit-extraction';
+import { S455Calculator } from '@/components/tools/calculator/s455-calculator';
 import type { SavedCalculation } from '@/components/tools/calculator/GloBECalculator';
 import type { SavedAssessment } from '@/components/tools/calculator/SafeHarbourQualifier';
 import type { SavedDeadlineCalculation } from '@/components/tools/calculator/FilingDeadlineCalculator';
@@ -311,6 +318,113 @@ export function ToolPageClient({ tool, userEmail }: ToolPageClientProps) {
               compareEnabled: true,
             }}
             showTooltips
+          />
+        </>
+      );
+    }
+
+    // BADR Eligibility Checker
+    if (tool.id === 'badr-checker' || tool.slug === 'badr-checker') {
+      return (
+        <>
+          {errorBanner}
+          <BadrChecker
+            config={{
+              showTooltips: true,
+              showComparison: true,
+            }}
+          />
+        </>
+      );
+    }
+
+    // Capital Allowances Computation
+    if (tool.id === 'capital-allowances' || tool.slug === 'capital-allowances') {
+      return (
+        <>
+          {errorBanner}
+          <CapitalAllowances
+            config={{
+              showTooltips: true,
+              showExamLayout: true,
+            }}
+          />
+        </>
+      );
+    }
+
+    // CEST Employment Status Tool
+    if (tool.id === 'cest-status' || tool.slug === 'cest-status') {
+      return (
+        <>
+          {errorBanner}
+          <CestStatus
+            config={{
+              showTooltips: true,
+              showCaseLaw: true,
+              showIR35: true,
+            }}
+          />
+        </>
+      );
+    }
+
+    // Corporation Tax Computation
+    if (tool.id === 'ct-computation' || tool.slug === 'ct-computation') {
+      return (
+        <>
+          {errorBanner}
+          <CtComputation
+            config={{
+              showTooltips: true,
+              showCT600Layout: true,
+            }}
+          />
+        </>
+      );
+    }
+
+    // PENP Calculator
+    if (tool.id === 'penp-calculator' || tool.slug === 'penp-calculator') {
+      return (
+        <>
+          {errorBanner}
+          <PenpCalculator
+            config={{
+              showTooltips: true,
+              showRedundancyCrossCheck: true,
+            }}
+          />
+        </>
+      );
+    }
+
+    // Profit Extraction Optimiser
+    if (tool.id === 'profit-extraction' || tool.slug === 'profit-extraction') {
+      return (
+        <>
+          {errorBanner}
+          <ProfitExtraction
+            config={{
+              showTooltips: true,
+              showComparison: true,
+              showRecommendation: true,
+            }}
+          />
+        </>
+      );
+    }
+
+    // S455 Loans to Participators Calculator
+    if (tool.id === 's455-calculator' || tool.slug === 's455-calculator') {
+      return (
+        <>
+          {errorBanner}
+          <S455Calculator
+            config={{
+              showTooltips: true,
+              showTimeline: true,
+            }}
           />
         </>
       );

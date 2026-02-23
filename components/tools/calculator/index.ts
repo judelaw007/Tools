@@ -34,6 +34,27 @@ export type { CustomsValuationWorksheetProps } from './customs-valuation-workshe
 export { UKTradeTariffLookup } from './uk-trade-tariff-lookup';
 export type { UKTradeTariffLookupProps } from './uk-trade-tariff-lookup';
 
+export { BadrChecker } from './badr-checker';
+export type { BadrCheckerProps } from './badr-checker';
+
+export { CapitalAllowances } from './capital-allowances';
+export type { CapitalAllowancesProps } from './capital-allowances';
+
+export { CestStatus } from './cest-status';
+export type { CestStatusProps } from './cest-status';
+
+export { CtComputation } from './ct-computation';
+export type { CtComputationProps } from './ct-computation';
+
+export { PenpCalculator } from './penp-calculator';
+export type { PenpCalculatorProps } from './penp-calculator';
+
+export { ProfitExtraction } from './profit-extraction';
+export type { ProfitExtractionProps } from './profit-extraction';
+
+export { S455Calculator } from './s455-calculator';
+export type { S455CalculatorProps } from './s455-calculator';
+
 // Calculator registry - maps calculator IDs to their components
 import { GloBECalculator } from './GloBECalculator';
 import { SafeHarbourQualifier } from './SafeHarbourQualifier';
@@ -46,6 +67,13 @@ import { CCL100Return } from './ccl100-return';
 import { CDSImportDeclaration } from './cds-import-declaration';
 import { CustomsValuationWorksheet } from './customs-valuation-worksheet';
 import { UKTradeTariffLookup } from './uk-trade-tariff-lookup';
+import { BadrChecker } from './badr-checker';
+import { CapitalAllowances } from './capital-allowances';
+import { CestStatus } from './cest-status';
+import { CtComputation } from './ct-computation';
+import { PenpCalculator } from './penp-calculator';
+import { ProfitExtraction } from './profit-extraction';
+import { S455Calculator } from './s455-calculator';
 import type { ComponentType } from 'react';
 
 export const CALCULATOR_COMPONENTS: Record<string, ComponentType<any>> = {
@@ -66,6 +94,13 @@ export const CALCULATOR_COMPONENTS: Record<string, ComponentType<any>> = {
   'cds-import-declaration': CDSImportDeclaration,
   'customs-valuation-worksheet': CustomsValuationWorksheet,
   'uk-trade-tariff-lookup': UKTradeTariffLookup,
+  'badr-checker': BadrChecker,
+  'capital-allowances': CapitalAllowances,
+  'cest-status': CestStatus,
+  'ct-computation': CtComputation,
+  'penp-calculator': PenpCalculator,
+  'profit-extraction': ProfitExtraction,
+  's455-calculator': S455Calculator,
 };
 
 export function getCalculatorComponent(calculatorId: string): ComponentType<any> | null {

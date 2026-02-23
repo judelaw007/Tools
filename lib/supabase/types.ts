@@ -6,7 +6,7 @@
 
 export type ToolStatus = 'draft' | 'active' | 'inactive' | 'archived';
 export type ToolType = 'calculator' | 'search' | 'validator' | 'generator' | 'tracker' | 'reference' | 'external-link' | 'spreadsheet' | 'form';
-export type ToolCategory = 'transfer_pricing' | 'vat' | 'fatca_crs' | 'withholding_tax' | 'pillar_two' | 'pe_assessment' | 'cross_category';
+export type ToolCategory = 'transfer_pricing' | 'vat' | 'fatca_crs' | 'withholding_tax' | 'pillar_two' | 'pe_assessment' | 'cross_category' | 'owner_managed_business';
 export type AccessLevel = 'full' | 'limited' | 'preview';
 export type AdminRole = 'admin' | 'super_admin';
 export type UsageAction = 'view' | 'calculate' | 'save' | 'export' | 'error';

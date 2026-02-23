@@ -19,7 +19,8 @@ export type ToolCategory =
   | 'withholding_tax'
   | 'pillar_two'
   | 'pe_assessment'
-  | 'cross_category';
+  | 'cross_category'
+  | 'owner_managed_business';
 
 export type AccessLevel = 'full' | 'limited' | 'preview';
 

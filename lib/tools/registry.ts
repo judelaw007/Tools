@@ -142,4 +142,10 @@ export const CATEGORY_METADATA: Record<string, {
     description: 'Tools that span multiple tax areas',
     color: 'slate',
   },
+  owner_managed_business: {
+    name: 'Owner Managed Business',
+    shortName: 'OMB',
+    description: 'Tools for owner managed business tax planning and compliance',
+    color: 'amber',
+  },
 };

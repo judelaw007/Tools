@@ -404,7 +404,7 @@ export function CestStatus({
   const [output, setOutput] = useState<CestOutput | null>(null);
   const [attemptNumber, setAttemptNumber] = useState(0);
   const [showScenarios, setShowScenarios] = useState(false);
-  const [openAreas, setOpenAreas] = useState<Set<AssessmentAreaId>>(new Set(['control']));
+  const [openAreas, setOpenAreas] = useState<Set<AssessmentAreaId>>(new Set(['control' as AssessmentAreaId]));
   const [showCaseLawDetail, setShowCaseLawDetail] = useState<string | null>(null);
 
   // ─── Preliminary handlers ──────────────────────────────────────────────────
@@ -478,7 +478,7 @@ export function CestStatus({
             const areaIndex = ASSESSMENT_AREAS.findIndex((a) => a.id === question.areaId);
             if (areaIndex < ASSESSMENT_AREAS.length - 1) {
               const nextArea = ASSESSMENT_AREAS[areaIndex + 1];
-              setOpenAreas((prev) => new Set([...prev, nextArea.id]));
+              setOpenAreas((prev) => new Set([...Array.from(prev), nextArea.id]));
             }
           }
         }
@@ -490,7 +490,7 @@ export function CestStatus({
   // ─── Toggle area ───────────────────────────────────────────────────────────
   const toggleArea = useCallback((areaId: AssessmentAreaId) => {
     setOpenAreas((prev) => {
-      const next = new Set(prev);
+      const next = new Set<AssessmentAreaId>(Array.from(prev));
       if (next.has(areaId)) {
         next.delete(areaId);
       } else {
@@ -535,7 +535,7 @@ export function CestStatus({
     setInputs(createEmptyInputs());
     setOutput(null);
     setAttemptNumber(0);
-    setOpenAreas(new Set(['control']));
+    setOpenAreas(new Set<AssessmentAreaId>(['control' as AssessmentAreaId]));
 
     callbacks?.onReset?.({ previousResult, timestamp: Date.now() });
   }, [output, callbacks]);
@@ -548,7 +548,7 @@ export function CestStatus({
       setAttemptNumber(0);
       setShowScenarios(false);
       // Open all areas when loading a scenario
-      setOpenAreas(new Set(ASSESSMENT_AREAS.map((a) => a.id)));
+      setOpenAreas(new Set<AssessmentAreaId>(ASSESSMENT_AREAS.map((a) => a.id)));
 
       callbacks?.onScenarioLoad?.({
         scenarioId: scenario.id,

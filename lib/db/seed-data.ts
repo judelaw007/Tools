@@ -544,4 +544,246 @@ Compare duty impact side-by-side for two countries on the same commodity code.
     createdAt: new Date('2025-02-18'),
     updatedAt: new Date('2025-02-18'),
   },
+  {
+    id: 'badr-checker',
+    name: 'BADR Eligibility Checker and Calculator',
+    slug: 'badr-checker',
+    toolType: 'calculator',
+    category: 'owner_managed_business',
+    icon: 'Calculator',
+    shortDescription: 'Check BADR qualifying conditions and calculate CGT liability at the BADR rate with lifetime limit tracking and rate comparison.',
+    description: `Two-part tool for Business Asset Disposal Relief: (1) checks all BADR qualifying conditions (2-year holding, 5% tests, personal company, trading company with 80% threshold), (2) calculates CGT liability at the BADR rate with lifetime limit tracking. Includes associated disposal rent restriction calculation and comparison against standard CGT rates.
+
+## What You'll Learn
+
+- BADR qualifying conditions for shares, business assets, and associated disposals
+- The 2-year holding period requirement
+- 5% shareholding and voting rights tests
+- Trading company vs investment company distinction (80% threshold)
+- CGT computation at BADR rates (14% for 2025/26, 18% from 2026/27)
+- £1,000,000 lifetime limit tracking across multiple disposals
+- Associated disposal rent restriction calculation
+- Rate comparison against standard CGT rates
+
+> **Note:** This is an educational tool based on TCGA 1992 ss.169H–169S. Always verify with professional advice.`,
+    previewImage: undefined,
+    config: {
+      calculatorType: 'badr-checker',
+      version: '1.0',
+    },
+    status: 'active',
+    isPublic: true,
+    isPremium: false,
+    version: '1.0',
+    createdBy: undefined,
+    createdAt: new Date('2026-02-23'),
+    updatedAt: new Date('2026-02-23'),
+  },
+  {
+    id: 'capital-allowances',
+    name: 'Capital Allowances Computation',
+    slug: 'capital-allowances',
+    toolType: 'calculator',
+    category: 'owner_managed_business',
+    icon: 'Calculator',
+    shortDescription: 'Calculate writing-down allowances, AIA, full expensing, and special rate FYA with exam-format layout.',
+    description: `Compute capital allowances for corporation tax including main pool and special rate pool WDA, Annual Investment Allowance, full expensing for qualifying plant and machinery, and zero-emission car FYA. Produces exam-format working paper layout.
+
+## What You'll Learn
+
+- Asset classification by pool (main pool, special rate, single asset)
+- CO2-based car classification
+- Annual Investment Allowance (AIA) allocation
+- Full expensing eligibility for companies
+- Writing-down allowance computation with short period adjustments
+- Small pool write-off threshold
+- Balancing charges and allowances on disposal
+- Exam-format capital allowances working paper
+
+> **Note:** This is an educational tool for practising CA computations. Rates are based on current legislation.`,
+    previewImage: undefined,
+    config: {
+      calculatorType: 'capital-allowances',
+      version: '1.0',
+    },
+    status: 'active',
+    isPublic: true,
+    isPremium: false,
+    version: '1.0',
+    createdBy: undefined,
+    createdAt: new Date('2026-02-23'),
+    updatedAt: new Date('2026-02-23'),
+  },
+  {
+    id: 'cest-status',
+    name: 'CEST Employment Status Tool',
+    slug: 'cest-status',
+    toolType: 'calculator',
+    category: 'owner_managed_business',
+    icon: 'ClipboardList',
+    shortDescription: 'Determine employment status for tax using HMRC CEST methodology with case law references and IR35 implications.',
+    description: `Assess whether a worker is employed or self-employed for tax purposes using the HMRC Check Employment Status for Tax (CEST) methodology. Covers personal service, control, financial risk, mutuality of obligation, and part-and-parcel indicators with case law references.
+
+## What You'll Learn
+
+- The multi-factor employment status test
+- Personal service and substitution rights
+- Control indicators (what, how, when, where)
+- Financial risk factors
+- Mutuality of obligation
+- Part-and-parcel integration indicators
+- IR35 implications for off-payroll working
+- Key case law references (Ready Mixed Concrete, Market Investigations, etc.)
+
+> **Note:** This is an educational tool. HMRC's actual CEST tool is at gov.uk/guidance/check-employment-status-for-tax.`,
+    previewImage: undefined,
+    config: {
+      calculatorType: 'cest-status',
+      version: '1.0',
+    },
+    status: 'active',
+    isPublic: true,
+    isPremium: false,
+    version: '1.0',
+    createdBy: undefined,
+    createdAt: new Date('2026-02-23'),
+    updatedAt: new Date('2026-02-23'),
+  },
+  {
+    id: 'ct-computation',
+    name: 'Corporation Tax Computation with Marginal Relief',
+    slug: 'ct-computation',
+    toolType: 'calculator',
+    category: 'owner_managed_business',
+    icon: 'Calculator',
+    shortDescription: 'Compute CT liability including marginal relief, associated companies adjustments, and CT600 box mapping.',
+    description: `Compute corporation tax liability for UK companies including the small profits rate, main rate, and marginal relief calculation. Handles associated companies threshold adjustments, short accounting periods, and maps results to CT600 boxes.
+
+## What You'll Learn
+
+- Taxable total profits (TTP) computation
+- Small profits rate (19%) vs main rate (25%) thresholds
+- Marginal relief formula and calculation
+- Associated companies impact on thresholds
+- Short accounting period adjustments
+- Augmented profits for rate band determination
+- CT600 box mapping
+- Key compliance dates (filing, payment, QIPs)
+
+> **Note:** This is an educational tool based on CTA 2010. Always verify computations with professional advice.`,
+    previewImage: undefined,
+    config: {
+      calculatorType: 'ct-computation',
+      version: '1.0',
+    },
+    status: 'active',
+    isPublic: true,
+    isPremium: false,
+    version: '1.0',
+    createdBy: undefined,
+    createdAt: new Date('2026-02-23'),
+    updatedAt: new Date('2026-02-23'),
+  },
+  {
+    id: 'penp-calculator',
+    name: 'Termination Payment Analyser (PENP Calculator)',
+    slug: 'penp-calculator',
+    toolType: 'calculator',
+    category: 'owner_managed_business',
+    icon: 'Calculator',
+    shortDescription: 'Calculate Post-Employment Notice Pay, apply the £30,000 exemption, and compute employer NIC on termination payments.',
+    description: `Analyse termination payments using the PENP formula to split payments into taxable earnings and potentially exempt components. Applies the £30,000 exemption under ITEPA 2003 s.403 and computes employer NIC on excess.
+
+## What You'll Learn
+
+- Post-Employment Notice Pay (PENP) formula
+- Unserved notice period calculation
+- Component classification (contractual vs ex-gratia)
+- £30,000 exemption application order
+- Employer NIC on termination payments above £30,000
+- Statutory redundancy pay calculation and cross-check
+- Pay period types and their impact on PENP
+
+> **Note:** This is an educational tool based on ITEPA 2003 ss.402A–402E. Always verify with professional advice.`,
+    previewImage: undefined,
+    config: {
+      calculatorType: 'penp-calculator',
+      version: '1.0',
+    },
+    status: 'active',
+    isPublic: true,
+    isPremium: false,
+    version: '1.0',
+    createdBy: undefined,
+    createdAt: new Date('2026-02-23'),
+    updatedAt: new Date('2026-02-23'),
+  },
+  {
+    id: 'profit-extraction',
+    name: 'Salary vs Dividend Profit Extraction Optimiser',
+    slug: 'profit-extraction',
+    toolType: 'calculator',
+    category: 'owner_managed_business',
+    icon: 'Calculator',
+    shortDescription: 'Compare salary, dividend, and mixed extraction strategies with full NIC, corporation tax, and income tax modelling.',
+    description: `Model and compare profit extraction strategies for owner-managed businesses: salary only, dividend only, and optimal salary/dividend mix. Calculates the combined tax burden across corporation tax, income tax, NICs, and dividend tax.
+
+## What You'll Learn
+
+- Salary vs dividend tax efficiency
+- Employer and employee NIC thresholds
+- Corporation tax deductibility of salary
+- Personal allowance and dividend allowance interaction
+- Income tax bands for employment and dividend income
+- NIC efficiency point calculation
+- Optimal extraction strategy recommendation
+
+> **Note:** This is an educational tool. Tax-efficient extraction depends on individual circumstances — always seek professional advice.`,
+    previewImage: undefined,
+    config: {
+      calculatorType: 'profit-extraction',
+      version: '1.0',
+    },
+    status: 'active',
+    isPublic: true,
+    isPremium: false,
+    version: '1.0',
+    createdBy: undefined,
+    createdAt: new Date('2026-02-23'),
+    updatedAt: new Date('2026-02-23'),
+  },
+  {
+    id: 's455-calculator',
+    name: 's.455 Loans to Participators Calculator',
+    slug: 's455-calculator',
+    toolType: 'calculator',
+    category: 'owner_managed_business',
+    icon: 'Calculator',
+    shortDescription: 'Calculate s.455 tax on director loan accounts with bed-and-breakfast anti-avoidance checks and write-off analysis.',
+    description: `Calculate s.455 CTA 2010 tax charges on loans to participators (director loan accounts). Tracks DLA balances, identifies s.464C bed-and-breakfast arrangements, computes repayment relief timing, and analyses write-off tax implications.
+
+## What You'll Learn
+
+- s.455 tax charge calculation (33.75% rate)
+- Director loan account balance tracking
+- Key compliance dates (9 months + 1 day after AP end)
+- s.464C bed-and-breakfast anti-avoidance rules (30-day window)
+- Repayment relief and timing
+- Write-off analysis (income tax and NIC implications)
+- Timeline visualisation of loan events
+
+> **Note:** This is an educational tool based on CTA 2010 ss.455–464. Always verify with professional advice.`,
+    previewImage: undefined,
+    config: {
+      calculatorType: 's455-calculator',
+      version: '1.0',
+    },
+    status: 'active',
+    isPublic: true,
+    isPremium: false,
+    version: '1.0',
+    createdBy: undefined,
+    createdAt: new Date('2026-02-23'),
+    updatedAt: new Date('2026-02-23'),
+  },
 ];
