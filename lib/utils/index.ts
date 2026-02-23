@@ -116,6 +116,7 @@ export function getCategoryName(category: ToolCategory): string {
     pillar_two: 'Pillar Two / Global Min Tax',
     pe_assessment: 'PE Assessment',
     cross_category: 'Cross-Category',
+    owner_managed_business: 'Owner Managed Business',
   };
   return names[category] || category;
 }

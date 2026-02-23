@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS tools (
   name VARCHAR(255) NOT NULL,
   slug VARCHAR(255) UNIQUE NOT NULL,
   tool_type VARCHAR(50) NOT NULL CHECK (tool_type IN ('calculator', 'search', 'validator', 'generator', 'tracker', 'reference', 'external-link', 'spreadsheet', 'form')),
-  category VARCHAR(50) NOT NULL CHECK (category IN ('transfer_pricing', 'vat', 'fatca_crs', 'withholding_tax', 'pillar_two', 'pe_assessment', 'cross_category')),
+  category VARCHAR(50) NOT NULL CHECK (category IN ('transfer_pricing', 'vat', 'fatca_crs', 'withholding_tax', 'pillar_two', 'pe_assessment', 'cross_category', 'owner_managed_business')),
   icon VARCHAR(100),
   short_description TEXT,
   description TEXT,
