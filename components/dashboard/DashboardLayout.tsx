@@ -25,7 +25,7 @@ export function DashboardLayout({ children, variant = 'user' }: DashboardLayoutP
         'transition-all duration-300',
         isCollapsed ? 'ml-16' : 'ml-64'
       )}>
-        <Header />
+        <Header showSearch={variant === 'user'} />
 
         <main className="p-6">
           {children}

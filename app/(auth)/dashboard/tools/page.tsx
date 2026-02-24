@@ -12,7 +12,11 @@ export interface ToolWithAccess {
   courseNames: string[];
 }
 
-export default async function DashboardToolsPage() {
+export default async function DashboardToolsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>;
+}) {
   const session = await getServerSession();
 
   if (!session) {
@@ -59,9 +63,11 @@ export default async function DashboardToolsPage() {
       };
     });
 
+  const { q: initialSearch } = await searchParams;
+
   return (
     <DashboardLayout>
-      <DashboardToolsLibrary tools={toolsWithAccess} />
+      <DashboardToolsLibrary tools={toolsWithAccess} initialSearch={initialSearch || ''} />
     </DashboardLayout>
   );
 }
