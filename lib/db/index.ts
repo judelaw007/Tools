@@ -614,6 +614,81 @@ export async function getPlatformStats() {
 }
 
 // ============================================
+// COURSES WITH TOOL DETAILS (for public page)
+// ============================================
+
+export interface CourseWithToolDetails {
+  courseId: string;
+  courseName: string;
+  tools: Tool[];
+}
+
+/**
+ * Get all courses that have tools allocated, with full tool details.
+ * Used for the public tools page to show courses with their tools.
+ * Only includes active tools — courses with no active tools are omitted.
+ */
+export async function getCoursesWithToolDetails(): Promise<CourseWithToolDetails[]> {
+  if (!isSupabaseConfigured()) {
+    return [];
+  }
+
+  try {
+    const supabase = createServiceClient();
+    const { data, error } = await supabase
+      .from('course_tool_allocations')
+      .select(`
+        course_id,
+        course_name,
+        tool_id,
+        display_order,
+        tools (*)
+      `)
+      .order('course_name');
+
+    if (error) throw error;
+
+    if (!data || data.length === 0) {
+      return [];
+    }
+
+    // Group by course
+    const courseMap = new Map<string, { name: string; tools: Tool[]; orders: Map<string, number> }>();
+
+    data.forEach((row: { course_id: string; course_name: string | null; tool_id: string; display_order: number; tools: unknown }) => {
+      if (!courseMap.has(row.course_id)) {
+        courseMap.set(row.course_id, {
+          name: row.course_name || row.course_id,
+          tools: [],
+          orders: new Map(),
+        });
+      }
+      if (row.tools) {
+        const tool = dbToolToAppTool(row.tools as unknown as DbTool);
+        // Only include active tools
+        if (tool.status === 'active') {
+          courseMap.get(row.course_id)!.tools.push(tool);
+          courseMap.get(row.course_id)!.orders.set(tool.id, row.display_order || 0);
+        }
+      }
+    });
+
+    // Filter out courses with no active tools, sort tools by display_order
+    return Array.from(courseMap.entries())
+      .filter(([, { tools }]) => tools.length > 0)
+      .map(([courseId, { name, tools, orders }]) => ({
+        courseId,
+        courseName: name,
+        tools: tools.sort((a, b) => (orders.get(a.id) || 0) - (orders.get(b.id) || 0)),
+      }))
+      .sort((a, b) => a.courseName.localeCompare(b.courseName));
+  } catch (error) {
+    console.error('Error fetching courses with tool details:', error);
+    return [];
+  }
+}
+
+// ============================================
 // TOOLS BY CATEGORY (for grouped display)
 // ============================================
 
