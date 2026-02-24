@@ -1,47 +1,21 @@
 import Link from 'next/link';
 import { PublicHeader } from '@/components/PublicHeader';
+import { PublicToolsFilter } from '@/components/PublicToolsFilter';
 import { Logo } from '@/components/ui/Logo';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { getPublicTools } from '@/lib/db';
-import { CATEGORY_METADATA } from '@/lib/tools/registry';
 import {
-  FileText,
   ExternalLink,
-  ArrowRight,
   GraduationCap,
   Sparkles,
   Wrench,
 } from 'lucide-react';
-import { getToolTypeIcon, toolTypeColors } from '@/lib/tools/tool-ui';
-import type { Tool, ToolCategory } from '@/types';
-
-// Group tools by category
-function groupToolsByCategory(tools: Tool[]): { id: ToolCategory; name: string; tools: Tool[] }[] {
-  const grouped: Record<string, Tool[]> = {};
-
-  tools.forEach(tool => {
-    if (!grouped[tool.category]) {
-      grouped[tool.category] = [];
-    }
-    grouped[tool.category].push(tool);
-  });
-
-  return Object.entries(grouped)
-    .filter(([_, tools]) => tools.length > 0)
-    .map(([category, tools]) => ({
-      id: category as ToolCategory,
-      name: CATEGORY_METADATA[category]?.name || category,
-      tools,
-    }))
-    .sort((a, b) => a.name.localeCompare(b.name));
-}
 
 export default async function PublicToolsPage() {
   // Fetch tools from database
   const tools = await getPublicTools();
-  const categories = groupToolsByCategory(tools);
   const hasTools = tools.length > 0;
 
   return (
@@ -114,7 +88,7 @@ export default async function PublicToolsPage() {
                   Tools Coming Soon
                 </h3>
                 <p className="text-slate-500 mb-6">
-                  We're building practical demo tools for tax professionals.
+                  We&apos;re building practical demo tools for tax professionals.
                   These tools will help you practice real-world tax calculations
                   and scenarios in a safe learning environment.
                 </p>
@@ -135,57 +109,7 @@ export default async function PublicToolsPage() {
               </CardContent>
             </Card>
           ) : (
-            /* Tools by Category */
-            categories.map((category) => (
-              <div key={category.id} className="mb-12">
-                <div className="flex items-center gap-3 mb-6">
-                  <h3 className="text-xl font-semibold text-mojitax-navy">
-                    {category.name}
-                  </h3>
-                  <Badge variant="default" size="sm">
-                    {category.tools.length} {category.tools.length === 1 ? 'tool' : 'tools'}
-                  </Badge>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {category.tools.map((tool) => (
-                    <Link
-                      key={tool.id}
-                      href={`/tools/${tool.slug}`}
-                      className="group"
-                    >
-                      <Card hover>
-                        <CardContent className="p-6">
-                          <div className="flex items-start gap-4">
-                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${toolTypeColors[tool.toolType] || 'bg-slate-100 text-slate-600'}`}>
-                              {getToolTypeIcon(tool.toolType)}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <h4 className="font-semibold text-mojitax-navy group-hover:text-mojitax-green-dark transition-colors mb-1">
-                                {tool.name}
-                              </h4>
-                              <p className="text-sm text-slate-500 line-clamp-2">
-                                {tool.shortDescription}
-                              </p>
-                            </div>
-                          </div>
-
-                          <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
-                            <span className="text-xs text-slate-400 capitalize">
-                              {tool.toolType.replace('-', ' ')}
-                            </span>
-                            <span className="text-sm font-medium text-mojitax-green-dark flex items-center gap-1 group-hover:gap-2 transition-all">
-                              Preview
-                              <ArrowRight className="w-4 h-4" />
-                            </span>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            ))
+            <PublicToolsFilter tools={tools} />
           )}
         </div>
       </section>
