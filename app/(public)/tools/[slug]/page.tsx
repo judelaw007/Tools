@@ -380,7 +380,7 @@ export default async function ToolPage({ params }: ToolPageProps) {
                   <div className="flex justify-between">
                     <dt className="text-sm text-slate-500">Category</dt>
                     <dd className="text-sm font-medium text-mojitax-navy">
-                      {CATEGORY_METADATA[tool.category]?.name || tool.category.replace('_', ' ')}
+                      {CATEGORY_METADATA[tool.category]?.name || tool.category.replace(/_/g, ' ')}
                     </dd>
                   </div>
                   <div className="flex justify-between">

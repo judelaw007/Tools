@@ -23,6 +23,7 @@ import {
   Loader2,
   X,
   TrendingUp,
+  Activity,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -93,7 +94,7 @@ export function Sidebar({ variant = 'user', isCollapsed = false, onToggleCollaps
 
   const userNavItems: NavItem[] = [
     { href: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5" /> },
-    { href: '/tools', label: 'Browse Tools', icon: <Wrench className="w-5 h-5" /> },
+    { href: '/dashboard/tools', label: 'Browse Tools', icon: <Wrench className="w-5 h-5" /> },
     { href: '/dashboard/skills', label: 'Skills Matrix', icon: <TrendingUp className="w-5 h-5" /> },
   ];
 
@@ -102,6 +103,7 @@ export function Sidebar({ variant = 'user', isCollapsed = false, onToggleCollaps
     { href: '/admin/tools', label: 'Tools', icon: <Wrench className="w-5 h-5" /> },
     { href: '/admin/courses', label: 'Courses', icon: <BookOpen className="w-5 h-5" /> },
     { href: '/admin/skills', label: 'Skills Matrix', icon: <TrendingUp className="w-5 h-5" /> },
+    { href: '/admin/activity', label: 'Activity', icon: <Activity className="w-5 h-5" /> },
   ];
 
   const navItems = variant === 'admin' ? adminNavItems : userNavItems;

@@ -26,6 +26,7 @@ import {
   Check,
   RefreshCw,
 } from 'lucide-react';
+import { CATEGORY_METADATA } from '@/lib/tools/registry';
 import type { Tool, ToolStatus, ToolCategory } from '@/types';
 
 const statusOptions = [
@@ -36,14 +37,12 @@ const statusOptions = [
   { value: 'archived', label: 'Archived' },
 ];
 
+// Dynamically build category options from the registry
 const categoryOptions = [
   { value: '', label: 'All Categories' },
-  { value: 'transfer_pricing', label: 'Transfer Pricing' },
-  { value: 'vat', label: 'VAT / Indirect Tax' },
-  { value: 'fatca_crs', label: 'FATCA / CRS' },
-  { value: 'withholding_tax', label: 'Withholding Tax' },
-  { value: 'pillar_two', label: 'Pillar Two' },
-  { value: 'pe_assessment', label: 'PE Assessment' },
+  ...Object.entries(CATEGORY_METADATA)
+    .map(([key, meta]) => ({ value: key, label: meta.name }))
+    .sort((a, b) => a.label.localeCompare(b.label)),
 ];
 
 export default function AdminToolsPage() {
@@ -463,7 +462,7 @@ export default function AdminToolsPage() {
                       {tool.toolType.replace('-', ' ')}
                     </td>
                     <td className="px-4 py-3 text-sm text-slate-600 capitalize">
-                      {tool.category?.replace('_', ' ') || '-'}
+                      {tool.category?.replace(/_/g, ' ') || '-'}
                     </td>
                     <td className="px-4 py-3 text-sm text-slate-500">
                       {tool.updatedAt.toLocaleDateString()}
