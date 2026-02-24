@@ -144,7 +144,7 @@ export function dbToolToAppTool(dbTool: DbTool): import('@/types').Tool {
 
 // Helper to convert app type to DB update
 export function appToolToDbUpdate(
-  updates: Partial<Pick<import('@/types').Tool, 'name' | 'shortDescription' | 'description' | 'category' | 'status'>>
+  updates: Partial<Pick<import('@/types').Tool, 'name' | 'shortDescription' | 'description' | 'category' | 'status' | 'toolType'>>
 ): DbToolUpdate {
   const dbUpdate: DbToolUpdate = {};
 
@@ -153,6 +153,7 @@ export function appToolToDbUpdate(
   if (updates.description !== undefined) dbUpdate.description = updates.description;
   if (updates.category !== undefined) dbUpdate.category = updates.category;
   if (updates.status !== undefined) dbUpdate.status = updates.status;
+  if (updates.toolType !== undefined) dbUpdate.tool_type = updates.toolType;
 
   return dbUpdate;
 }

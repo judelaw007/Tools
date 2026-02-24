@@ -281,7 +281,7 @@ export async function searchTools(query: string): Promise<Tool[]> {
  */
 export async function updateTool(
   id: string,
-  updates: Partial<Pick<Tool, 'name' | 'shortDescription' | 'description' | 'category' | 'status'>>
+  updates: Partial<Pick<Tool, 'name' | 'shortDescription' | 'description' | 'category' | 'status' | 'toolType'>>
 ): Promise<Tool | null> {
   if (!isSupabaseConfigured()) {
     // Fallback to in-memory update (for development only)
