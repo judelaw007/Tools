@@ -625,7 +625,8 @@ export interface CourseWithToolDetails {
 
 /**
  * Get all courses that have tools allocated, with full tool details.
- * Used for the public tools page to show courses with their tools.
+ * Uses a two-step approach (allocations + tools) to avoid reliance on
+ * Supabase foreign-key joins which may not be configured.
  * Only includes active tools — courses with no active tools are omitted.
  */
 export async function getCoursesWithToolDetails(): Promise<CourseWithToolDetails[]> {
@@ -635,51 +636,55 @@ export async function getCoursesWithToolDetails(): Promise<CourseWithToolDetails
 
   try {
     const supabase = createServiceClient();
-    const { data, error } = await supabase
+
+    // Step 1: Get all allocations
+    const { data: allocations, error: allocError } = await supabase
       .from('course_tool_allocations')
-      .select(`
-        course_id,
-        course_name,
-        tool_id,
-        display_order,
-        tools (*)
-      `)
-      .order('course_name');
+      .select('course_id, course_name, tool_id');
 
-    if (error) throw error;
+    if (allocError) throw allocError;
+    if (!allocations || allocations.length === 0) return [];
 
-    if (!data || data.length === 0) {
-      return [];
-    }
+    // Step 2: Get unique tool IDs and fetch full tool records
+    const toolIds = Array.from(new Set(allocations.map((a: { tool_id: string }) => a.tool_id)));
+    const { data: toolRows, error: toolError } = await supabase
+      .from('tools')
+      .select('*')
+      .in('id', toolIds)
+      .eq('status', 'active');
 
-    // Group by course
-    const courseMap = new Map<string, { name: string; tools: Tool[]; orders: Map<string, number> }>();
+    if (toolError) throw toolError;
 
-    data.forEach((row: { course_id: string; course_name: string | null; tool_id: string; display_order: number; tools: unknown }) => {
+    // Build a lookup map of tool ID → Tool
+    const toolMap = new Map<string, Tool>();
+    (toolRows || []).forEach((row: DbTool) => {
+      const tool = dbToolToAppTool(row);
+      toolMap.set(tool.id, tool);
+    });
+
+    // Step 3: Group allocations by course, resolve tool objects
+    const courseMap = new Map<string, { name: string; tools: Tool[] }>();
+
+    allocations.forEach((row: { course_id: string; course_name: string | null; tool_id: string }) => {
+      const tool = toolMap.get(row.tool_id);
+      if (!tool) return; // tool not active or not found
+
       if (!courseMap.has(row.course_id)) {
         courseMap.set(row.course_id, {
           name: row.course_name || row.course_id,
           tools: [],
-          orders: new Map(),
         });
       }
-      if (row.tools) {
-        const tool = dbToolToAppTool(row.tools as unknown as DbTool);
-        // Only include active tools
-        if (tool.status === 'active') {
-          courseMap.get(row.course_id)!.tools.push(tool);
-          courseMap.get(row.course_id)!.orders.set(tool.id, row.display_order || 0);
-        }
-      }
+      courseMap.get(row.course_id)!.tools.push(tool);
     });
 
-    // Filter out courses with no active tools, sort tools by display_order
+    // Return courses with active tools, sorted alphabetically
     return Array.from(courseMap.entries())
       .filter(([, { tools }]) => tools.length > 0)
-      .map(([courseId, { name, tools, orders }]) => ({
+      .map(([courseId, { name, tools }]) => ({
         courseId,
         courseName: name,
-        tools: tools.sort((a, b) => (orders.get(a.id) || 0) - (orders.get(b.id) || 0)),
+        tools: tools.sort((a, b) => a.name.localeCompare(b.name)),
       }))
       .sort((a, b) => a.courseName.localeCompare(b.courseName));
   } catch (error) {
