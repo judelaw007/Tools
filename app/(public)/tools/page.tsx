@@ -96,91 +96,88 @@ export default async function PublicToolsPage() {
       </section>
 
       {/* ══════════════════════════════════════
-          SECTION 3: COURSES & SKILLS MATRIX (SIDE-BY-SIDE)
+          SECTION 3: COURSES & TOOLS (FULL WIDTH)
           ══════════════════════════════════════ */}
       <section className="py-16 md:py-20 bg-slate-50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-8 items-start">
-
-            {/* LEFT: Courses & Tools */}
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-8">
             <div>
               <p className="text-xs font-bold uppercase tracking-[2px] text-orange-500 mb-3">
                 Courses &amp; Tools
               </p>
-              <h2 className="text-2xl md:text-[28px] font-bold text-mojitax-navy mb-2">
+              <h2 className="text-2xl md:text-[28px] font-bold text-mojitax-navy mb-1">
                 Professional Practice Courses
               </h2>
-              <p className="text-sm text-slate-500 leading-relaxed mb-8">
-                Each course includes hands-on tools. Click a course to see its tools. As new tools are developed they appear here automatically.
+              <p className="text-sm text-slate-500 leading-relaxed max-w-xl">
+                Each course includes hands-on tools. Click a course to see its tools.
               </p>
-
-              <CourseToolsList courses={coursesWithTools} />
             </div>
-
-            {/* RIGHT: Skills Matrix */}
-            <div className="lg:sticky lg:top-8">
-              <p className="text-xs font-bold uppercase tracking-[2px] text-orange-500 mb-3">
-                Your Credential
-              </p>
-              <h2 className="text-2xl md:text-[28px] font-bold text-mojitax-navy mb-2">
-                The Skills Matrix
-              </h2>
-              <p className="text-sm text-slate-500 leading-relaxed mb-8">
-                A detailed record of your practical competence, generated from your work inside MojiTax Tools.
-              </p>
-
-              {/* Skills Matrix Card */}
-              <div className="bg-white rounded-xl border-t-[3px] border-t-violet-600 shadow-sm overflow-hidden">
-                {/* Side panel accent */}
-                <div className="bg-violet-50 flex items-center justify-center py-6">
-                  <div className="text-center">
-                    <div className="text-5xl mb-2">&#128196;</div>
-                    <h4 className="text-sm font-bold text-mojitax-navy">Verifiable Credential</h4>
-                    <p className="text-xs font-semibold text-violet-600">QR code validated</p>
-                  </div>
+            {hasCourses && (
+              <div className="flex items-center gap-4 flex-shrink-0">
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-mojitax-navy">{coursesWithTools.length}</p>
+                  <p className="text-[11px] text-slate-400">{coursesWithTools.length === 1 ? 'Course' : 'Courses'}</p>
                 </div>
-
-                {/* Body */}
-                <div className="p-6">
-                  <h3 className="text-base font-bold text-mojitax-navy mb-2">
-                    Downloadable Skills Matrix
-                  </h3>
-                  <p className="text-sm text-slate-500 leading-relaxed mb-4">
-                    Every scenario you complete contributes to your Skills Matrix &mdash; mapping your competence across international tax topics.
-                  </p>
-                  <ul className="space-y-2.5">
-                    {[
-                      'Topics covered and competence level per area',
-                      'Study hours and completion dates',
-                      'Tools and forms practised',
-                      'QR code for employer verification',
-                    ].map((item) => (
-                      <li key={item} className="flex items-start gap-2 text-sm text-mojitax-navy">
-                        <span className="text-violet-600 font-bold text-sm leading-5 flex-shrink-0">&#10003;</span>
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
+                <div className="w-px h-8 bg-slate-200" />
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-mojitax-navy">{totalToolCount}</p>
+                  <p className="text-[11px] text-slate-400">{totalToolCount === 1 ? 'Tool' : 'Tools'}</p>
                 </div>
               </div>
+            )}
+          </div>
 
-              <p className="text-xs text-slate-400 leading-relaxed mt-4">
-                Employers and professional bodies can scan the QR code to verify your Skills Matrix directly.
-              </p>
+          <CourseToolsList courses={coursesWithTools} />
+        </div>
+      </section>
 
-              {/* Quick stats */}
-              {hasCourses && (
-                <div className="mt-6 grid grid-cols-2 gap-3">
-                  <div className="bg-white rounded-lg p-4 text-center shadow-sm">
-                    <p className="text-2xl font-bold text-mojitax-navy">{coursesWithTools.length}</p>
-                    <p className="text-xs text-slate-400 mt-0.5">{coursesWithTools.length === 1 ? 'Course' : 'Courses'}</p>
-                  </div>
-                  <div className="bg-white rounded-lg p-4 text-center shadow-sm">
-                    <p className="text-2xl font-bold text-mojitax-navy">{totalToolCount}</p>
-                    <p className="text-xs text-slate-400 mt-0.5">{totalToolCount === 1 ? 'Tool' : 'Tools'}</p>
-                  </div>
-                </div>
-              )}
+      {/* ══════════════════════════════════════
+          SECTION 4: SKILLS MATRIX (COMPACT HORIZONTAL)
+          ══════════════════════════════════════ */}
+      <section className="py-16 md:py-20 bg-white">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <p className="text-xs font-bold uppercase tracking-[2px] text-orange-500 mb-3">
+            Your Credential
+          </p>
+          <h2 className="text-2xl md:text-[28px] font-bold text-mojitax-navy mb-2">
+            The Skills Matrix
+          </h2>
+          <p className="text-sm text-slate-500 leading-relaxed max-w-2xl mb-8">
+            A detailed record of your practical competence, generated from your work inside MojiTax Tools.
+          </p>
+
+          {/* Horizontal featured card */}
+          <div className="bg-white rounded-xl border-t-[3px] border-t-violet-600 shadow-md overflow-hidden">
+            <div className="grid grid-cols-1 md:grid-cols-[1fr_220px]">
+              <div className="p-6 md:p-8">
+                <h3 className="text-base font-bold text-mojitax-navy mb-2">
+                  Downloadable Skills Matrix
+                </h3>
+                <p className="text-sm text-slate-500 leading-relaxed mb-4">
+                  Every scenario you complete contributes to your Skills Matrix &mdash; mapping your competence across international tax topics.
+                </p>
+                <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2">
+                  {[
+                    'Topics covered and competence level',
+                    'Study hours and completion dates',
+                    'Tools and forms practised',
+                    'QR code for employer verification',
+                  ].map((item) => (
+                    <li key={item} className="flex items-start gap-2 text-sm text-mojitax-navy">
+                      <span className="text-violet-600 font-bold text-sm leading-5 flex-shrink-0">&#10003;</span>
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div className="bg-violet-50 flex flex-col items-center justify-center p-6 text-center">
+                <div className="text-5xl mb-2">&#128196;</div>
+                <h4 className="text-sm font-bold text-mojitax-navy">Verifiable Credential</h4>
+                <p className="text-xs font-semibold text-violet-600 mb-2">QR code validated</p>
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  Employers scan the QR code to verify directly
+                </p>
+              </div>
             </div>
           </div>
         </div>
