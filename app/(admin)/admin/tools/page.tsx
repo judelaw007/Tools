@@ -26,8 +26,9 @@ import {
   Check,
   RefreshCw,
 } from 'lucide-react';
-import { CATEGORY_METADATA } from '@/lib/tools/registry';
-import type { Tool, ToolStatus, ToolCategory } from '@/types';
+import { toast } from 'sonner';
+import { CATEGORY_METADATA, TOOL_TYPE_METADATA } from '@/lib/tools/registry';
+import type { Tool, ToolType, ToolStatus, ToolCategory } from '@/types';
 
 const statusOptions = [
   { value: '', label: 'All Status' },
@@ -45,18 +46,26 @@ const categoryOptions = [
     .sort((a, b) => a.label.localeCompare(b.label)),
 ];
 
+// Dynamically build tool type options from the registry
+const typeOptions = [
+  { value: '', label: 'All Types' },
+  ...Object.entries(TOOL_TYPE_METADATA)
+    .map(([key, meta]) => ({ value: key, label: meta.name }))
+    .sort((a, b) => a.label.localeCompare(b.label)),
+];
+
 export default function AdminToolsPage() {
   const [tools, setTools] = useState<Tool[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
+  const [typeFilter, setTypeFilter] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
   // Sync state
   const [isSyncing, setIsSyncing] = useState(false);
-  const [syncMessage, setSyncMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   // Edit modal state
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -64,6 +73,8 @@ export default function AdminToolsPage() {
   const [editForm, setEditForm] = useState({
     name: '',
     shortDescription: '',
+    description: '',
+    toolType: '' as ToolType | '',
     category: '' as ToolCategory | '',
     status: '' as ToolStatus,
   });
@@ -97,24 +108,19 @@ export default function AdminToolsPage() {
   // Sync seed data to database
   const syncTools = async () => {
     setIsSyncing(true);
-    setSyncMessage(null);
     try {
       const response = await fetch('/api/admin/sync-tools', { method: 'POST' });
       const data = await response.json();
       if (data.success) {
-        setSyncMessage({
-          type: 'success',
-          text: `Synced: ${data.stats.insertedCount} added, ${data.stats.updatedCount} updated`,
-        });
+        toast.success(`Synced: ${data.stats.insertedCount} added, ${data.stats.updatedCount} updated`);
         await fetchTools();
       } else {
-        setSyncMessage({ type: 'error', text: data.error || 'Sync failed' });
+        toast.error(data.error || 'Sync failed');
       }
     } catch {
-      setSyncMessage({ type: 'error', text: 'Failed to sync tools' });
+      toast.error('Failed to sync tools');
     } finally {
       setIsSyncing(false);
-      setTimeout(() => setSyncMessage(null), 5000);
     }
   };
 
@@ -124,6 +130,8 @@ export default function AdminToolsPage() {
     setEditForm({
       name: tool.name,
       shortDescription: tool.shortDescription || '',
+      description: tool.description || '',
+      toolType: tool.toolType,
       category: tool.category,
       status: tool.status,
     });
@@ -147,13 +155,17 @@ export default function AdminToolsPage() {
       });
 
       if (response.ok) {
-        // Refresh tools list
         await fetchTools();
         setIsEditModalOpen(false);
         setEditingTool(null);
+        toast.success(`"${editForm.name}" updated successfully`);
+      } else {
+        const data = await response.json().catch(() => null);
+        toast.error(data?.error || 'Failed to save changes');
       }
     } catch (error) {
       console.error('Failed to save tool:', error);
+      toast.error('Failed to save changes');
     } finally {
       setIsSaving(false);
     }
@@ -171,9 +183,13 @@ export default function AdminToolsPage() {
 
       if (response.ok) {
         await fetchTools();
+        toast.success(`"${tool.name}" ${newStatus === 'active' ? 'activated' : 'deactivated'}`);
+      } else {
+        toast.error('Failed to update tool status');
       }
     } catch (error) {
       console.error('Failed to toggle tool status:', error);
+      toast.error('Failed to update tool status');
     }
     setOpenMenuId(null);
   };
@@ -184,7 +200,8 @@ export default function AdminToolsPage() {
                          tool.shortDescription?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = !statusFilter || tool.status === statusFilter;
     const matchesCategory = !categoryFilter || tool.category === categoryFilter;
-    return matchesSearch && matchesStatus && matchesCategory;
+    const matchesType = !typeFilter || tool.toolType === typeFilter;
+    return matchesSearch && matchesStatus && matchesCategory && matchesType;
   });
 
   const statusCounts = {
@@ -231,22 +248,6 @@ export default function AdminToolsPage() {
         </Button>
       </div>
 
-      {/* Sync status message */}
-      {syncMessage && (
-        <div className={`mb-4 p-3 rounded-lg flex items-center gap-2 text-sm ${
-          syncMessage.type === 'success'
-            ? 'bg-green-50 border border-green-200 text-green-700'
-            : 'bg-red-50 border border-red-200 text-red-700'
-        }`}>
-          {syncMessage.type === 'success' ? (
-            <Check className="w-4 h-4" />
-          ) : (
-            <X className="w-4 h-4" />
-          )}
-          {syncMessage.text}
-        </div>
-      )}
-
       {/* Filters Bar */}
       <Card className="mb-6">
         <CardContent className="p-4">
@@ -275,6 +276,13 @@ export default function AdminToolsPage() {
                   options={categoryOptions}
                   value={categoryFilter}
                   onChange={(e) => setCategoryFilter(e.target.value)}
+                />
+              </div>
+              <div className="w-44">
+                <Select
+                  options={typeOptions}
+                  value={typeFilter}
+                  onChange={(e) => setTypeFilter(e.target.value)}
                 />
               </div>
 
@@ -345,9 +353,9 @@ export default function AdminToolsPage() {
       {/* Tools Grid/List */}
       {filteredTools.length === 0 ? (
         <EmptyState
-          icon={searchQuery || statusFilter || categoryFilter ? Wrench : FolderOpen}
-          title={searchQuery || statusFilter || categoryFilter ? "No tools found" : "No tools uploaded yet"}
-          description={searchQuery || statusFilter || categoryFilter
+          icon={searchQuery || statusFilter || categoryFilter || typeFilter ? Wrench : FolderOpen}
+          title={searchQuery || statusFilter || categoryFilter || typeFilter ? "No tools found" : "No tools uploaded yet"}
+          description={searchQuery || statusFilter || categoryFilter || typeFilter
             ? "Try adjusting your search or filters"
             : "Tools will appear here once developers upload them to the platform. You'll then be able to categorise, describe, and activate them for users."
           }
@@ -535,7 +543,7 @@ export default function AdminToolsPage() {
             </div>
 
             {/* Body */}
-            <div className="p-4 space-y-4 overflow-y-auto max-h-[50vh]">
+            <div className="p-4 space-y-4 overflow-y-auto max-h-[60vh]">
               {/* Name */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">
@@ -556,22 +564,51 @@ export default function AdminToolsPage() {
                 <textarea
                   value={editForm.shortDescription}
                   onChange={(e) => setEditForm({ ...editForm, shortDescription: e.target.value })}
-                  placeholder="Brief description of the tool"
+                  placeholder="Brief description shown on cards and listings"
                   className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-mojitax-green/50 focus:border-mojitax-green resize-none"
-                  rows={3}
+                  rows={2}
                 />
               </div>
 
-              {/* Category */}
+              {/* Full Description */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Category
+                  Full Description
                 </label>
-                <Select
-                  options={categoryOptions.filter(o => o.value !== '')}
-                  value={editForm.category}
-                  onChange={(e) => setEditForm({ ...editForm, category: e.target.value as ToolCategory })}
+                <textarea
+                  value={editForm.description}
+                  onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                  placeholder="Detailed description shown on the tool page. Supports plain text."
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-mojitax-green/50 focus:border-mojitax-green resize-y"
+                  rows={4}
                 />
+                <p className="mt-1 text-xs text-slate-400">
+                  Shown on the tool&apos;s detail page
+                </p>
+              </div>
+
+              {/* Tool Type & Category row */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    Tool Type
+                  </label>
+                  <Select
+                    options={typeOptions.filter(o => o.value !== '')}
+                    value={editForm.toolType}
+                    onChange={(e) => setEditForm({ ...editForm, toolType: e.target.value as ToolType })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    Category
+                  </label>
+                  <Select
+                    options={categoryOptions.filter(o => o.value !== '')}
+                    value={editForm.category}
+                    onChange={(e) => setEditForm({ ...editForm, category: e.target.value as ToolCategory })}
+                  />
+                </div>
               </div>
 
               {/* Status */}

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { GeistSans } from 'geist/font/sans';
 import { GeistMono } from 'geist/font/mono';
+import { Toaster } from 'sonner';
 import { Providers } from '@/components/Providers';
 import './globals.css';
 
@@ -47,6 +48,7 @@ export default function RootLayout({
     <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable}`}>
       <body className="min-h-screen bg-slate-50">
         <Providers>{children}</Providers>
+        <Toaster position="top-right" richColors closeButton />
       </body>
     </html>
   );
