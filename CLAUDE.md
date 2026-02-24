@@ -54,7 +54,7 @@ Copy `.env.local.example` to `.env.local`. On Replit, secrets are configured via
 
 ### Route Groups & Access Control
 The app uses Next.js route groups with middleware-enforced authentication (`middleware.ts`):
-- `app/(public)/` — No auth required (public tools listing)
+- `app/(public)/` — No auth required (public landing page with course-tool listings)
 - `app/(auth)/` — Requires authenticated session (user dashboard)
 - `app/(admin)/` — Requires admin/super_admin role
 - `app/api/` — 35+ API route handlers organized by domain
@@ -67,12 +67,25 @@ User tool access = intersection of user's LearnWorlds enrollments and course-too
 **Tool Visibility Rule**: Tools with zero course allocations are completely invisible to non-admin users. `getPublicTools()` in `lib/db/index.ts` filters through `getAllocatedToolIds()`, the tool page returns `notFound()`, and the API returns 404. The `course_tool_allocations` table does **not** have an `is_active` column in the deployed database — never filter by it.
 
 ### Tool System
-Tools are React components in `components/tools/calculator/`. Each tool (GloBECalculator, FilingDeadlineCalculator, SafeHarbourQualifier, DFEAssessmentTool, GIRPracticeForm, AuditFileChecklist) is a self-contained 4-file folder (`types.ts`, `utils.ts`, `ToolName.tsx`, `index.ts`). The tool registry at `lib/tools/registry.ts` maps tool types to components and defines metadata for types (calculator, search, validator, generator, tracker, reference, external-link, spreadsheet, form) and categories (transfer_pricing, vat, fatca_crs, withholding_tax, pillar_two, pe_assessment, cross_category).
+Tools are React components in `components/tools/calculator/`. Each tool (GloBECalculator, FilingDeadlineCalculator, SafeHarbourQualifier, DFEAssessmentTool, GIRPracticeForm, AuditFileChecklist) is a self-contained 4-file folder (`types.ts`, `utils.ts`, `ToolName.tsx`, `index.ts`). The tool registry at `lib/tools/registry.ts` maps tool types to components and defines metadata for types (calculator, search, validator, generator, tracker, reference, external-link, spreadsheet, form) and categories.
+
+**Dynamic categories**: Categories are managed via admin at `/admin/categories` and stored in the `tool_categories` table. The `lib/categories.ts` module fetches from the DB with a fallback to `CATEGORY_METADATA` in `lib/tools/registry.ts`. The `tools.category` column no longer has a CHECK constraint, so any new category slug can be assigned. The `tools_category_check` constraint was dropped in production.
 
 **Adding new tools**: Follow the standardised process in `docs/TOOL-CREATION-GUIDE.md`. Key registration points: component folder, `CALCULATOR_COMPONENTS` registry in `components/tools/calculator/index.ts`, render block in `components/tools/ToolPageClient.tsx`, database `tools` record, and `course_tool_allocations` row.
 
 ### Journey Tracking
 All 6 tools are instrumented with tracking callbacks via `hooks/useToolTracking.ts`. The hook generates a per-session UUID and fires events to `POST /api/tools/track` (fire-and-forget, `keepalive: true`). The API endpoint writes to `tool_usage_logs`, updates `user_skills` via `incrementToolUsage()` on `calculate` events, updates `user_tool_projects` via `incrementToolProjectCount()` on `workflow_complete` events, and logs to the activity dashboard. Skill auto-levelling: 1-4 uses = familiar, 5-14 = proficient, 15+ = expert.
+
+### Public Tools Page (`app/(public)/tools/page.tsx`)
+The public-facing landing page for MojiTax Tools. Designed as a marketing page that dynamically updates as tools are allocated to courses. Sections:
+1. **Hero** — "International Tax Practice Simulator" with badge chips
+2. **Practice Areas** — 3-card grid (Forms & Filings, Real-World Scenarios, Skills Evaluation)
+3. **Courses & Tools** — Dynamic accordion list from `getCoursesWithToolDetails()`. Each course is a collapsible row showing name, tool count, and preview. Expands to reveal the full tool grid. Scales to 100+ tools. Rendered by `components/CourseToolsList.tsx` (client component).
+4. **Skills Matrix** — Horizontal featured card with credential checklist
+5. **How to Access** — Purchase course / Subscribe paths
+6. **CTA** — Blue gradient with Browse Courses / View Pricing
+
+`getCoursesWithToolDetails()` in `lib/db/index.ts` uses a two-step fetch (allocations then tools by ID) to avoid reliance on Supabase foreign-key joins. Only returns active tools; omits courses with zero active tools.
 
 ### Key Modules in `lib/`
 - `supabase/` — Server/client Supabase clients (service role pattern for server ops)
@@ -86,6 +99,8 @@ All 6 tools are instrumented with tracking callbacks via `hooks/useToolTracking.
 - `skills/` — Skill tracking with auto-detection from usage (1-4 uses = familiar, 5-14 = proficient, 15+ = expert)
 - `skill-verifications/` — QR code verification for skill portfolios
 - `activity-logs/` — User activity tracking
+- `categories.ts` — Dynamic tool categories (DB-backed with fallback to `CATEGORY_METADATA`)
+- `course-allocations.ts` — Course-tool relationship CRUD (`getCoursesWithTools()`, `checkUserToolAccess()`, etc.)
 - `hooks/useToolTracking.ts` — Client-side journey tracking hook (session lifecycle, step changes, calculations, errors, completion)
 - `app/api/tools/track/route.ts` — Server endpoint for tracking events (writes to `tool_usage_logs`, `user_skills`, `user_tool_projects`, `activity_logs`)
 
@@ -99,7 +114,9 @@ All 6 tools are instrumented with tracking callbacks via `hooks/useToolTracking.
 - **Health check**: `GET /api/health` returns `{ status: 'ok' }`.
 
 ### Database Schema
-Defined in `supabase/schema.sql`. Key tables: `tools`, `course_tool_allocations`, `admin_users`, `tool_usage_logs`, `user_saved_work`, `user_skills`, `skill_categories`, `user_skill_progress`, `user_tool_projects`, `user_course_completions`, `skill_verifications`.
+Defined in `supabase/schema.sql`. Key tables: `tools`, `tool_categories`, `course_tool_allocations`, `admin_users`, `tool_usage_logs`, `user_saved_work`, `user_skills`, `skill_categories`, `user_skill_progress`, `user_tool_projects`, `user_course_completions`, `skill_verifications`.
+
+**Important constraints removed**: The `tools_category_check` CHECK constraint on `tools.category` has been dropped in production to allow dynamic categories created via the admin panel.
 
 ### Deployment
 Configured for Replit (see `.replit`). Webpack polling enabled for cloud file watching. Dev server binds to `0.0.0.0:5000`.
