@@ -24,6 +24,7 @@ import {
   X,
   TrendingUp,
   Activity,
+  FolderTree,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -103,6 +104,7 @@ export function Sidebar({ variant = 'user', isCollapsed = false, onToggleCollaps
   const adminNavItems: NavItem[] = [
     { href: '/admin', label: 'Overview', icon: <LayoutDashboard className="w-5 h-5" /> },
     { href: '/admin/tools', label: 'Tools', icon: <Wrench className="w-5 h-5" /> },
+    { href: '/admin/categories', label: 'Categories', icon: <FolderTree className="w-5 h-5" /> },
     { href: '/admin/courses', label: 'Courses', icon: <BookOpen className="w-5 h-5" /> },
     { href: '/admin/skills', label: 'Skills Matrix', icon: <TrendingUp className="w-5 h-5" /> },
     { href: '/admin/activity', label: 'Activity', icon: <Activity className="w-5 h-5" /> },

@@ -33,10 +33,12 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { CATEGORY_METADATA, TOOL_TYPE_METADATA } from '@/lib/tools/registry';
-import type { Tool, ToolType, ToolStatus, ToolCategory } from '@/types';
+import { TOOL_TYPE_METADATA } from '@/lib/tools/registry';
+import type { Tool, ToolType, ToolStatus } from '@/types';
 
 const ITEMS_PER_PAGE = 12;
+
+interface CategoryOption { value: string; label: string }
 
 const statusOptions = [
   { value: '', label: 'All Status' },
@@ -44,13 +46,6 @@ const statusOptions = [
   { value: 'draft', label: 'Draft' },
   { value: 'inactive', label: 'Inactive' },
   { value: 'archived', label: 'Archived' },
-];
-
-const categoryOptions = [
-  { value: '', label: 'All Categories' },
-  ...Object.entries(CATEGORY_METADATA)
-    .map(([key, meta]) => ({ value: key, label: meta.name }))
-    .sort((a, b) => a.label.localeCompare(b.label)),
 ];
 
 const typeOptions = [
@@ -63,6 +58,7 @@ const typeOptions = [
 export default function AdminToolsPage() {
   const [tools, setTools] = useState<Tool[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [categoryOptions, setCategoryOptions] = useState<CategoryOption[]>([{ value: '', label: 'All Categories' }]);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
@@ -85,7 +81,7 @@ export default function AdminToolsPage() {
     shortDescription: '',
     description: '',
     toolType: '' as ToolType | '',
-    category: '' as ToolCategory | '',
+    category: '',
     status: '' as ToolStatus,
   });
   const [isSaving, setIsSaving] = useState(false);
@@ -112,9 +108,29 @@ export default function AdminToolsPage() {
     }
   }, []);
 
+  // Fetch categories from API
+  const fetchCategories = useCallback(async () => {
+    try {
+      const res = await fetch('/api/categories');
+      if (res.ok) {
+        const data = await res.json();
+        const opts: CategoryOption[] = [
+          { value: '', label: 'All Categories' },
+          ...data.categories
+            .map((c: { slug: string; name: string }) => ({ value: c.slug, label: c.name }))
+            .sort((a: CategoryOption, b: CategoryOption) => a.label.localeCompare(b.label)),
+        ];
+        setCategoryOptions(opts);
+      }
+    } catch {
+      // keep fallback
+    }
+  }, []);
+
   useEffect(() => {
     fetchTools();
-  }, [fetchTools]);
+    fetchCategories();
+  }, [fetchTools, fetchCategories]);
 
   // Sync seed data to database
   const syncTools = async () => {
@@ -748,7 +764,7 @@ export default function AdminToolsPage() {
                   <Select
                     options={categoryOptions.filter(o => o.value !== '')}
                     value={editForm.category}
-                    onChange={(e) => updateEditForm({ category: e.target.value as ToolCategory })}
+                    onChange={(e) => updateEditForm({ category: e.target.value })}
                   />
                 </div>
               </div>

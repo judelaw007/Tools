@@ -7,17 +7,74 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- ===========================================
+-- TOOL_CATEGORIES TABLE
+-- ===========================================
+-- Dynamic tool categories (admin-configurable)
+-- Replaces the hardcoded CHECK constraint on tools.category
+
+CREATE TABLE IF NOT EXISTS tool_categories (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  slug VARCHAR(100) UNIQUE NOT NULL,        -- e.g. 'transfer_pricing'
+  name VARCHAR(255) NOT NULL,               -- e.g. 'Transfer Pricing'
+  short_name VARCHAR(20) NOT NULL,          -- e.g. 'TP'
+  description TEXT,
+  color VARCHAR(30) NOT NULL DEFAULT 'slate', -- Tailwind colour token
+  display_order INT NOT NULL DEFAULT 0,
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_tool_categories_slug ON tool_categories(slug);
+CREATE INDEX IF NOT EXISTS idx_tool_categories_active ON tool_categories(is_active);
+CREATE INDEX IF NOT EXISTS idx_tool_categories_order ON tool_categories(display_order);
+
+-- Enable RLS
+ALTER TABLE tool_categories ENABLE ROW LEVEL SECURITY;
+
+-- Anyone can read active categories
+CREATE POLICY "Anyone can view active tool categories"
+  ON tool_categories FOR SELECT
+  USING (true);
+
+-- Service role can manage categories
+CREATE POLICY "Service role can manage tool categories"
+  ON tool_categories FOR ALL
+  USING (true)
+  WITH CHECK (true);
+
+-- Trigger for updated_at
+DROP TRIGGER IF EXISTS tool_categories_updated_at ON tool_categories;
+CREATE TRIGGER tool_categories_updated_at
+  BEFORE UPDATE ON tool_categories
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+-- Seed the default categories
+INSERT INTO tool_categories (slug, name, short_name, description, color, display_order) VALUES
+  ('transfer_pricing', 'Transfer Pricing', 'TP', 'Tools for transfer pricing analysis and documentation', 'blue', 1),
+  ('vat', 'VAT / Indirect Tax', 'VAT', 'Tools for VAT calculations and compliance', 'green', 2),
+  ('fatca_crs', 'FATCA / CRS', 'FATCA', 'Tools for FATCA and CRS compliance', 'purple', 3),
+  ('withholding_tax', 'Withholding Tax & Treaties', 'WHT', 'Tools for withholding tax and treaty analysis', 'orange', 4),
+  ('pillar_two', 'Pillar Two / Global Min Tax', 'P2', 'Tools for Pillar Two calculations', 'cyan', 5),
+  ('pe_assessment', 'PE Assessment', 'PE', 'Tools for permanent establishment analysis', 'pink', 6),
+  ('cross_category', 'Cross-Category', 'Multi', 'Tools that span multiple tax areas', 'slate', 7),
+  ('owner_managed_business', 'Owner Managed Business', 'OMB', 'Tools for owner managed business tax planning and compliance', 'amber', 8)
+ON CONFLICT (slug) DO NOTHING;
+
+-- ===========================================
 -- TOOLS TABLE
 -- ===========================================
 -- Stores tool metadata (synced from developer uploads)
 -- NOTE: id is TEXT to match application tool IDs (e.g., 'gir-globe-calculator')
+-- NOTE: category column no longer has a CHECK constraint — categories are managed
+-- in the tool_categories table and validated at the application layer.
 
 CREATE TABLE IF NOT EXISTS tools (
   id TEXT PRIMARY KEY,
   name VARCHAR(255) NOT NULL,
   slug VARCHAR(255) UNIQUE NOT NULL,
   tool_type VARCHAR(50) NOT NULL CHECK (tool_type IN ('calculator', 'search', 'validator', 'generator', 'tracker', 'reference', 'external-link', 'spreadsheet', 'form')),
-  category VARCHAR(50) NOT NULL CHECK (category IN ('transfer_pricing', 'vat', 'fatca_crs', 'withholding_tax', 'pillar_two', 'pe_assessment', 'cross_category', 'owner_managed_business')),
+  category VARCHAR(50) NOT NULL,
   icon VARCHAR(100),
   short_description TEXT,
   description TEXT,

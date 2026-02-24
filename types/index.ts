@@ -12,15 +12,9 @@ export type ToolType =
 
 export type ToolStatus = 'draft' | 'active' | 'inactive' | 'archived';
 
-export type ToolCategory = 
-  | 'transfer_pricing'
-  | 'vat'
-  | 'fatca_crs'
-  | 'withholding_tax'
-  | 'pillar_two'
-  | 'pe_assessment'
-  | 'cross_category'
-  | 'owner_managed_business';
+// Dynamic — categories are managed in the tool_categories DB table.
+// The string type allows admin-created categories without code changes.
+export type ToolCategory = string;
 
 export type AccessLevel = 'full' | 'limited' | 'preview';
 

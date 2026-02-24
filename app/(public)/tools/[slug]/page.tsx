@@ -11,6 +11,7 @@ import { ToolAccessCard } from '@/components/tools/ToolAccessCard';
 import { getToolBySlug } from '@/lib/db';
 import { getCoursesForToolWithNames } from '@/lib/course-allocations';
 import { CATEGORY_METADATA } from '@/lib/tools/registry';
+import { getCategoryMap } from '@/lib/categories';
 import { getServerSession, hasToolAccess } from '@/lib/server-session';
 import {
   ExternalLink,
@@ -42,6 +43,9 @@ export default async function ToolPage({ params }: ToolPageProps) {
 
   // Fetch courses that include this tool (from course-tool allocations)
   const courses = await getCoursesForToolWithNames(tool.id);
+
+  // Fetch dynamic category names
+  const categoryMap = await getCategoryMap();
 
   // Unallocated tools are invisible to non-admins
   const isAdmin = session?.role === 'admin' || session?.role === 'super_admin';
@@ -349,7 +353,7 @@ export default async function ToolPage({ params }: ToolPageProps) {
                   <div className="flex justify-between">
                     <dt className="text-sm text-slate-500">Category</dt>
                     <dd className="text-sm font-medium text-mojitax-navy">
-                      {CATEGORY_METADATA[tool.category]?.name || tool.category.replace(/_/g, ' ')}
+                      {categoryMap[tool.category]?.name || CATEGORY_METADATA[tool.category]?.name || tool.category.replace(/_/g, ' ')}
                     </dd>
                   </div>
                   <div className="flex justify-between">

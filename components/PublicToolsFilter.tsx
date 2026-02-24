@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
@@ -14,7 +14,10 @@ interface PublicToolsFilterProps {
   tools: Tool[];
 }
 
-function groupToolsByCategory(tools: Tool[]): { id: ToolCategory; name: string; tools: Tool[] }[] {
+function groupToolsByCategory(
+  tools: Tool[],
+  nameMap: Record<string, string>
+): { id: ToolCategory; name: string; tools: Tool[] }[] {
   const grouped: Record<string, Tool[]> = {};
   tools.forEach(tool => {
     if (!grouped[tool.category]) grouped[tool.category] = [];
@@ -24,7 +27,7 @@ function groupToolsByCategory(tools: Tool[]): { id: ToolCategory; name: string; 
     .filter(([, tools]) => tools.length > 0)
     .map(([category, tools]) => ({
       id: category as ToolCategory,
-      name: CATEGORY_METADATA[category]?.name || category,
+      name: nameMap[category] || CATEGORY_METADATA[category]?.name || category.replace(/_/g, ' '),
       tools,
     }))
     .sort((a, b) => a.name.localeCompare(b.name));
@@ -33,14 +36,39 @@ function groupToolsByCategory(tools: Tool[]): { id: ToolCategory; name: string; 
 export function PublicToolsFilter({ tools }: PublicToolsFilterProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
+  const [categoryNames, setCategoryNames] = useState<Record<string, string>>({});
+
+  // Fetch dynamic category names
+  useEffect(() => {
+    fetch('/api/categories')
+      .then(r => r.json())
+      .then(data => {
+        const map: Record<string, string> = {};
+        for (const c of data.categories || []) {
+          map[c.slug] = c.name;
+        }
+        setCategoryNames(map);
+      })
+      .catch(() => {/* use fallback */});
+  }, []);
+
+  const nameMap = useMemo(() => {
+    // Merge dynamic names over hardcoded fallback
+    const m: Record<string, string> = {};
+    for (const [slug, meta] of Object.entries(CATEGORY_METADATA)) {
+      m[slug] = meta.name;
+    }
+    Object.assign(m, categoryNames);
+    return m;
+  }, [categoryNames]);
 
   const allCategories = useMemo(() => {
     const cats = new Set<ToolCategory>();
     tools.forEach(t => cats.add(t.category));
     return Array.from(cats)
-      .map(c => ({ id: c, name: CATEGORY_METADATA[c]?.name || c }))
+      .map(c => ({ id: c, name: nameMap[c] || c.replace(/_/g, ' ') }))
       .sort((a, b) => a.name.localeCompare(b.name));
-  }, [tools]);
+  }, [tools, nameMap]);
 
   const filteredTools = useMemo(() => {
     return tools.filter(tool => {
@@ -52,7 +80,7 @@ export function PublicToolsFilter({ tools }: PublicToolsFilterProps) {
     });
   }, [tools, searchQuery, categoryFilter]);
 
-  const categories = groupToolsByCategory(filteredTools);
+  const categories = groupToolsByCategory(filteredTools, nameMap);
 
   return (
     <>
