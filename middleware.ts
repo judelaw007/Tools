@@ -114,9 +114,15 @@ function addSecurityHeaders(response: NextResponse): NextResponse {
 
   // CSP: allow Replit iframe embedding in dev, block in production
   const frameAncestors = isReplit ? 'frame-ancestors *' : "frame-ancestors 'none'";
+  const scriptSrc = isReplit
+    ? "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://replit.com"
+    : "script-src 'self' 'unsafe-inline' 'unsafe-eval'";
+  const imgSrc = isReplit
+    ? "img-src 'self' https://*.supabase.co https://gravatar.com https://*.gravatar.com data:"
+    : "img-src 'self' https://*.supabase.co https://gravatar.com https://*.gravatar.com data:";
   response.headers.set(
     'Content-Security-Policy',
-    `default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' https://*.supabase.co data:; connect-src 'self' https://*.supabase.co; font-src 'self' data:; ${frameAncestors};`
+    `default-src 'self'; ${scriptSrc}; style-src 'self' 'unsafe-inline'; ${imgSrc}; connect-src 'self' https://*.supabase.co; font-src 'self' data:; ${frameAncestors};`
   );
 
   return response;
