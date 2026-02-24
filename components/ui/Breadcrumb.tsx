@@ -9,6 +9,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   dashboard: 'Dashboard',
   admin: 'Admin',
   tools: 'Tools',
+  categories: 'Categories',
   courses: 'Courses',
   skills: 'Skills Matrix',
   activity: 'Activity',

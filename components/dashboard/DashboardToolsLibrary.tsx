@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { ToolCard } from '@/components/tools/ToolCard';
 import { Card, CardContent } from '@/components/ui/Card';
@@ -27,17 +27,38 @@ export function DashboardToolsLibrary({ tools, initialSearch = '' }: DashboardTo
   const [searchQuery, setSearchQuery] = useState(initialSearch);
   const [categoryFilter, setCategoryFilter] = useState<string>('');
   const [accessFilter, setAccessFilter] = useState<'all' | 'unlocked' | 'locked'>('all');
+  const [dynamicCategoryNames, setDynamicCategoryNames] = useState<Record<string, { name: string; shortName: string }>>({});
+
+  // Fetch dynamic category names
+  useEffect(() => {
+    fetch('/api/categories')
+      .then(r => r.json())
+      .then(data => {
+        const map: Record<string, { name: string; shortName: string }> = {};
+        for (const c of data.categories || []) {
+          map[c.slug] = { name: c.name, shortName: c.shortName };
+        }
+        setDynamicCategoryNames(map);
+      })
+      .catch(() => {/* use fallback */});
+  }, []);
+
+  const getCategoryName = (slug: string) =>
+    dynamicCategoryNames[slug]?.name || CATEGORY_METADATA[slug]?.name || slug.replace(/_/g, ' ');
+  const getCategoryShortName = (slug: string) =>
+    dynamicCategoryNames[slug]?.shortName || CATEGORY_METADATA[slug]?.shortName || slug.replace(/_/g, ' ');
 
   // Get unique categories from the tools
   const categories = useMemo(() => {
     const cats = new Set<ToolCategory>();
     tools.forEach(t => cats.add(t.tool.category));
     return Array.from(cats).sort((a, b) => {
-      const nameA = CATEGORY_METADATA[a]?.name || a;
-      const nameB = CATEGORY_METADATA[b]?.name || b;
+      const nameA = getCategoryName(a);
+      const nameB = getCategoryName(b);
       return nameA.localeCompare(nameB);
     });
-  }, [tools]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tools, dynamicCategoryNames]);
 
   // Filter tools
   const filteredTools = useMemo(() => {
@@ -72,7 +93,7 @@ export function DashboardToolsLibrary({ tools, initialSearch = '' }: DashboardTo
     categoryMap.forEach((categoryTools, category) => {
       groups.push({
         category,
-        name: CATEGORY_METADATA[category]?.name || category.replace(/_/g, ' '),
+        name: getCategoryName(category),
         tools: categoryTools,
       });
     });
@@ -150,7 +171,7 @@ export function DashboardToolsLibrary({ tools, initialSearch = '' }: DashboardTo
                     categoryFilter === cat ? 'bg-mojitax-navy text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
                 >
-                  {CATEGORY_METADATA[cat]?.shortName || cat.replace(/_/g, ' ')}
+                  {getCategoryShortName(cat)}
                 </button>
               ))}
             </div>

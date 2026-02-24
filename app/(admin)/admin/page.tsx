@@ -1,4 +1,5 @@
 export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
 
 import Link from 'next/link';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
