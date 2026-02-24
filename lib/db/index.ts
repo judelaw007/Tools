@@ -704,3 +704,46 @@ export async function logToolUsage(
     return false;
   }
 }
+
+/**
+ * Get recently used tools for a user (for "Continue Working" dashboard section).
+ * Returns distinct tool IDs ordered by most-recently-used, with tool details.
+ */
+export async function getRecentlyUsedTools(
+  userEmail: string,
+  limit = 5
+): Promise<{ toolId: string; lastUsed: string }[]> {
+  if (!isSupabaseConfigured()) {
+    return [];
+  }
+
+  try {
+    const supabase = createServiceClient();
+    // Fetch recent logs for the user, ordered by newest first
+    const { data, error } = await supabase
+      .from('tool_usage_logs')
+      .select('tool_id, created_at')
+      .eq('user_email', userEmail)
+      .in('action', ['view', 'calculate', 'save'])
+      .order('created_at', { ascending: false })
+      .limit(100);
+
+    if (error) throw error;
+    if (!data || data.length === 0) return [];
+
+    // Deduplicate to get most recent use per tool
+    const seen = new Map<string, string>();
+    for (const row of data) {
+      if (!seen.has(row.tool_id)) {
+        seen.set(row.tool_id, row.created_at);
+      }
+    }
+
+    return Array.from(seen.entries())
+      .slice(0, limit)
+      .map(([toolId, lastUsed]) => ({ toolId, lastUsed }));
+  } catch (error) {
+    console.error('Error fetching recently used tools:', error);
+    return [];
+  }
+}

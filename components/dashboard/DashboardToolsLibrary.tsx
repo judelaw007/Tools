@@ -20,10 +20,11 @@ import type { ToolCategory } from '@/types';
 
 interface DashboardToolsLibraryProps {
   tools: ToolWithAccess[];
+  initialSearch?: string;
 }
 
-export function DashboardToolsLibrary({ tools }: DashboardToolsLibraryProps) {
-  const [searchQuery, setSearchQuery] = useState('');
+export function DashboardToolsLibrary({ tools, initialSearch = '' }: DashboardToolsLibraryProps) {
+  const [searchQuery, setSearchQuery] = useState(initialSearch);
   const [categoryFilter, setCategoryFilter] = useState<string>('');
   const [accessFilter, setAccessFilter] = useState<'all' | 'unlocked' | 'locked'>('all');
 

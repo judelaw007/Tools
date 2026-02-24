@@ -13,46 +13,15 @@ import { getCoursesForToolWithNames } from '@/lib/course-allocations';
 import { CATEGORY_METADATA } from '@/lib/tools/registry';
 import { getServerSession, hasToolAccess } from '@/lib/server-session';
 import {
-  Calculator,
-  Search,
-  CheckCircle,
-  FileText,
-  TrendingUp,
-  BookOpen,
   ExternalLink,
   Lock,
   ArrowLeft,
   GraduationCap,
   AlertTriangle,
   ArrowRight,
-  Table,
-  ClipboardList,
 } from 'lucide-react';
+import { getToolTypeIcon, toolTypeColors } from '@/lib/tools/tool-ui';
 import type { ToolType } from '@/types';
-
-const toolTypeIcons: Record<ToolType, React.ReactNode> = {
-  calculator: <Calculator className="w-6 h-6" />,
-  search: <Search className="w-6 h-6" />,
-  validator: <CheckCircle className="w-6 h-6" />,
-  generator: <FileText className="w-6 h-6" />,
-  tracker: <TrendingUp className="w-6 h-6" />,
-  reference: <BookOpen className="w-6 h-6" />,
-  'external-link': <ExternalLink className="w-6 h-6" />,
-  spreadsheet: <Table className="w-6 h-6" />,
-  form: <ClipboardList className="w-6 h-6" />,
-};
-
-const toolTypeColors: Record<ToolType, string> = {
-  calculator: 'bg-blue-100 text-blue-600',
-  search: 'bg-purple-100 text-purple-600',
-  validator: 'bg-green-100 text-green-600',
-  generator: 'bg-orange-100 text-orange-600',
-  tracker: 'bg-pink-100 text-pink-600',
-  reference: 'bg-cyan-100 text-cyan-600',
-  'external-link': 'bg-slate-100 text-slate-600',
-  spreadsheet: 'bg-emerald-100 text-emerald-600',
-  form: 'bg-indigo-100 text-indigo-600',
-};
 
 interface ToolPageProps {
   params: { slug: string };
@@ -130,7 +99,7 @@ export default async function ToolPage({ params }: ToolPageProps) {
         {/* Tool Header */}
         <div className="flex items-start gap-6 mb-8">
           <div className={`w-20 h-20 rounded-2xl flex items-center justify-center flex-shrink-0 opacity-50 ${toolTypeColors[tool.toolType]}`}>
-            {toolTypeIcons[tool.toolType]}
+            {getToolTypeIcon(tool.toolType, 'w-6 h-6')}
           </div>
           <div>
             <div className="flex items-center gap-3 mb-2">
@@ -242,7 +211,7 @@ export default async function ToolPage({ params }: ToolPageProps) {
             {/* Tool Header */}
             <div className="flex items-start gap-6 mb-8">
               <div className={`w-20 h-20 rounded-2xl flex items-center justify-center flex-shrink-0 ${toolTypeColors[tool.toolType]}`}>
-                {toolTypeIcons[tool.toolType]}
+                {getToolTypeIcon(tool.toolType, 'w-6 h-6')}
               </div>
               <div>
                 <div className="flex items-center gap-3 mb-2">
@@ -268,7 +237,7 @@ export default async function ToolPage({ params }: ToolPageProps) {
                 <div className="absolute inset-0 bg-mesh-pattern opacity-50" />
                 <div className="relative text-center p-8">
                   <div className={`w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center ${toolTypeColors[tool.toolType]}`}>
-                    {toolTypeIcons[tool.toolType]}
+                    {getToolTypeIcon(tool.toolType, 'w-6 h-6')}
                   </div>
                   <p className="text-slate-600 mb-4">
                     Tool preview will be shown here

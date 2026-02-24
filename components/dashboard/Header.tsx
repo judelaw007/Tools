@@ -12,6 +12,7 @@ import {
   Settings,
   LogOut,
   ExternalLink,
+  Search,
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -20,6 +21,7 @@ interface HeaderProps {
 
 export function Header({ showSearch = false }: HeaderProps) {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const router = useRouter();
   const { user, logout, isAuthenticated, isAdmin } = useAuth();
 
@@ -35,12 +37,27 @@ export function Header({ showSearch = false }: HeaderProps) {
   
   return (
     <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6">
-      {/* Left side - Breadcrumb or search can go here */}
+      {/* Left side - Search */}
       <div className="flex items-center gap-4">
         {showSearch && (
-          <div className="relative">
-            {/* Search input placeholder */}
-          </div>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (searchQuery.trim()) {
+                router.push(`/dashboard/tools?q=${encodeURIComponent(searchQuery.trim())}`);
+              }
+            }}
+            className="relative"
+          >
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search tools..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 pr-4 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-mojitax-green/50 focus:border-mojitax-green w-64 bg-slate-50 hover:bg-white transition-colors"
+            />
+          </form>
         )}
       </div>
       

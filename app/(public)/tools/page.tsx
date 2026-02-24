@@ -7,45 +7,15 @@ import { Badge } from '@/components/ui/Badge';
 import { getPublicTools } from '@/lib/db';
 import { CATEGORY_METADATA } from '@/lib/tools/registry';
 import {
-  Calculator,
-  Search,
-  CheckCircle,
   FileText,
-  TrendingUp,
-  BookOpen,
   ExternalLink,
   ArrowRight,
   GraduationCap,
   Sparkles,
-  Table,
-  ClipboardList,
   Wrench,
 } from 'lucide-react';
+import { getToolTypeIcon, toolTypeColors } from '@/lib/tools/tool-ui';
 import type { Tool, ToolCategory } from '@/types';
-
-const toolTypeIcons: Record<string, React.ReactNode> = {
-  calculator: <Calculator className="w-5 h-5" />,
-  search: <Search className="w-5 h-5" />,
-  validator: <CheckCircle className="w-5 h-5" />,
-  generator: <FileText className="w-5 h-5" />,
-  tracker: <TrendingUp className="w-5 h-5" />,
-  reference: <BookOpen className="w-5 h-5" />,
-  'external-link': <ExternalLink className="w-5 h-5" />,
-  spreadsheet: <Table className="w-5 h-5" />,
-  form: <ClipboardList className="w-5 h-5" />,
-};
-
-const toolTypeColors: Record<string, string> = {
-  calculator: 'bg-blue-100 text-blue-600',
-  search: 'bg-purple-100 text-purple-600',
-  validator: 'bg-green-100 text-green-600',
-  generator: 'bg-orange-100 text-orange-600',
-  tracker: 'bg-pink-100 text-pink-600',
-  reference: 'bg-cyan-100 text-cyan-600',
-  'external-link': 'bg-slate-100 text-slate-600',
-  spreadsheet: 'bg-emerald-100 text-emerald-600',
-  form: 'bg-indigo-100 text-indigo-600',
-};
 
 // Group tools by category
 function groupToolsByCategory(tools: Tool[]): { id: ToolCategory; name: string; tools: Tool[] }[] {
@@ -188,7 +158,7 @@ export default async function PublicToolsPage() {
                         <CardContent className="p-6">
                           <div className="flex items-start gap-4">
                             <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${toolTypeColors[tool.toolType] || 'bg-slate-100 text-slate-600'}`}>
-                              {toolTypeIcons[tool.toolType] || <FileText className="w-5 h-5" />}
+                              {getToolTypeIcon(tool.toolType)}
                             </div>
                             <div className="flex-1 min-w-0">
                               <h4 className="font-semibold text-mojitax-navy group-hover:text-mojitax-green-dark transition-colors mb-1">

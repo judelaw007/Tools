@@ -5,19 +5,8 @@ import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
-import { 
-  Calculator, 
-  Search, 
-  CheckCircle, 
-  FileText, 
-  TrendingUp, 
-  BookOpen, 
-  ExternalLink,
-  Table,
-  ClipboardList,
-  Lock,
-  ArrowRight,
-} from 'lucide-react';
+import { Lock, ArrowRight } from 'lucide-react';
+import { getToolTypeIcon, toolTypeColors } from '@/lib/tools/tool-ui';
 import type { Tool, ToolType, ToolStatus } from '@/types';
 
 interface ToolCardProps {
@@ -27,30 +16,6 @@ interface ToolCardProps {
   variant?: 'default' | 'compact' | 'admin';
   onClick?: () => void;
 }
-
-const toolTypeIcons: Record<ToolType, React.ReactNode> = {
-  calculator: <Calculator className="w-5 h-5" />,
-  search: <Search className="w-5 h-5" />,
-  validator: <CheckCircle className="w-5 h-5" />,
-  generator: <FileText className="w-5 h-5" />,
-  tracker: <TrendingUp className="w-5 h-5" />,
-  reference: <BookOpen className="w-5 h-5" />,
-  'external-link': <ExternalLink className="w-5 h-5" />,
-  spreadsheet: <Table className="w-5 h-5" />,
-  form: <ClipboardList className="w-5 h-5" />,
-};
-
-const toolTypeColors: Record<ToolType, string> = {
-  calculator: 'bg-blue-100 text-blue-600',
-  search: 'bg-purple-100 text-purple-600',
-  validator: 'bg-green-100 text-green-600',
-  generator: 'bg-orange-100 text-orange-600',
-  tracker: 'bg-pink-100 text-pink-600',
-  reference: 'bg-cyan-100 text-cyan-600',
-  'external-link': 'bg-slate-100 text-slate-600',
-  spreadsheet: 'bg-emerald-100 text-emerald-600',
-  form: 'bg-indigo-100 text-indigo-600',
-};
 
 const statusVariants: Record<ToolStatus, 'draft' | 'active' | 'inactive' | 'archived'> = {
   draft: 'draft',
@@ -66,7 +31,7 @@ export function ToolCard({
   variant = 'default',
   onClick 
 }: ToolCardProps) {
-  const Icon = toolTypeIcons[tool.toolType];
+  const Icon = getToolTypeIcon(tool.toolType);
   const iconColor = toolTypeColors[tool.toolType];
   
   if (variant === 'compact') {

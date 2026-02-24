@@ -6,6 +6,9 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { getCoursesWithTools } from '@/lib/course-allocations';
 import { getServerSession } from '@/lib/server-session';
+import { getSkillSummary } from '@/lib/skills';
+import { getRecentlyUsedTools, getAllTools } from '@/lib/db';
+import { getToolTypeIcon, toolTypeColors } from '@/lib/tools/tool-ui';
 import {
   BookOpen,
   Wrench,
@@ -16,6 +19,8 @@ import {
   Unlock,
   GraduationCap,
   ChevronRight,
+  Award,
+  Clock,
 } from 'lucide-react';
 
 export default async function DashboardPage() {
@@ -45,6 +50,26 @@ export default async function DashboardPage() {
   const accessibleToolsCount = coursesWithAccess
     .filter(c => c.hasAccess)
     .reduce((sum, c) => sum + c.toolCount, 0);
+
+  // Fetch skills summary for the current user
+  const skillSummary = session?.email
+    ? await getSkillSummary(session.email)
+    : { totalSkills: 0, byCategory: {}, byLevel: { familiar: 0, proficient: 0, expert: 0 }, byEvidence: { course_completed: 0, tool_used: 0, work_saved: 0 } };
+
+  // Fetch recently used tools
+  const allTools = await getAllTools();
+  const recentUsage = session?.email
+    ? await getRecentlyUsedTools(session.email, 5)
+    : [];
+
+  // Resolve tool details for recently used tools
+  const toolMap = new Map(allTools.map(t => [t.id, t]));
+  const recentTools = recentUsage
+    .map(r => {
+      const tool = toolMap.get(r.toolId);
+      return tool ? { tool, lastUsed: r.lastUsed } : null;
+    })
+    .filter((r): r is { tool: (typeof allTools)[0]; lastUsed: string } => r !== null);
 
   const hasCourses = coursesWithTools.length > 0;
 
@@ -103,13 +128,13 @@ export default async function DashboardPage() {
 
         <Card>
           <CardContent className="p-4 flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center">
-              <Lock className="w-6 h-6 text-slate-500" />
+            <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center">
+              <Award className="w-6 h-6 text-purple-600" />
             </div>
             <div>
-              <p className="text-sm text-slate-500">Locked Courses</p>
+              <p className="text-sm text-slate-500">Skills Earned</p>
               <p className="text-2xl font-bold text-mojitax-navy">
-                {coursesWithTools.length - accessibleCoursesCount}
+                {skillSummary.totalSkills}
               </p>
             </div>
           </CardContent>
@@ -129,6 +154,49 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Continue Working Section */}
+      {recentTools.length > 0 && (
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold text-mojitax-navy flex items-center gap-2">
+              <Clock className="w-5 h-5 text-slate-400" />
+              Continue Working
+            </h2>
+            <Link
+              href="/dashboard/tools"
+              className="text-sm text-mojitax-green-dark hover:text-mojitax-green flex items-center gap-1"
+            >
+              Browse All Tools
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {recentTools.map(({ tool, lastUsed }) => {
+              const iconColor = toolTypeColors[tool.toolType] || 'bg-slate-100 text-slate-600';
+              const timeAgo = formatTimeAgo(lastUsed);
+              return (
+                <Link
+                  key={tool.id}
+                  href={`/tools/${tool.slug}`}
+                  className="group flex items-center gap-3 p-3 rounded-lg border border-slate-200 bg-white hover:border-mojitax-green/30 hover:shadow-sm transition-all"
+                >
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${iconColor}`}>
+                    {getToolTypeIcon(tool.toolType)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-medium text-mojitax-navy truncate group-hover:text-mojitax-green-dark transition-colors">
+                      {tool.name}
+                    </h4>
+                    <p className="text-xs text-slate-400">{timeAgo}</p>
+                  </div>
+                  <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-mojitax-green group-hover:translate-x-0.5 transition-all flex-shrink-0" />
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Courses with Tools */}
       {hasCourses ? (
@@ -329,4 +397,20 @@ export default async function DashboardPage() {
       </div>
     </DashboardLayout>
   );
+}
+
+/** Format an ISO date string as a human-readable relative time. */
+function formatTimeAgo(dateStr: string): string {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 }
