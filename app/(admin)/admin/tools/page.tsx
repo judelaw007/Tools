@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout';
 import { Card, CardContent } from '@/components/ui/Card';
@@ -10,6 +10,7 @@ import { Select } from '@/components/ui/Select';
 import { Badge } from '@/components/ui/Badge';
 import { ToolCard } from '@/components/tools/ToolCard';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { ToolCardSkeleton } from '@/components/ui/Skeleton';
 import {
   Search,
   MoreVertical,
@@ -25,10 +26,17 @@ import {
   X,
   Check,
   RefreshCw,
+  ChevronLeft,
+  ChevronRight,
+  CheckSquare,
+  Square,
+  AlertTriangle,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { CATEGORY_METADATA, TOOL_TYPE_METADATA } from '@/lib/tools/registry';
 import type { Tool, ToolType, ToolStatus, ToolCategory } from '@/types';
+
+const ITEMS_PER_PAGE = 12;
 
 const statusOptions = [
   { value: '', label: 'All Status' },
@@ -38,7 +46,6 @@ const statusOptions = [
   { value: 'archived', label: 'Archived' },
 ];
 
-// Dynamically build category options from the registry
 const categoryOptions = [
   { value: '', label: 'All Categories' },
   ...Object.entries(CATEGORY_METADATA)
@@ -46,7 +53,6 @@ const categoryOptions = [
     .sort((a, b) => a.label.localeCompare(b.label)),
 ];
 
-// Dynamically build tool type options from the registry
 const typeOptions = [
   { value: '', label: 'All Types' },
   ...Object.entries(TOOL_TYPE_METADATA)
@@ -63,6 +69,10 @@ export default function AdminToolsPage() {
   const [typeFilter, setTypeFilter] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Bulk selection
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   // Sync state
   const [isSyncing, setIsSyncing] = useState(false);
@@ -79,6 +89,8 @@ export default function AdminToolsPage() {
     status: '' as ToolStatus,
   });
   const [isSaving, setIsSaving] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [showDiscardWarning, setShowDiscardWarning] = useState(false);
 
   // Fetch tools from API
   const fetchTools = useCallback(async () => {
@@ -86,7 +98,6 @@ export default function AdminToolsPage() {
       const response = await fetch('/api/admin/tools');
       if (response.ok) {
         const data = await response.json();
-        // Convert date strings to Date objects
         const toolsWithDates = data.tools.map((tool: Tool) => ({
           ...tool,
           createdAt: new Date(tool.createdAt),
@@ -135,8 +146,32 @@ export default function AdminToolsPage() {
       category: tool.category,
       status: tool.status,
     });
+    setHasUnsavedChanges(false);
     setIsEditModalOpen(true);
     setOpenMenuId(null);
+  };
+
+  // Close edit modal with unsaved warning
+  const closeEditModal = () => {
+    if (hasUnsavedChanges) {
+      setShowDiscardWarning(true);
+    } else {
+      setIsEditModalOpen(false);
+      setEditingTool(null);
+    }
+  };
+
+  const confirmDiscard = () => {
+    setShowDiscardWarning(false);
+    setIsEditModalOpen(false);
+    setEditingTool(null);
+    setHasUnsavedChanges(false);
+  };
+
+  // Track form changes
+  const updateEditForm = (updates: Partial<typeof editForm>) => {
+    setEditForm(prev => ({ ...prev, ...updates }));
+    setHasUnsavedChanges(true);
   };
 
   // Save tool changes
@@ -156,6 +191,7 @@ export default function AdminToolsPage() {
 
       if (response.ok) {
         await fetchTools();
+        setHasUnsavedChanges(false);
         setIsEditModalOpen(false);
         setEditingTool(null);
         toast.success(`"${editForm.name}" updated successfully`);
@@ -194,15 +230,66 @@ export default function AdminToolsPage() {
     setOpenMenuId(null);
   };
 
+  // Bulk status change
+  const bulkSetStatus = async (newStatus: ToolStatus) => {
+    if (selectedIds.size === 0) return;
+    const ids = Array.from(selectedIds);
+    let successCount = 0;
+    for (const id of ids) {
+      try {
+        const response = await fetch('/api/admin/tools', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id, status: newStatus }),
+        });
+        if (response.ok) successCount++;
+      } catch {
+        // continue with rest
+      }
+    }
+    await fetchTools();
+    setSelectedIds(new Set());
+    toast.success(`${successCount} tool${successCount !== 1 ? 's' : ''} set to ${newStatus}`);
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
   // Filter tools
-  const filteredTools = tools.filter((tool) => {
+  const filteredTools = useMemo(() => tools.filter((tool) => {
     const matchesSearch = tool.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          tool.shortDescription?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = !statusFilter || tool.status === statusFilter;
     const matchesCategory = !categoryFilter || tool.category === categoryFilter;
     const matchesType = !typeFilter || tool.toolType === typeFilter;
     return matchesSearch && matchesStatus && matchesCategory && matchesType;
-  });
+  }), [tools, searchQuery, statusFilter, categoryFilter, typeFilter]);
+
+  // Pagination
+  const totalPages = Math.max(1, Math.ceil(filteredTools.length / ITEMS_PER_PAGE));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const paginatedTools = filteredTools.slice(
+    (safeCurrentPage - 1) * ITEMS_PER_PAGE,
+    safeCurrentPage * ITEMS_PER_PAGE
+  );
+
+  // Reset page when filters change
+  useEffect(() => { setCurrentPage(1); }, [searchQuery, statusFilter, categoryFilter, typeFilter]);
+  // Clear selection when page changes
+  useEffect(() => { setSelectedIds(new Set()); }, [safeCurrentPage]);
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === paginatedTools.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(paginatedTools.map(t => t.id)));
+    }
+  };
 
   const statusCounts = {
     all: tools.length,
@@ -212,11 +299,25 @@ export default function AdminToolsPage() {
     archived: tools.filter(t => t.status === 'archived').length,
   };
 
+  // Loading skeleton
   if (isLoading) {
     return (
       <DashboardLayout variant="admin">
-        <div className="flex items-center justify-center min-h-[400px]">
-          <Loader2 className="w-8 h-8 animate-spin text-mojitax-green" />
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold text-mojitax-navy mb-1">Tools Management</h1>
+            <p className="text-slate-600">Categorise, configure, and manage tools uploaded by developers</p>
+          </div>
+        </div>
+        <Card className="mb-6">
+          <CardContent className="p-4">
+            <div className="h-10 bg-slate-100 rounded-lg animate-pulse" />
+          </CardContent>
+        </Card>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <ToolCardSkeleton key={i} />
+          ))}
         </div>
       </DashboardLayout>
     );
@@ -248,11 +349,37 @@ export default function AdminToolsPage() {
         </Button>
       </div>
 
+      {/* Bulk Actions Bar */}
+      {selectedIds.size > 0 && (
+        <div className="mb-4 flex flex-wrap items-center gap-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <span className="text-sm font-medium text-blue-800">
+            {selectedIds.size} selected
+          </span>
+          <div className="h-4 w-px bg-blue-200" />
+          <Button variant="outline" size="sm" onClick={() => bulkSetStatus('active')}>
+            <Power className="w-3.5 h-3.5" />
+            Activate
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => bulkSetStatus('inactive')}>
+            <PowerOff className="w-3.5 h-3.5" />
+            Deactivate
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => bulkSetStatus('draft')}>
+            Set Draft
+          </Button>
+          <button
+            onClick={() => setSelectedIds(new Set())}
+            className="ml-auto text-sm text-blue-600 hover:text-blue-800"
+          >
+            Clear selection
+          </button>
+        </div>
+      )}
+
       {/* Filters Bar */}
       <Card className="mb-6">
         <CardContent className="p-4">
           <div className="flex flex-col lg:flex-row gap-4">
-            {/* Search */}
             <div className="flex-1">
               <Input
                 placeholder="Search tools..."
@@ -262,7 +389,6 @@ export default function AdminToolsPage() {
               />
             </div>
 
-            {/* Filters */}
             <div className="flex flex-wrap gap-3">
               <div className="w-40">
                 <Select
@@ -286,7 +412,6 @@ export default function AdminToolsPage() {
                 />
               </div>
 
-              {/* View Toggle */}
               <div className="flex rounded-lg border border-slate-200 overflow-hidden">
                 <button
                   onClick={() => setViewMode('grid')}
@@ -306,46 +431,23 @@ export default function AdminToolsPage() {
 
           {/* Status Quick Filters */}
           <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-slate-100">
-            <button
-              onClick={() => setStatusFilter('')}
-              className={`text-xs px-3 py-1.5 rounded-full transition-colors ${
-                !statusFilter ? 'bg-mojitax-navy text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-              }`}
-            >
-              All ({statusCounts.all})
-            </button>
-            <button
-              onClick={() => setStatusFilter('active')}
-              className={`text-xs px-3 py-1.5 rounded-full transition-colors ${
-                statusFilter === 'active' ? 'bg-mojitax-green text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-              }`}
-            >
-              Live ({statusCounts.active})
-            </button>
-            <button
-              onClick={() => setStatusFilter('draft')}
-              className={`text-xs px-3 py-1.5 rounded-full transition-colors ${
-                statusFilter === 'draft' ? 'bg-slate-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-              }`}
-            >
-              Draft ({statusCounts.draft})
-            </button>
-            <button
-              onClick={() => setStatusFilter('inactive')}
-              className={`text-xs px-3 py-1.5 rounded-full transition-colors ${
-                statusFilter === 'inactive' ? 'bg-amber-500 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-              }`}
-            >
-              Inactive ({statusCounts.inactive})
-            </button>
-            <button
-              onClick={() => setStatusFilter('archived')}
-              className={`text-xs px-3 py-1.5 rounded-full transition-colors ${
-                statusFilter === 'archived' ? 'bg-red-500 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-              }`}
-            >
-              Archived ({statusCounts.archived})
-            </button>
+            {([
+              { key: '', label: 'All', count: statusCounts.all, activeClass: 'bg-mojitax-navy text-white' },
+              { key: 'active', label: 'Live', count: statusCounts.active, activeClass: 'bg-mojitax-green text-white' },
+              { key: 'draft', label: 'Draft', count: statusCounts.draft, activeClass: 'bg-slate-600 text-white' },
+              { key: 'inactive', label: 'Inactive', count: statusCounts.inactive, activeClass: 'bg-amber-500 text-white' },
+              { key: 'archived', label: 'Archived', count: statusCounts.archived, activeClass: 'bg-red-500 text-white' },
+            ] as const).map(({ key, label, count, activeClass }) => (
+              <button
+                key={key}
+                onClick={() => setStatusFilter(key)}
+                className={`text-xs px-3 py-1.5 rounded-full transition-colors ${
+                  statusFilter === key ? activeClass : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                {label} ({count})
+              </button>
+            ))}
           </div>
         </CardContent>
       </Card>
@@ -357,18 +459,29 @@ export default function AdminToolsPage() {
           title={searchQuery || statusFilter || categoryFilter || typeFilter ? "No tools found" : "No tools uploaded yet"}
           description={searchQuery || statusFilter || categoryFilter || typeFilter
             ? "Try adjusting your search or filters"
-            : "Tools will appear here once developers upload them to the platform. You'll then be able to categorise, describe, and activate them for users."
+            : "Tools will appear here once developers upload them to the platform."
           }
         />
       ) : viewMode === 'grid' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredTools.map((tool) => (
+          {paginatedTools.map((tool) => (
             <div key={tool.id} className="relative group">
+              <button
+                onClick={(e) => { e.stopPropagation(); toggleSelect(tool.id); }}
+                className="absolute top-4 left-4 z-10 opacity-0 group-hover:opacity-100 transition-opacity"
+                style={selectedIds.has(tool.id) ? { opacity: 1 } : undefined}
+              >
+                {selectedIds.has(tool.id) ? (
+                  <CheckSquare className="w-5 h-5 text-mojitax-green" />
+                ) : (
+                  <Square className="w-5 h-5 text-slate-400" />
+                )}
+              </button>
+
               <div onClick={() => openEditModal(tool)} className="cursor-pointer">
                 <ToolCard tool={tool} variant="admin" showStatus />
               </div>
 
-              {/* Actions Menu */}
               <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
                 <div className="relative">
                   <button
@@ -384,10 +497,7 @@ export default function AdminToolsPage() {
 
                   {openMenuId === tool.id && (
                     <>
-                      <div
-                        className="fixed inset-0 z-40"
-                        onClick={() => setOpenMenuId(null)}
-                      />
+                      <div className="fixed inset-0 z-40" onClick={() => setOpenMenuId(null)} />
                       <div className="absolute right-0 top-full mt-1 w-44 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-50">
                         <button
                           className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50"
@@ -438,6 +548,15 @@ export default function AdminToolsPage() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-slate-200">
+                  <th className="text-left px-4 py-3 w-10">
+                    <button onClick={toggleSelectAll}>
+                      {selectedIds.size === paginatedTools.length && paginatedTools.length > 0 ? (
+                        <CheckSquare className="w-4 h-4 text-mojitax-green" />
+                      ) : (
+                        <Square className="w-4 h-4 text-slate-400" />
+                      )}
+                    </button>
+                  </th>
                   <th className="text-left px-4 py-3 text-sm font-medium text-slate-600">Status</th>
                   <th className="text-left px-4 py-3 text-sm font-medium text-slate-600">Name</th>
                   <th className="text-left px-4 py-3 text-sm font-medium text-slate-600">Type</th>
@@ -447,8 +566,17 @@ export default function AdminToolsPage() {
                 </tr>
               </thead>
               <tbody>
-                {filteredTools.map((tool) => (
+                {paginatedTools.map((tool) => (
                   <tr key={tool.id} className="border-b border-slate-100 hover:bg-slate-50">
+                    <td className="px-4 py-3">
+                      <button onClick={() => toggleSelect(tool.id)}>
+                        {selectedIds.has(tool.id) ? (
+                          <CheckSquare className="w-4 h-4 text-mojitax-green" />
+                        ) : (
+                          <Square className="w-4 h-4 text-slate-400" />
+                        )}
+                      </button>
+                    </td>
                     <td className="px-4 py-3">
                       <Badge
                         variant={tool.status as 'active' | 'draft' | 'inactive' | 'archived'}
@@ -495,8 +623,40 @@ export default function AdminToolsPage() {
         </Card>
       )}
 
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="mt-6 flex items-center justify-between">
+          <p className="text-sm text-slate-500">
+            Showing {(safeCurrentPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(safeCurrentPage * ITEMS_PER_PAGE, filteredTools.length)} of {filteredTools.length}
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={safeCurrentPage === 1}
+            >
+              <ChevronLeft className="w-4 h-4" />
+              Previous
+            </Button>
+            <span className="text-sm text-slate-600 px-2">
+              {safeCurrentPage} / {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={safeCurrentPage === totalPages}
+            >
+              Next
+              <ChevronRight className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Legend */}
-      <div className="mt-6 flex items-center gap-4 text-xs text-slate-500">
+      <div className="mt-6 flex flex-wrap items-center gap-4 text-xs text-slate-500">
         <span className="flex items-center gap-1.5">
           <span className="w-2 h-2 rounded-full bg-mojitax-green" />
           Live - Visible to users
@@ -518,113 +678,91 @@ export default function AdminToolsPage() {
       {/* Edit Tool Modal */}
       {isEditModalOpen && editingTool && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-          {/* Backdrop */}
-          <div
-            className="absolute inset-0 bg-black/50"
-            onClick={() => setIsEditModalOpen(false)}
-          />
+          <div className="absolute inset-0 bg-black/50" onClick={closeEditModal} />
 
-          {/* Modal */}
           <div className="relative bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[80vh] overflow-hidden mx-4">
-            {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-slate-200">
               <div>
-                <h2 className="text-lg font-semibold text-mojitax-navy">
-                  Edit Tool
-                </h2>
+                <h2 className="text-lg font-semibold text-mojitax-navy">Edit Tool</h2>
                 <p className="text-sm text-slate-500">{editingTool.slug}</p>
               </div>
               <button
-                onClick={() => setIsEditModalOpen(false)}
+                onClick={closeEditModal}
                 className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
               >
                 <X className="w-5 h-5 text-slate-500" />
               </button>
             </div>
 
-            {/* Body */}
+            {hasUnsavedChanges && (
+              <div className="px-4 py-2 bg-amber-50 border-b border-amber-200 flex items-center gap-2 text-xs text-amber-700">
+                <AlertTriangle className="w-3.5 h-3.5" />
+                You have unsaved changes
+              </div>
+            )}
+
             <div className="p-4 space-y-4 overflow-y-auto max-h-[60vh]">
-              {/* Name */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Name
-                </label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Name</label>
                 <Input
                   value={editForm.name}
-                  onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                  onChange={(e) => updateEditForm({ name: e.target.value })}
                   placeholder="Tool name"
                 />
               </div>
 
-              {/* Short Description */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Short Description
-                </label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Short Description</label>
                 <textarea
                   value={editForm.shortDescription}
-                  onChange={(e) => setEditForm({ ...editForm, shortDescription: e.target.value })}
+                  onChange={(e) => updateEditForm({ shortDescription: e.target.value })}
                   placeholder="Brief description shown on cards and listings"
                   className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-mojitax-green/50 focus:border-mojitax-green resize-none"
                   rows={2}
                 />
               </div>
 
-              {/* Full Description */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Full Description
-                </label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Full Description</label>
                 <textarea
                   value={editForm.description}
-                  onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
-                  placeholder="Detailed description shown on the tool page. Supports plain text."
+                  onChange={(e) => updateEditForm({ description: e.target.value })}
+                  placeholder="Detailed description shown on the tool page."
                   className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-mojitax-green/50 focus:border-mojitax-green resize-y"
                   rows={4}
                 />
-                <p className="mt-1 text-xs text-slate-400">
-                  Shown on the tool&apos;s detail page
-                </p>
+                <p className="mt-1 text-xs text-slate-400">Shown on the tool&apos;s detail page</p>
               </div>
 
-              {/* Tool Type & Category row */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Tool Type
-                  </label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Tool Type</label>
                   <Select
                     options={typeOptions.filter(o => o.value !== '')}
                     value={editForm.toolType}
-                    onChange={(e) => setEditForm({ ...editForm, toolType: e.target.value as ToolType })}
+                    onChange={(e) => updateEditForm({ toolType: e.target.value as ToolType })}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    Category
-                  </label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Category</label>
                   <Select
                     options={categoryOptions.filter(o => o.value !== '')}
                     value={editForm.category}
-                    onChange={(e) => setEditForm({ ...editForm, category: e.target.value as ToolCategory })}
+                    onChange={(e) => updateEditForm({ category: e.target.value as ToolCategory })}
                   />
                 </div>
               </div>
 
-              {/* Status */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Status
-                </label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Status</label>
                 <Select
                   options={statusOptions.filter(o => o.value !== '')}
                   value={editForm.status}
-                  onChange={(e) => setEditForm({ ...editForm, status: e.target.value as ToolStatus })}
+                  onChange={(e) => updateEditForm({ status: e.target.value as ToolStatus })}
                 />
               </div>
             </div>
 
-            {/* Footer */}
             <div className="flex items-center justify-between p-4 border-t border-slate-200 bg-slate-50">
               <Link
                 href={`/tools/${editingTool.slug}`}
@@ -635,18 +773,10 @@ export default function AdminToolsPage() {
                 Preview Tool
               </Link>
               <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => setIsEditModalOpen(false)}
-                  disabled={isSaving}
-                >
+                <Button variant="outline" onClick={closeEditModal} disabled={isSaving}>
                   Cancel
                 </Button>
-                <Button
-                  variant="primary"
-                  onClick={saveTool}
-                  disabled={isSaving}
-                >
+                <Button variant="primary" onClick={saveTool} disabled={isSaving}>
                   {isSaving ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
@@ -660,6 +790,32 @@ export default function AdminToolsPage() {
                   )}
                 </Button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Discard Changes Confirmation */}
+      {showDiscardWarning && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setShowDiscardWarning(false)} />
+          <div className="relative bg-white rounded-xl shadow-xl w-full max-w-sm mx-4 p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
+                <AlertTriangle className="w-5 h-5 text-amber-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-mojitax-navy">Discard changes?</h3>
+                <p className="text-sm text-slate-500">Your unsaved changes will be lost.</p>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowDiscardWarning(false)}>
+                Keep Editing
+              </Button>
+              <Button variant="danger" onClick={confirmDiscard}>
+                Discard
+              </Button>
             </div>
           </div>
         </div>

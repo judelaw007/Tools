@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/auth';
 import { Button } from '@/components/ui/Button';
+import { Breadcrumb } from '@/components/ui/Breadcrumb';
 import {
   User,
   ChevronDown,
@@ -13,13 +14,15 @@ import {
   LogOut,
   ExternalLink,
   Search,
+  Menu,
 } from 'lucide-react';
 
 interface HeaderProps {
   showSearch?: boolean;
+  onMobileMenuToggle?: () => void;
 }
 
-export function Header({ showSearch = false }: HeaderProps) {
+export function Header({ showSearch = false, onMobileMenuToggle }: HeaderProps) {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const router = useRouter();
@@ -34,11 +37,26 @@ export function Header({ showSearch = false }: HeaderProps) {
   const handleLogin = () => {
     router.push('/auth');
   };
-  
+
   return (
-    <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6">
-      {/* Left side - Search */}
-      <div className="flex items-center gap-4">
+    <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-6">
+      {/* Left side - Mobile menu + Breadcrumb / Search */}
+      <div className="flex items-center gap-3">
+        {/* Mobile hamburger */}
+        {onMobileMenuToggle && (
+          <button
+            onClick={onMobileMenuToggle}
+            className="md:hidden p-2 -ml-2 rounded-lg hover:bg-slate-100 transition-colors"
+          >
+            <Menu className="w-5 h-5 text-slate-600" />
+          </button>
+        )}
+
+        {/* Breadcrumb (hidden on mobile when search is showing) */}
+        <div className={showSearch ? 'hidden lg:block' : ''}>
+          <Breadcrumb />
+        </div>
+
         {showSearch && (
           <form
             onSubmit={(e) => {
@@ -47,7 +65,7 @@ export function Header({ showSearch = false }: HeaderProps) {
                 router.push(`/dashboard/tools?q=${encodeURIComponent(searchQuery.trim())}`);
               }
             }}
-            className="relative"
+            className="relative hidden sm:block"
           >
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input
@@ -60,20 +78,20 @@ export function Header({ showSearch = false }: HeaderProps) {
           </form>
         )}
       </div>
-      
+
       {/* Right side - User menu */}
       <div className="flex items-center gap-3">
         {/* Back to Courses Link */}
         <Link
           href="https://www.mojitax.co.uk/courses-catalogue"
           target="_blank"
-          className="text-sm text-slate-600 hover:text-mojitax-navy flex items-center gap-1.5 transition-colors"
+          className="hidden sm:flex text-sm text-slate-600 hover:text-mojitax-navy items-center gap-1.5 transition-colors"
         >
           Back to Courses
           <ExternalLink className="w-3.5 h-3.5" />
         </Link>
-        
-        <div className="h-6 w-px bg-slate-200" />
+
+        <div className="hidden sm:block h-6 w-px bg-slate-200" />
 
         {/* User Menu */}
         {isAuthenticated && user ? (
