@@ -1,12 +1,10 @@
 import Link from 'next/link';
 import { PublicHeader } from '@/components/PublicHeader';
-import { PublicToolsFilter } from '@/components/PublicToolsFilter';
 import { Logo } from '@/components/ui/Logo';
 import { Badge } from '@/components/ui/Badge';
-import { getPublicTools, getCoursesWithToolDetails } from '@/lib/db';
+import { getCoursesWithToolDetails } from '@/lib/db';
 import { getToolTypeIcon, toolTypeColors } from '@/lib/tools/tool-ui';
 import {
-  ExternalLink,
   GraduationCap,
   ClipboardCheck,
   QrCode,
@@ -32,19 +30,12 @@ const COURSE_BORDER_COLORS = [
 ];
 
 export default async function PublicToolsPage() {
-  // Fetch data in parallel
-  const [tools, coursesWithTools] = await Promise.all([
-    getPublicTools(),
-    getCoursesWithToolDetails(),
-  ]);
-
-  const hasTools = tools.length > 0;
+  const coursesWithTools = await getCoursesWithToolDetails();
   const hasCourses = coursesWithTools.length > 0;
-  const totalToolCount = tools.length;
+  const totalToolCount = coursesWithTools.reduce((sum, c) => sum + c.tools.length, 0);
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Header */}
       <PublicHeader />
 
       {/* ══════════════════════════════════════
@@ -95,34 +86,23 @@ export default async function PublicToolsPage() {
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Card 1 — Forms & Filings */}
             <div className="bg-slate-50 rounded-2xl p-8 border-t-4 border-t-blue-600 hover:-translate-y-1 hover:shadow-lg hover:bg-white transition-all duration-300">
               <FileText className="w-7 h-7 text-blue-600 mb-4" />
-              <h3 className="text-lg font-bold text-mojitax-navy mb-2">
-                Forms &amp; Filings
-              </h3>
+              <h3 className="text-lg font-bold text-mojitax-navy mb-2">Forms &amp; Filings</h3>
               <p className="text-sm text-slate-500 leading-relaxed">
                 Complete the same tax forms and filings used in professional practice. Work through each field, understand requirements, submit for assessment.
               </p>
             </div>
-
-            {/* Card 2 — Real-World Scenarios */}
             <div className="bg-slate-50 rounded-2xl p-8 border-t-4 border-t-orange-500 hover:-translate-y-1 hover:shadow-lg hover:bg-white transition-all duration-300">
               <Target className="w-7 h-7 text-orange-500 mb-4" />
-              <h3 className="text-lg font-bold text-mojitax-navy mb-2">
-                Real-World Scenarios
-              </h3>
+              <h3 className="text-lg font-bold text-mojitax-navy mb-2">Real-World Scenarios</h3>
               <p className="text-sm text-slate-500 leading-relaxed">
                 Each scenario simulates a professional engagement &mdash; a client situation, compliance deadline, or advisory task. Work through the problem the way a professional would.
               </p>
             </div>
-
-            {/* Card 3 — Skills Evaluation */}
             <div className="bg-slate-50 rounded-2xl p-8 border-t-4 border-t-emerald-600 hover:-translate-y-1 hover:shadow-lg hover:bg-white transition-all duration-300">
               <BarChart3 className="w-7 h-7 text-emerald-600 mb-4" />
-              <h3 className="text-lg font-bold text-mojitax-navy mb-2">
-                Skills Evaluation
-              </h3>
+              <h3 className="text-lg font-bold text-mojitax-navy mb-2">Skills Evaluation</h3>
               <p className="text-sm text-slate-500 leading-relaxed">
                 Track progress as you complete scenarios. The platform records topics covered, competence level, and generates a benchmarked assessment of practical skills.
               </p>
@@ -132,209 +112,165 @@ export default async function PublicToolsPage() {
       </section>
 
       {/* ══════════════════════════════════════
-          SECTION 3: COURSES & TOOLS (DYNAMIC)
+          SECTION 3: COURSES & SKILLS MATRIX (SIDE-BY-SIDE)
           ══════════════════════════════════════ */}
       <section className="py-16 md:py-20 bg-slate-50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <p className="text-xs font-bold uppercase tracking-[2px] text-orange-500 mb-3">
-            Courses &amp; Tools
-          </p>
-          <h2 className="text-2xl md:text-[28px] font-bold text-mojitax-navy mb-2">
-            MojiTax Professional Practice Courses
-          </h2>
-          <p className="text-base text-slate-500 leading-relaxed max-w-2xl mb-10">
-            Each course includes hands-on tools for practical application. As new tools are developed, they&apos;re added to the relevant course automatically.
-          </p>
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-8 items-start">
 
-          {hasCourses ? (
-            <div className="space-y-6">
-              {coursesWithTools.map((course, idx) => (
-                <div
-                  key={course.courseId}
-                  className={`bg-white rounded-2xl border-t-4 ${COURSE_BORDER_COLORS[idx % COURSE_BORDER_COLORS.length]} shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden`}
-                >
-                  {/* Course Header */}
-                  <div className="px-6 md:px-8 pt-6 md:pt-8 pb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-mojitax-navy/5 flex items-center justify-center flex-shrink-0">
-                        <BookOpen className="w-5 h-5 text-mojitax-navy" />
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-bold text-mojitax-navy">
-                          {course.courseName}
-                        </h3>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <Badge variant="info" size="sm">
-                        {course.tools.length} {course.tools.length === 1 ? 'tool' : 'tools'}
-                      </Badge>
-                      <Link
-                        href={`https://www.mojitax.co.uk/course/${course.courseId}`}
-                        className="text-sm font-semibold text-orange-500 hover:text-orange-600 flex items-center gap-1 transition-colors"
-                      >
-                        View course
-                        <ChevronRight className="w-4 h-4" />
-                      </Link>
-                    </div>
-                  </div>
+            {/* LEFT: Courses & Tools */}
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[2px] text-orange-500 mb-3">
+                Courses &amp; Tools
+              </p>
+              <h2 className="text-2xl md:text-[28px] font-bold text-mojitax-navy mb-2">
+                Professional Practice Courses
+              </h2>
+              <p className="text-sm text-slate-500 leading-relaxed mb-8">
+                Each course includes hands-on tools. As new tools are developed they appear here automatically.
+              </p>
 
-                  {/* Tools Grid */}
-                  <div className="px-6 md:px-8 pb-6 md:pb-8">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                      {course.tools.map((tool) => (
+              {hasCourses ? (
+                <div className="space-y-4">
+                  {coursesWithTools.map((course, idx) => (
+                    <div
+                      key={course.courseId}
+                      className={`bg-white rounded-xl border-t-[3px] ${COURSE_BORDER_COLORS[idx % COURSE_BORDER_COLORS.length]} shadow-sm hover:shadow-md transition-shadow duration-300`}
+                    >
+                      {/* Course Header */}
+                      <div className="px-5 pt-5 pb-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                        <div className="flex items-center gap-2.5">
+                          <BookOpen className="w-4.5 h-4.5 text-mojitax-navy flex-shrink-0" />
+                          <h3 className="text-[15px] font-bold text-mojitax-navy">
+                            {course.courseName}
+                          </h3>
+                          <Badge variant="info" size="sm" className="text-[11px]">
+                            {course.tools.length} {course.tools.length === 1 ? 'tool' : 'tools'}
+                          </Badge>
+                        </div>
                         <Link
-                          key={tool.id}
-                          href={`/tools/${tool.slug}`}
-                          className="group flex items-start gap-3 p-3 rounded-xl hover:bg-slate-50 transition-colors"
+                          href={`https://www.mojitax.co.uk/course/${course.courseId}`}
+                          className="text-xs font-semibold text-orange-500 hover:text-orange-600 flex items-center gap-0.5 transition-colors"
                         >
-                          <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${toolTypeColors[tool.toolType] || 'bg-slate-100 text-slate-600'}`}>
-                            {getToolTypeIcon(tool.toolType, 'w-4 h-4')}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold text-mojitax-navy group-hover:text-mojitax-blue transition-colors leading-tight">
-                              {tool.name}
-                            </p>
-                            <p className="text-xs text-slate-400 mt-0.5 line-clamp-1">
-                              {tool.shortDescription}
-                            </p>
-                          </div>
-                          <ArrowRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-mojitax-blue flex-shrink-0 mt-0.5 transition-colors" />
+                          View course
+                          <ChevronRight className="w-3.5 h-3.5" />
                         </Link>
-                      ))}
+                      </div>
+
+                      {/* Tools List */}
+                      <div className="px-5 pb-5">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                          {course.tools.map((tool) => (
+                            <Link
+                              key={tool.id}
+                              href={`/tools/${tool.slug}`}
+                              className="group flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-slate-50 transition-colors"
+                            >
+                              <div className={`w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0 ${toolTypeColors[tool.toolType] || 'bg-slate-100 text-slate-600'}`}>
+                                {getToolTypeIcon(tool.toolType, 'w-3.5 h-3.5')}
+                              </div>
+                              <span className="text-sm text-mojitax-navy group-hover:text-mojitax-blue transition-colors truncate">
+                                {tool.name}
+                              </span>
+                              <ArrowRight className="w-3 h-3 text-slate-300 group-hover:text-mojitax-blue flex-shrink-0 ml-auto transition-colors" />
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
                     </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-white rounded-xl p-10 text-center shadow-sm">
+                  <Wrench className="w-8 h-8 text-slate-300 mx-auto mb-3" />
+                  <h3 className="text-base font-semibold text-mojitax-navy mb-1">
+                    Courses Coming Soon
+                  </h3>
+                  <p className="text-sm text-slate-500 mb-4">
+                    Tools are being allocated to Professional Practice courses.
+                  </p>
+                  <Link
+                    href="https://www.mojitax.co.uk/courses-catalogue"
+                    className="inline-flex items-center gap-1.5 text-sm font-semibold text-orange-500 hover:text-orange-600 transition-colors"
+                  >
+                    Browse all courses
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
+              )}
+            </div>
+
+            {/* RIGHT: Skills Matrix */}
+            <div className="lg:sticky lg:top-8">
+              <p className="text-xs font-bold uppercase tracking-[2px] text-orange-500 mb-3">
+                Your Credential
+              </p>
+              <h2 className="text-2xl md:text-[28px] font-bold text-mojitax-navy mb-2">
+                The Skills Matrix
+              </h2>
+              <p className="text-sm text-slate-500 leading-relaxed mb-8">
+                A detailed record of your practical competence, generated from your work inside MojiTax Tools.
+              </p>
+
+              {/* Skills Matrix Card */}
+              <div className="bg-white rounded-xl border-t-[3px] border-t-violet-600 shadow-sm overflow-hidden">
+                {/* Side panel accent */}
+                <div className="bg-violet-50 flex items-center justify-center py-6">
+                  <div className="text-center">
+                    <div className="text-5xl mb-2">&#128196;</div>
+                    <h4 className="text-sm font-bold text-mojitax-navy">Verifiable Credential</h4>
+                    <p className="text-xs font-semibold text-violet-600">QR code validated</p>
                   </div>
                 </div>
-              ))}
-            </div>
-          ) : (
-            /* Empty state when no courses have tools yet */
-            <div className="bg-white rounded-2xl p-12 text-center shadow-sm">
-              <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-5">
-                <Wrench className="w-8 h-8 text-slate-400" />
+
+                {/* Body */}
+                <div className="p-6">
+                  <h3 className="text-base font-bold text-mojitax-navy mb-2">
+                    Downloadable Skills Matrix
+                  </h3>
+                  <p className="text-sm text-slate-500 leading-relaxed mb-4">
+                    Every scenario you complete contributes to your Skills Matrix &mdash; mapping your competence across international tax topics.
+                  </p>
+                  <ul className="space-y-2.5">
+                    {[
+                      'Topics covered and competence level per area',
+                      'Study hours and completion dates',
+                      'Tools and forms practised',
+                      'QR code for employer verification',
+                    ].map((item) => (
+                      <li key={item} className="flex items-start gap-2 text-sm text-mojitax-navy">
+                        <span className="text-violet-600 font-bold text-sm leading-5 flex-shrink-0">&#10003;</span>
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </div>
-              <h3 className="text-lg font-semibold text-mojitax-navy mb-2">
-                Courses Coming Soon
-              </h3>
-              <p className="text-sm text-slate-500 max-w-md mx-auto mb-6">
-                We&apos;re building practical tools and allocating them to Professional Practice courses. Check back soon for updates.
+
+              <p className="text-xs text-slate-400 leading-relaxed mt-4">
+                Employers and professional bodies can scan the QR code to verify your Skills Matrix directly.
               </p>
-              <Link
-                href="https://www.mojitax.co.uk/courses-catalogue"
-                className="inline-flex items-center gap-2 text-sm font-semibold text-orange-500 hover:text-orange-600 transition-colors"
-              >
-                Browse all courses
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-            </div>
-          )}
-        </div>
-      </section>
 
-      {/* ══════════════════════════════════════
-          SECTION 4: THE SKILLS MATRIX
-          ══════════════════════════════════════ */}
-      <section className="py-16 md:py-20 bg-white">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <p className="text-xs font-bold uppercase tracking-[2px] text-orange-500 mb-3">
-            Your Credential
-          </p>
-          <h2 className="text-2xl md:text-[28px] font-bold text-mojitax-navy mb-2">
-            The Skills Matrix
-          </h2>
-          <p className="text-base text-slate-500 leading-relaxed max-w-2xl mb-10">
-            A detailed record of your practical competence, generated from your work inside MojiTax Tools.
-          </p>
-
-          {/* Featured Card */}
-          <div className="bg-white rounded-2xl border-t-4 border-t-violet-600 shadow-md overflow-hidden">
-            <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px]">
-              {/* Body */}
-              <div className="p-8 md:p-10">
-                <h3 className="text-xl font-bold text-mojitax-navy mb-3">
-                  Downloadable Skills Matrix
-                </h3>
-                <p className="text-[15px] text-slate-500 leading-relaxed mb-5">
-                  Every scenario you complete contributes to your Skills Matrix &mdash; a comprehensive document that maps your practical competence across international tax topics.
-                </p>
-                <ul className="space-y-3">
-                  {[
-                    'Topics covered and competence level per area',
-                    'Study hours and completion dates',
-                    'Tools and forms practised',
-                    'QR code for employer and professional body verification',
-                  ].map((item) => (
-                    <li key={item} className="flex items-start gap-3 text-sm text-mojitax-navy">
-                      <span className="text-violet-600 font-bold text-base leading-5 flex-shrink-0">&#10003;</span>
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              {/* Side Panel */}
-              <div className="bg-violet-50 flex flex-col items-center justify-center p-8 md:p-10 text-center">
-                <div className="text-6xl mb-4">&#128196;</div>
-                <h4 className="text-base font-bold text-mojitax-navy mb-1">
-                  Verifiable Credential
-                </h4>
-                <p className="text-sm font-semibold text-violet-600">
-                  QR code validated
-                </p>
-              </div>
+              {/* Quick stats */}
+              {hasCourses && (
+                <div className="mt-6 grid grid-cols-2 gap-3">
+                  <div className="bg-white rounded-lg p-4 text-center shadow-sm">
+                    <p className="text-2xl font-bold text-mojitax-navy">{coursesWithTools.length}</p>
+                    <p className="text-xs text-slate-400 mt-0.5">{coursesWithTools.length === 1 ? 'Course' : 'Courses'}</p>
+                  </div>
+                  <div className="bg-white rounded-lg p-4 text-center shadow-sm">
+                    <p className="text-2xl font-bold text-mojitax-navy">{totalToolCount}</p>
+                    <p className="text-xs text-slate-400 mt-0.5">{totalToolCount === 1 ? 'Tool' : 'Tools'}</p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
-
-          <p className="text-sm text-slate-500 leading-relaxed mt-5 max-w-2xl">
-            Employers and professional bodies can scan the QR code to verify your Skills Matrix directly. More comprehensive than a generic CPD certificate.
-          </p>
         </div>
       </section>
 
       {/* ══════════════════════════════════════
-          SECTION 5: BROWSE ALL TOOLS
-          ══════════════════════════════════════ */}
-      <section id="tools" className="py-16 md:py-20 bg-slate-50">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <p className="text-xs font-bold uppercase tracking-[2px] text-orange-500 mb-3">
-            Browse Tools
-          </p>
-          <h2 className="text-2xl md:text-[28px] font-bold text-mojitax-navy mb-2">
-            All Available Tools
-          </h2>
-          <p className="text-base text-slate-500 leading-relaxed max-w-2xl mb-10">
-            {hasTools
-              ? `${totalToolCount} tools available across ${coursesWithTools.length || 'multiple'} courses. Filter by category or search for a specific tool.`
-              : 'Demo tools are currently being developed. Check back soon!'}
-          </p>
-
-          {!hasTools ? (
-            <div className="bg-white rounded-2xl p-12 text-center shadow-sm max-w-2xl">
-              <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-5">
-                <Wrench className="w-8 h-8 text-slate-400" />
-              </div>
-              <h3 className="text-lg font-semibold text-mojitax-navy mb-2">
-                Tools Coming Soon
-              </h3>
-              <p className="text-sm text-slate-500 mb-6">
-                We&apos;re building practical demo tools for tax professionals.
-              </p>
-              <Link
-                href="https://www.mojitax.co.uk/courses-catalogue"
-                className="inline-flex items-center gap-2 text-sm font-semibold text-orange-500 hover:text-orange-600 transition-colors"
-              >
-                Browse courses
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-            </div>
-          ) : (
-            <PublicToolsFilter tools={tools} />
-          )}
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════
-          SECTION 6: HOW TO ACCESS
+          SECTION 4: HOW TO ACCESS
           ══════════════════════════════════════ */}
       <section className="py-16 md:py-20 bg-white">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -349,7 +285,6 @@ export default async function PublicToolsPage() {
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            {/* Option 1 — Purchase a course */}
             <div className="bg-slate-50 rounded-2xl p-8 border-t-4 border-t-violet-600 hover:-translate-y-1 hover:shadow-lg hover:bg-white transition-all duration-300">
               <h3 className="text-lg font-bold text-mojitax-navy mb-2">
                 Purchase a Professional Practice course
@@ -357,19 +292,14 @@ export default async function PublicToolsPage() {
               <p className="text-sm text-slate-500 leading-relaxed mb-4">
                 Buy any Professional Practice course (ADIT Thematic, CTA Advanced Technical, EA, or Pillar Two). Access to Tools is included for the duration of your course access.
               </p>
-              <p className="text-xl font-bold text-mojitax-navy mb-3">
-                From &pound;500
-              </p>
+              <p className="text-xl font-bold text-mojitax-navy mb-3">From &pound;500</p>
               <Link
                 href="https://www.mojitax.co.uk/courses-catalogue"
                 className="text-sm font-bold text-orange-500 hover:text-orange-600 transition-colors inline-flex items-center gap-1"
               >
-                Browse courses
-                <ArrowRight className="w-4 h-4" />
+                Browse courses <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
-
-            {/* Option 2 — Subscribe */}
             <div className="bg-slate-50 rounded-2xl p-8 border-t-4 border-t-blue-600 hover:-translate-y-1 hover:shadow-lg hover:bg-white transition-all duration-300">
               <h3 className="text-lg font-bold text-mojitax-navy mb-2">
                 Subscribe to Professional
@@ -377,15 +307,12 @@ export default async function PublicToolsPage() {
               <p className="text-sm text-slate-500 leading-relaxed mb-4">
                 The Professional subscription (&pound;100/mo) includes all courses, including all Professional Practice courses. Full Tools access included. 7-day free trial available.
               </p>
-              <p className="text-xl font-bold text-mojitax-navy mb-3">
-                &pound;100/mo
-              </p>
+              <p className="text-xl font-bold text-mojitax-navy mb-3">&pound;100/mo</p>
               <Link
                 href="https://www.mojitax.co.uk/subscription-page"
                 className="text-sm font-bold text-orange-500 hover:text-orange-600 transition-colors inline-flex items-center gap-1"
               >
-                View subscriptions
-                <ArrowRight className="w-4 h-4" />
+                View subscriptions <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
           </div>
@@ -397,10 +324,9 @@ export default async function PublicToolsPage() {
       </section>
 
       {/* ══════════════════════════════════════
-          SECTION 7: CTA
+          SECTION 5: CTA
           ══════════════════════════════════════ */}
       <section className="relative py-16 md:py-20 bg-gradient-to-br from-mojitax-navy via-mojitax-navy-light to-blue-600 overflow-hidden">
-        {/* Decorative background */}
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/3" />
           <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/3" />
@@ -448,19 +374,12 @@ export default async function PublicToolsPage() {
               </span>
             </div>
             <div className="flex items-center gap-6 text-sm text-slate-500">
-              <Link href="https://mojitax.co.uk/privacy" className="hover:text-mojitax-navy transition-colors">
-                Privacy
-              </Link>
-              <Link href="https://mojitax.co.uk/terms" className="hover:text-mojitax-navy transition-colors">
-                Terms
-              </Link>
-              <Link href="https://mojitax.co.uk/contact" className="hover:text-mojitax-navy transition-colors">
-                Contact
-              </Link>
+              <Link href="https://mojitax.co.uk/privacy" className="hover:text-mojitax-navy transition-colors">Privacy</Link>
+              <Link href="https://mojitax.co.uk/terms" className="hover:text-mojitax-navy transition-colors">Terms</Link>
+              <Link href="https://mojitax.co.uk/contact" className="hover:text-mojitax-navy transition-colors">Contact</Link>
             </div>
           </div>
 
-          {/* Disclaimer */}
           <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
             <p className="text-xs text-amber-800">
               <strong>Demo Tools for Learning:</strong> These are educational demo tools designed to help you understand tax concepts and practice calculations.
