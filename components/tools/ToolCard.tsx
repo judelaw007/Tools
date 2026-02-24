@@ -116,7 +116,7 @@ export function ToolCard({
               <div className="flex items-center gap-3 text-xs text-slate-400">
                 <span className="capitalize">{tool.toolType.replace('-', ' ')}</span>
                 <span>•</span>
-                <span className="capitalize">{tool.category?.replace('_', ' ') || 'Uncategorized'}</span>
+                <span className="capitalize">{tool.category?.replace(/_/g, ' ') || 'Uncategorized'}</span>
               </div>
             </div>
           </div>
@@ -163,7 +163,7 @@ export function ToolCard({
         {/* Bottom section with action */}
         <div className="px-6 py-4 flex items-center justify-between">
           <span className="text-xs text-slate-400 capitalize">
-            {tool.toolType.replace('-', ' ')} • {tool.category?.replace('_', ' ') || 'General'}
+            {tool.toolType.replace('-', ' ')} • {tool.category?.replace(/_/g, ' ') || 'General'}
           </span>
           
           {hasAccess ? (
