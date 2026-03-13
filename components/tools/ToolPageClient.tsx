@@ -1,9 +1,9 @@
 'use client';
 
 import { GloBECalculator } from '@/components/tools/calculator/GloBECalculator';
-import { SafeHarbourQualifier } from '@/components/tools/calculator/SafeHarbourQualifier';
+import { SafeHarbourQualifier as SafeHarbourQualifierLegacy } from '@/components/tools/calculator/SafeHarbourQualifier';
 import { FilingDeadlineCalculator } from '@/components/tools/calculator/FilingDeadlineCalculator';
-import { GIRPracticeForm } from '@/components/tools/calculator/GIRPracticeForm';
+import { GIRPracticeForm as GIRPracticeFormLegacy } from '@/components/tools/calculator/GIRPracticeForm';
 import { DFEAssessmentTool } from '@/components/tools/calculator/DFEAssessmentTool';
 import { AuditFileChecklist } from '@/components/tools/calculator/AuditFileChecklist';
 import { VATReturn } from '@/components/tools/calculator/VATReturn';
@@ -18,13 +18,27 @@ import { CtComputation } from '@/components/tools/calculator/ct-computation';
 import { PenpCalculator } from '@/components/tools/calculator/penp-calculator';
 import { ProfitExtraction } from '@/components/tools/calculator/profit-extraction';
 import { S455Calculator } from '@/components/tools/calculator/s455-calculator';
+// New Pillar Two tools
+import { ScopeDecisionTree } from '@/components/tools/calculator/scope-decision-tree';
+import { EtrCalculator } from '@/components/tools/calculator/etr-calculator';
+import { ChargingAllocation } from '@/components/tools/calculator/charging-allocation';
+import { SafeHarbourQualifier } from '@/components/tools/calculator/safe-harbour-qualifier-v2';
+import { GirPracticeForm } from '@/components/tools/calculator/gir-practice-form-v2';
+
 import type { SavedCalculation } from '@/components/tools/calculator/GloBECalculator';
-import type { SavedAssessment } from '@/components/tools/calculator/SafeHarbourQualifier';
+import type { SavedAssessment as SavedAssessmentLegacy } from '@/components/tools/calculator/SafeHarbourQualifier';
 import type { SavedDeadlineCalculation } from '@/components/tools/calculator/FilingDeadlineCalculator';
 import type { SavedPracticeSession } from '@/components/tools/calculator/GIRPracticeForm';
 import type { SavedDFEAssessment } from '@/components/tools/calculator/DFEAssessmentTool';
 import type { SavedAuditChecklist } from '@/components/tools/calculator/AuditFileChecklist';
 import type { SavedVATReturnData } from '@/components/tools/calculator/VATReturn';
+// New Pillar Two saved types
+import type { SavedScopeAssessment } from '@/components/tools/calculator/scope-decision-tree';
+import type { SavedComputation } from '@/components/tools/calculator/etr-calculator';
+import type { SavedAllocation } from '@/components/tools/calculator/charging-allocation';
+import type { SavedAssessment } from '@/components/tools/calculator/safe-harbour-qualifier-v2';
+import type { SavedGIRSession } from '@/components/tools/calculator/gir-practice-form-v2';
+
 import type { Tool } from '@/types';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Loader2, Calculator, AlertCircle } from 'lucide-react';
@@ -37,7 +51,19 @@ interface ToolPageClientProps {
 }
 
 // Generic saved item type - union of all tool-specific types
-type SavedItemData = SavedCalculation | SavedAssessment | SavedDeadlineCalculation | SavedPracticeSession | SavedDFEAssessment | SavedAuditChecklist | SavedVATReturnData;
+type SavedItemData =
+  | SavedCalculation
+  | SavedAssessmentLegacy
+  | SavedDeadlineCalculation
+  | SavedPracticeSession
+  | SavedDFEAssessment
+  | SavedAuditChecklist
+  | SavedVATReturnData
+  | SavedScopeAssessment
+  | SavedComputation
+  | SavedAllocation
+  | SavedAssessment
+  | SavedGIRSession;
 
 /**
  * Client component for rendering tool content.
@@ -127,8 +153,112 @@ export function ToolPageClient({ tool, userEmail }: ToolPageClientProps) {
   // Adding auth checks here causes hydration mismatches.
 
   // Render the appropriate tool component based on tool type/id
-  if (tool.toolType === 'calculator') {
-    // GloBE Calculator
+  if (tool.toolType === 'calculator' || tool.toolType === 'form') {
+
+    // ═══════════════════════════════════════════════════════════════════
+    // NEW PILLAR TWO TOOLS (v2) — these take priority over legacy tools
+    // ═══════════════════════════════════════════════════════════════════
+
+    // Scope Determination Decision Tree (replaces DFEAssessmentTool)
+    if (tool.slug === 'scope-decision-tree') {
+      return (
+        <>
+          {errorBanner}
+          <ScopeDecisionTree
+            userId={userEmail}
+            onSave={handleSave as (data: Omit<SavedScopeAssessment, 'id' | 'updatedAt'>) => Promise<string>}
+            onDelete={handleDelete}
+            savedItems={savedItems as SavedScopeAssessment[]}
+            onTrackCalculation={tracking.trackCalculation}
+            onTrackStepChange={tracking.trackStepChange}
+            onTrackError={tracking.trackError}
+            onTrackCompletion={tracking.trackCompletion}
+          />
+        </>
+      );
+    }
+
+    // ETR and Top-Up Tax Calculator (replaces GloBECalculator)
+    if (tool.slug === 'etr-calculator') {
+      return (
+        <>
+          {errorBanner}
+          <EtrCalculator
+            userId={userEmail}
+            onSave={handleSave as (data: Omit<SavedComputation, 'id' | 'updatedAt'>) => Promise<string>}
+            onDelete={handleDelete}
+            savedItems={savedItems as SavedComputation[]}
+            onTrackCalculation={tracking.trackCalculation}
+            onTrackStepChange={tracking.trackStepChange}
+            onTrackError={tracking.trackError}
+            onTrackCompletion={tracking.trackCompletion}
+          />
+        </>
+      );
+    }
+
+    // Charging Mechanism Allocation Workbench (new)
+    if (tool.slug === 'charging-allocation') {
+      return (
+        <>
+          {errorBanner}
+          <ChargingAllocation
+            userId={userEmail}
+            onSave={handleSave as (data: Omit<SavedAllocation, 'id' | 'updatedAt'>) => Promise<string>}
+            onDelete={handleDelete}
+            savedItems={savedItems as SavedAllocation[]}
+            onTrackCalculation={tracking.trackCalculation}
+            onTrackStepChange={tracking.trackStepChange}
+            onTrackError={tracking.trackError}
+            onTrackCompletion={tracking.trackCompletion}
+          />
+        </>
+      );
+    }
+
+    // Transitional CbCR Safe Harbour Assessment (v2, replaces legacy SafeHarbourQualifier)
+    if (tool.slug === 'safe-harbour-qualifier') {
+      return (
+        <>
+          {errorBanner}
+          <SafeHarbourQualifier
+            userId={userEmail}
+            onSave={handleSave as (data: Omit<SavedAssessment, 'id' | 'updatedAt'>) => Promise<string>}
+            onDelete={handleDelete}
+            savedItems={savedItems as SavedAssessment[]}
+            onTrackCalculation={tracking.trackCalculation}
+            onTrackStepChange={tracking.trackStepChange}
+            onTrackError={tracking.trackError}
+            onTrackCompletion={tracking.trackCompletion}
+          />
+        </>
+      );
+    }
+
+    // GIR Practice Form (v2, replaces legacy GIRPracticeForm)
+    if (tool.slug === 'gir-practice-form') {
+      return (
+        <>
+          {errorBanner}
+          <GirPracticeForm
+            userId={userEmail}
+            onSave={handleSave as (data: Omit<SavedGIRSession, 'id' | 'updatedAt'>) => Promise<string>}
+            onDelete={handleDelete}
+            savedItems={savedItems as SavedGIRSession[]}
+            onTrackCalculation={tracking.trackCalculation}
+            onTrackStepChange={tracking.trackStepChange}
+            onTrackError={tracking.trackError}
+            onTrackCompletion={tracking.trackCompletion}
+          />
+        </>
+      );
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // LEGACY PILLAR TWO TOOLS (archived but kept for backward compat)
+    // ═══════════════════════════════════════════════════════════════════
+
+    // GloBE Calculator (legacy)
     if (tool.id === 'gir-globe-calculator' || tool.slug === 'globe-calculator') {
       return (
         <>
@@ -147,16 +277,16 @@ export function ToolPageClient({ tool, userEmail }: ToolPageClientProps) {
       );
     }
 
-    // Safe Harbour Qualifier
-    if (tool.id === 'gir-safe-harbour-qualifier' || tool.slug === 'safe-harbour-qualifier') {
+    // Safe Harbour Qualifier (legacy)
+    if (tool.id === 'gir-safe-harbour-qualifier') {
       return (
         <>
           {errorBanner}
-          <SafeHarbourQualifier
+          <SafeHarbourQualifierLegacy
             userId={userEmail}
-            onSave={handleSave as (data: Omit<SavedAssessment, 'id' | 'updatedAt'>) => Promise<string>}
+            onSave={handleSave as (data: Omit<SavedAssessmentLegacy, 'id' | 'updatedAt'>) => Promise<string>}
             onDelete={handleDelete}
-            savedItems={savedItems as SavedAssessment[]}
+            savedItems={savedItems as SavedAssessmentLegacy[]}
             onTrackCalculation={tracking.trackCalculation}
             onTrackStepChange={tracking.trackStepChange}
             onTrackError={tracking.trackError}
@@ -185,12 +315,12 @@ export function ToolPageClient({ tool, userEmail }: ToolPageClientProps) {
       );
     }
 
-    // GIR Practice Form
-    if (tool.id === 'gir-practice-form' || tool.slug === 'gir-practice-form') {
+    // GIR Practice Form (legacy)
+    if (tool.id === 'gir-practice-form-legacy') {
       return (
         <>
           {errorBanner}
-          <GIRPracticeForm
+          <GIRPracticeFormLegacy
             userId={userEmail}
             onSave={handleSave as (data: Omit<SavedPracticeSession, 'id' | 'updatedAt'>) => Promise<string>}
             onDelete={handleDelete}
@@ -204,7 +334,7 @@ export function ToolPageClient({ tool, userEmail }: ToolPageClientProps) {
       );
     }
 
-    // DFE Assessment Tool
+    // DFE Assessment Tool (legacy)
     if (tool.id === 'gir-dfe-assessment' || tool.slug === 'dfe-assessment-tool') {
       return (
         <>
@@ -466,6 +596,10 @@ function generateSaveName(data: Omit<SavedItemData, 'id' | 'updatedAt'>, toolNam
   // Try to extract a meaningful name from the data
   if ('name' in data && typeof data.name === 'string' && data.name) {
     return data.name;
+  }
+
+  if ('groupName' in data && typeof data.groupName === 'string' && data.groupName) {
+    return `${data.groupName} - ${dateStr}`;
   }
 
   if ('jurisdiction' in data && typeof data.jurisdiction === 'string') {

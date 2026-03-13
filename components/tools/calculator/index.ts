@@ -4,14 +4,15 @@
 export { GloBECalculator } from './GloBECalculator';
 export type { GloBECalculatorProps, SavedCalculation } from './GloBECalculator';
 
-export { SafeHarbourQualifier } from './SafeHarbourQualifier';
-export type { SafeHarbourQualifierProps, SavedAssessment } from './SafeHarbourQualifier';
+// Legacy Pillar Two tools (kept for backward compatibility)
+export { SafeHarbourQualifier as SafeHarbourQualifierLegacy } from './SafeHarbourQualifier';
+export type { SafeHarbourQualifierProps as SafeHarbourQualifierLegacyProps, SavedAssessment as SavedAssessmentLegacy } from './SafeHarbourQualifier';
 
 export { FilingDeadlineCalculator } from './FilingDeadlineCalculator';
 export type { FilingDeadlineCalculatorProps, SavedDeadlineCalculation } from './FilingDeadlineCalculator';
 
-export { GIRPracticeForm } from './GIRPracticeForm';
-export type { GIRPracticeFormProps, SavedPracticeSession } from './GIRPracticeForm';
+export { GIRPracticeForm as GIRPracticeFormLegacy } from './GIRPracticeForm';
+export type { GIRPracticeFormProps as GIRPracticeFormLegacyProps, SavedPracticeSession } from './GIRPracticeForm';
 
 export { DFEAssessmentTool } from './DFEAssessmentTool';
 export type { DFEAssessmentToolProps, SavedDFEAssessment } from './DFEAssessmentTool';
@@ -55,11 +56,27 @@ export type { ProfitExtractionProps } from './profit-extraction';
 export { S455Calculator } from './s455-calculator';
 export type { S455CalculatorProps } from './s455-calculator';
 
+// New Pillar Two tools (v2)
+export { ScopeDecisionTree } from './scope-decision-tree';
+export type { ScopeDecisionTreeProps, SavedScopeAssessment } from './scope-decision-tree';
+
+export { EtrCalculator } from './etr-calculator';
+export type { EtrCalculatorProps, SavedComputation } from './etr-calculator';
+
+export { ChargingAllocation } from './charging-allocation';
+export type { ChargingAllocationProps, SavedAllocation } from './charging-allocation';
+
+export { SafeHarbourQualifier } from './safe-harbour-qualifier-v2';
+export type { SafeHarbourQualifierProps, SavedAssessment } from './safe-harbour-qualifier-v2';
+
+export { GirPracticeForm } from './gir-practice-form-v2';
+export type { GirPracticeFormProps, SavedGIRSession } from './gir-practice-form-v2';
+
 // Calculator registry - maps calculator IDs to their components
 import { GloBECalculator } from './GloBECalculator';
-import { SafeHarbourQualifier } from './SafeHarbourQualifier';
+import { SafeHarbourQualifier as SafeHarbourQualifierLegacy } from './SafeHarbourQualifier';
 import { FilingDeadlineCalculator } from './FilingDeadlineCalculator';
-import { GIRPracticeForm } from './GIRPracticeForm';
+import { GIRPracticeForm as GIRPracticeFormLegacy } from './GIRPracticeForm';
 import { DFEAssessmentTool } from './DFEAssessmentTool';
 import { AuditFileChecklist } from './AuditFileChecklist';
 import { VATReturn } from './VATReturn';
@@ -74,22 +91,34 @@ import { CtComputation } from './ct-computation';
 import { PenpCalculator } from './penp-calculator';
 import { ProfitExtraction } from './profit-extraction';
 import { S455Calculator } from './s455-calculator';
+import { ScopeDecisionTree } from './scope-decision-tree';
+import { EtrCalculator } from './etr-calculator';
+import { ChargingAllocation } from './charging-allocation';
+import { SafeHarbourQualifier } from './safe-harbour-qualifier-v2';
+import { GirPracticeForm } from './gir-practice-form-v2';
 import type { ComponentType } from 'react';
 
 export const CALCULATOR_COMPONENTS: Record<string, ComponentType<any>> = {
+  // New Pillar Two tools
+  'scope-decision-tree': ScopeDecisionTree,
+  'etr-calculator': EtrCalculator,
+  'charging-allocation': ChargingAllocation,
+  'safe-harbour-qualifier': SafeHarbourQualifier,
+  'gir-practice-form': GirPracticeForm,
+  // Legacy Pillar Two tools (archived in DB but kept for reference)
   'gir-globe-calculator': GloBECalculator,
-  'globe-calculator': GloBECalculator, // alias
-  'gir-safe-harbour-qualifier': SafeHarbourQualifier,
-  'safe-harbour-qualifier': SafeHarbourQualifier, // alias
+  'globe-calculator': GloBECalculator,
+  'gir-safe-harbour-qualifier': SafeHarbourQualifierLegacy,
   'gir-filing-deadline-calculator': FilingDeadlineCalculator,
-  'filing-deadline-calculator': FilingDeadlineCalculator, // alias
-  'gir-practice-form': GIRPracticeForm,
+  'filing-deadline-calculator': FilingDeadlineCalculator,
+  'gir-practice-form-legacy': GIRPracticeFormLegacy,
   'gir-dfe-assessment': DFEAssessmentTool,
-  'dfe-assessment-tool': DFEAssessmentTool, // alias
+  'dfe-assessment-tool': DFEAssessmentTool,
   'gir-audit-file-checklist': AuditFileChecklist,
-  'audit-file-checklist': AuditFileChecklist, // alias
+  'audit-file-checklist': AuditFileChecklist,
+  // Other tools
   'vat-return-boxes-1-9': VATReturn,
-  'vat-return': VATReturn, // alias
+  'vat-return': VATReturn,
   'ccl100-return': CCL100Return,
   'cds-import-declaration': CDSImportDeclaration,
   'customs-valuation-worksheet': CustomsValuationWorksheet,
